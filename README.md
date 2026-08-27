@@ -56,7 +56,7 @@ npm run zip       # create a store-ready extension archive
 - Open and edit a note by clicking its highlight on the original page.
 - Choose a default color or recolor individual highlights.
 - Browse notes for the current page from the toolbar popup.
-- Search, sort, filter, edit, delete, and revisit notes in the library.
+- Group notes by website, or search, sort, filter, edit, delete, and revisit them in the library.
 - Automatic local topic tags with no network requests.
 - Optional OpenAI-compatible LLM organization.
 - JSON export/import for backups and portability.

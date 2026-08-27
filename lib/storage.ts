@@ -1,6 +1,8 @@
 import { storage } from '#imports';
 import type { AnchorData, AnchorNote, AnchorSettings } from './types';
 
+export { hostFromUrl } from './websites';
+
 export const EMPTY_DATA: AnchorData = {
   schemaVersion: 1,
   notes: [],
@@ -65,14 +67,6 @@ export function normalizeData(value: unknown): AnchorData {
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
     settings: { ...EMPTY_DATA.settings, ...currentSettings, aiProvider },
   };
-}
-
-export function hostFromUrl(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return 'unknown source';
-  }
 }
 
 export function normalizeUrl(value: string): string {
