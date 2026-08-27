@@ -31,12 +31,17 @@ export async function organizeWithAI(
   note: Pick<AnchorNote, 'title' | 'url' | 'quote' | 'body'>,
   settings: AnchorSettings,
 ): Promise<{ tags: string[]; summary: string }> {
-  if (!settings.aiApiKey) throw new Error('Add an API key in Settings first.');
+  const isOpenRouter = settings.aiProvider === 'openrouter';
+  if (isOpenRouter && !settings.aiApiKey) throw new Error('Add an OpenRouter API key in Settings first.');
   const response = await fetch(settings.aiEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${settings.aiApiKey}`,
+      ...(settings.aiApiKey ? { Authorization: `Bearer ${settings.aiApiKey}` } : {}),
+      ...(isOpenRouter ? {
+        'HTTP-Referer': 'https://github.com/kevinc16/anchor-notes',
+        'X-OpenRouter-Title': 'Anchor Notes',
+      } : {}),
     },
     body: JSON.stringify({
       model: settings.aiModel,
@@ -56,7 +61,13 @@ export async function organizeWithAI(
   if (!response.ok) throw new Error(`AI request failed (${response.status}).`);
   const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
   const content = payload.choices?.[0]?.message?.content ?? '';
-  const parsed = JSON.parse(content.replace(/^```json\s*|\s*```$/g, '')) as {
+  const withoutFence = content.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+  const firstBrace = withoutFence.indexOf('{');
+  const lastBrace = withoutFence.lastIndexOf('}');
+  const json = firstBrace >= 0 && lastBrace > firstBrace
+    ? withoutFence.slice(firstBrace, lastBrace + 1)
+    : withoutFence;
+  const parsed = JSON.parse(json) as {
     tags?: unknown;
     summary?: unknown;
   };
@@ -65,4 +76,3 @@ export async function organizeWithAI(
     summary: typeof parsed.summary === 'string' ? parsed.summary : '',
   };
 }
-

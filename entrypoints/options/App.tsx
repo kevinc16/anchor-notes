@@ -9,13 +9,37 @@ import {
   updateSettings,
   writeData,
 } from '@/lib/storage';
-import type { AnchorData, AnchorNote, AnchorSettings } from '@/lib/types';
+import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor } from '@/lib/types';
 
 type View = 'library' | 'settings';
 type SortMode = 'newest' | 'oldest' | 'source';
 
 const buttonClass = 'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass = 'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
+  { id: 'yellow', label: 'Yellow', className: 'bg-[#ffd74a]' },
+  { id: 'mint', label: 'Mint', className: 'bg-[#72e1be]' },
+  { id: 'lilac', label: 'Lilac', className: 'bg-[#bb97ff]' },
+  { id: 'coral', label: 'Coral', className: 'bg-[#ff8b77]' },
+];
+
+const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel' | 'aiApiKey'>> = {
+  openrouter: {
+    aiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    aiModel: 'openrouter/free',
+    aiApiKey: '',
+  },
+  ollama: {
+    aiEndpoint: 'http://localhost:11434/v1/chat/completions',
+    aiModel: 'llama3.2',
+    aiApiKey: '',
+  },
+  custom: {
+    aiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    aiModel: '',
+    aiApiKey: '',
+  },
+};
 
 function Brand() {
   return (
@@ -28,6 +52,24 @@ function Brand() {
 
 function Tag({ children }: { children: string }) {
   return <span className="rounded-full bg-[#eee9df] px-2 py-1 text-[10px] font-bold text-[#605a51]">{children}</span>;
+}
+
+function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (color: HighlightColor) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Highlight color">
+      {highlightColors.map((color) => (
+        <button
+          key={color.id}
+          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          type="button"
+          aria-pressed={value === color.id}
+          onClick={() => onChange(color.id)}
+        >
+          <span className={`size-4 rounded-full ${color.className}`} />{color.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function EmptyState({ hasNotes }: { hasNotes: boolean }) {
@@ -84,6 +126,7 @@ export default function App() {
   const [editing, setEditing] = useState<AnchorNote | null>(null);
   const [editBody, setEditBody] = useState('');
   const [editTags, setEditTags] = useState('');
+  const [editColor, setEditColor] = useState<HighlightColor>('yellow');
   const [settings, setSettings] = useState<AnchorSettings>(EMPTY_DATA.settings);
   const [toast, setToast] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
@@ -120,6 +163,7 @@ export default function App() {
     setEditing(note);
     setEditBody(note.body);
     setEditTags(note.tags.join(', '));
+    setEditColor(note.color);
   }
 
   async function persistEdit() {
@@ -127,6 +171,7 @@ export default function App() {
     await saveNote({
       ...editing,
       body: editBody.trim(),
+      color: editColor,
       tags: editTags.split(',').map((tag) => tag.trim().toLowerCase()).filter(Boolean),
     });
     setData(await readData());
@@ -145,6 +190,14 @@ export default function App() {
     await updateSettings(settings);
     setData(await readData());
     setToast('Settings saved');
+  }
+
+  function selectProvider(provider: AiProvider) {
+    if (provider === 'local') {
+      setSettings({ ...settings, aiProvider: provider });
+      return;
+    }
+    setSettings({ ...settings, aiProvider: provider, ...providerDefaults[provider] });
   }
 
   function exportData() {
@@ -224,18 +277,24 @@ export default function App() {
           </section>
         ) : (
           <section>
-            <header className="max-w-[680px]"><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p><h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1><p className="mt-3 text-[13px] leading-relaxed text-muted">Your highlights stay in Chrome's local storage unless you export them or enable a remote AI provider.</p></header>
+            <header className="max-w-[680px]"><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p><h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1><p className="mt-3 text-[13px] leading-relaxed text-muted">Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.</p></header>
             <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
               <h2 className="mb-5 font-serif text-xl font-semibold">Organization</h2>
+              <Field label="Default highlight color" help="Used for new highlights. Individual notes can be recolored from the page or library.">
+                <ColorPicker value={settings.highlightColor} onChange={(highlightColor) => setSettings({ ...settings, highlightColor })} />
+              </Field>
               <Field label="Organizer">
-                <select className={fieldClass} value={settings.aiMode} onChange={(event) => setSettings({ ...settings, aiMode: event.target.value as AnchorSettings['aiMode'] })}>
-                  <option value="local">Private, on-device topic rules</option><option value="remote">Remote LLM (OpenAI-compatible)</option>
+                <select className={fieldClass} value={settings.aiProvider} onChange={(event) => selectProvider(event.target.value as AiProvider)}>
+                  <option value="local">Private, on-device topic rules</option>
+                  <option value="openrouter">OpenRouter — hosted open and free models</option>
+                  <option value="ollama">Ollama — local open-source models</option>
+                  <option value="custom">Custom OpenAI-compatible endpoint</option>
                 </select>
               </Field>
-              {settings.aiMode === 'remote' && <>
-                <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
-                <Field label="Model"><input className={fieldClass} type="text" value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
-                <Field label="API key" help="New notes will be sent to this provider for tags and a short summary. Existing notes remain unchanged."><input className={fieldClass} type="password" autoComplete="off" placeholder="Stored locally in this browser" value={settings.aiApiKey} onChange={(event) => setSettings({ ...settings, aiApiKey: event.target.value })} /></Field>
+              {settings.aiProvider !== 'local' && <>
+                <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} readOnly={settings.aiProvider !== 'custom'} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
+                <Field label="Model" help={settings.aiProvider === 'openrouter' ? 'Use openrouter/free or any model slug from the OpenRouter catalog.' : settings.aiProvider === 'ollama' ? 'Enter a model you have already pulled with Ollama.' : undefined}><input className={fieldClass} type="text" placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'} value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
+                {settings.aiProvider !== 'ollama' && <Field label="API key" help="New notes are sent to this provider for tags and a short summary. The key remains in local extension storage."><input className={fieldClass} type="password" autoComplete="off" placeholder="Stored locally in this browser" value={settings.aiApiKey} onChange={(event) => setSettings({ ...settings, aiApiKey: event.target.value })} /></Field>}
               </>}
               <button className={`${buttonClass} border-ink bg-ink text-white`} type="button" onClick={() => void saveSettings()}>Save settings</button>
             </div>
@@ -255,6 +314,7 @@ export default function App() {
             <blockquote id="edit-title" className="my-5 font-serif text-lg font-medium leading-relaxed">“{editing.quote}”</blockquote>
             <Field label="Your note"><textarea className={fieldClass} rows={5} value={editBody} onChange={(event) => setEditBody(event.target.value)} /></Field>
             <Field label="Tags (comma separated)"><input className={fieldClass} type="text" value={editTags} onChange={(event) => setEditTags(event.target.value)} /></Field>
+            <Field label="Highlight color"><ColorPicker value={editColor} onChange={setEditColor} /></Field>
             <footer className="flex justify-end gap-2"><button className={buttonClass} type="button" onClick={() => setEditing(null)}>Cancel</button><button className={`${buttonClass} border-ink bg-ink text-white`} type="button" onClick={() => void persistEdit()}>Save changes</button></footer>
           </section>
         </div>
@@ -264,4 +324,3 @@ export default function App() {
     </div>
   );
 }
-
