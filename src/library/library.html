@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anchor Notes Library</title>
+    <link rel="stylesheet" href="../ui.css">
+    <link rel="stylesheet" href="library.css">
+  </head>
+  <body>
+    <aside>
+      <div class="brand"><span class="brand-mark">A</span><span>Anchor</span></div>
+      <nav>
+        <button class="nav-item active" data-view="library"><span>⌂</span> Library</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="aside-footer">
+        <div><strong id="total-count">0</strong><span>saved ideas</span></div>
+        <button id="export" class="button">Export backup</button>
+      </div>
+    </aside>
+
+    <main>
+      <section id="library-view">
+        <header class="library-header">
+          <div><div class="eyebrow">Your second memory</div><h1>Saved from the web</h1></div>
+          <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search notes, tags, or sources…"></label>
+        </header>
+        <div class="toolbar">
+          <div id="filters" class="filters"><button class="active" data-filter="all">All notes</button></div>
+          <select id="sort" aria-label="Sort notes"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="source">By source</option></select>
+        </div>
+        <div id="notes-grid" class="notes-grid"></div>
+      </section>
+
+      <section id="settings-view" hidden>
+        <header class="settings-header"><div class="eyebrow">Preferences</div><h1>Settings</h1><p>Your highlights stay in Chrome's local storage unless you export them or enable a remote AI provider.</p></header>
+        <div class="settings-card">
+          <h2>Organization</h2>
+          <label class="field"><span>Organizer</span><select id="ai-mode"><option value="local">Private, on-device topic rules</option><option value="remote">Remote LLM (OpenAI-compatible)</option></select></label>
+          <div id="remote-settings">
+            <label class="field"><span>API endpoint</span><input id="ai-endpoint" type="url"></label>
+            <label class="field"><span>Model</span><input id="ai-model" type="text"></label>
+            <label class="field"><span>API key</span><input id="ai-key" type="password" autocomplete="off" placeholder="Stored locally in this browser"></label>
+            <p class="field-help">New notes will be sent to this provider for tags and a short summary. Existing notes remain unchanged.</p>
+          </div>
+          <button id="save-settings" class="button primary">Save settings</button>
+        </div>
+        <div class="settings-card">
+          <h2>Data</h2>
+          <p>Use JSON backups to move your library or keep an independent copy.</p>
+          <div class="button-row"><button id="export-settings" class="button">Export JSON</button><button id="import" class="button">Import JSON</button><input id="import-file" type="file" accept="application/json" hidden></div>
+        </div>
+      </section>
+    </main>
+    <dialog id="edit-dialog">
+      <form method="dialog">
+        <div class="eyebrow">Edit note</div>
+        <blockquote id="edit-quote"></blockquote>
+        <label class="field"><span>Your note</span><textarea id="edit-body" rows="5"></textarea></label>
+        <label class="field"><span>Tags (comma separated)</span><input id="edit-tags" type="text"></label>
+        <div class="dialog-actions"><button class="button" value="cancel">Cancel</button><button id="save-edit" class="button primary" value="default">Save changes</button></div>
+      </form>
+    </dialog>
+    <script type="module" src="library.js"></script>
+  </body>
+</html>
+
