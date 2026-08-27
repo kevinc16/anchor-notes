@@ -34,10 +34,11 @@ Chrome does not inject extensions into already-open tabs after installation. Ref
 ## Tooling
 
 - **WXT** owns extension entrypoints, manifest generation, development mode, and packaging.
-- **Vite** is WXT's bundler and runs the Tailwind and React plugins.
+- **Vite** is WXT's bundler and runs the React, Sass, and PostCSS pipeline.
 - **React** powers the toolbar popup and full-page notes library.
 - **TypeScript** provides strict types for notes, storage, messages, and browser APIs.
-- **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
+- **Tailwind CSS v3** styles both React entrypoints through PostCSS.
+- **SCSS** handles shared theme styles and isolated content-script styling.
 
 Useful commands:
 
