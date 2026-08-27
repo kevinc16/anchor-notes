@@ -14,13 +14,39 @@ All data is stored in `chrome.storage.local`. There is no Anchor Notes server.
 
 ## Install for development
 
+Requirements: Node.js 22 or newer and npm.
+
+```sh
+npm install
+npm run dev
+```
+
+Then:
+
 1. Open `chrome://extensions` in Chrome.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select this `anchor-notes` folder.
+4. Select `.output/chrome-mv3`.
 5. Select text on a normal webpage and press **Option/Alt + Shift + H**, or use the right-click menu.
 
 Chrome does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight.
+
+## Tooling
+
+- **WXT** owns extension entrypoints, manifest generation, development mode, and packaging.
+- **Vite** is WXT's bundler and runs the Tailwind and React plugins.
+- **React** powers the toolbar popup and full-page notes library.
+- **TypeScript** provides strict types for notes, storage, messages, and browser APIs.
+- **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
+
+Useful commands:
+
+```sh
+npm run dev       # watch and rebuild the development extension
+npm run compile   # run strict TypeScript checks
+npm run build     # create .output/chrome-mv3
+npm run zip       # create a store-ready extension archive
+```
 
 ## Features
 
@@ -31,7 +57,7 @@ Chrome does not inject extensions into already-open tabs after installation. Ref
 - Automatic local topic tags with no network requests.
 - Optional OpenAI-compatible LLM organization.
 - JSON export/import for backups and portability.
-- No framework and no build step.
+- React UI with a typed WXT build pipeline.
 
 ## Optional LLM setup
 
@@ -42,14 +68,15 @@ For a production release, route model calls through a small authenticated backen
 ## Project layout
 
 ```text
-manifest.json
-src/
-  background.js        # commands, context menu, persistence orchestration
-  content.js           # selection capture and resilient highlight restoration
-  content.css          # isolated in-page UI styles
-  popup/                # current-page notes
-  library/              # searchable library and settings
-  shared/               # storage schema and organization logic
+entrypoints/
+  background.ts         # commands, context menu, persistence orchestration
+  anchor.content/       # selection capture and resilient restoration
+  popup/                # React current-page notes app
+  options/              # React library and settings app
+lib/                    # typed storage, note models, and organization logic
+styles/                 # shared Tailwind theme and base styles
+public/                 # extension icons copied into the build
+wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 ```
 
 ## Privacy and limitations
@@ -70,4 +97,3 @@ src/
 ## License
 
 MIT
-
