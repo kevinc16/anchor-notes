@@ -46,7 +46,7 @@ export default defineBackground(() => {
           };
           await saveNote(note);
 
-          if (data.settings.aiMode === 'remote' && data.settings.aiApiKey) {
+          if (data.settings.aiProvider !== 'local') {
             try {
               const organized = await organizeWithAI(note, data.settings);
               await saveNote({ ...note, ...organized });
@@ -59,6 +59,15 @@ export default defineBackground(() => {
           return { ok: false, error: error instanceof Error ? error.message : 'Could not save note.' };
         }
       })();
+    }
+
+    if (message.type === 'UPDATE_NOTE') {
+      return saveNote(message.note)
+        .then((note) => ({ ok: true, note }))
+        .catch((error: unknown) => ({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Could not update note.',
+        }));
     }
 
     if (message.type === 'DELETE_NOTE') {
@@ -82,4 +91,3 @@ export default defineBackground(() => {
     return undefined;
   });
 });
-

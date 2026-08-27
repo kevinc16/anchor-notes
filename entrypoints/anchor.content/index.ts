@@ -1,9 +1,16 @@
 import { browser, defineContentScript } from '#imports';
+import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
 import { normalizeUrl, readData } from '@/lib/storage';
-import type { AnchorNote, ExtensionMessage, HighlightAnchor, MessageResponse } from '@/lib/types';
+import type {
+  AnchorNote,
+  ExtensionMessage,
+  HighlightAnchor,
+  HighlightColor,
+  MessageResponse,
+} from '@/lib/types';
 import './style.css';
 
-const HIGHLIGHT_CLASS = 'anchor-note-highlight';
+const COLORS: HighlightColor[] = ['yellow', 'mint', 'lilac', 'coral'];
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -57,7 +64,26 @@ export default defineContentScript({
       };
     }
 
-    function showComposer() {
+    function renderColorPicker(
+      container: HTMLElement,
+      selected: HighlightColor,
+      onSelect: (color: HighlightColor) => void,
+    ) {
+      container.replaceChildren();
+      for (const color of COLORS) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'anchor-color-swatch';
+        button.dataset.color = color;
+        button.title = `${color[0]?.toUpperCase()}${color.slice(1)}`;
+        button.setAttribute('aria-label', `Use ${color} highlight`);
+        button.setAttribute('aria-pressed', String(color === selected));
+        button.addEventListener('click', () => onSelect(color));
+        container.appendChild(button);
+      }
+    }
+
+    async function showComposer() {
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed || !selection.toString().trim()) {
         showToast('Select some text first');
@@ -65,24 +91,38 @@ export default defineContentScript({
       }
 
       pendingRange = selection.getRangeAt(0).cloneRange();
+      const quoteText = pendingRange.toString().trim();
+      const { settings } = await readData();
       document.getElementById('anchor-notes-composer')?.remove();
+      document.getElementById('anchor-notes-popover')?.remove();
       const rect = pendingRange.getBoundingClientRect();
       const composer = document.createElement('div');
       composer.id = 'anchor-notes-composer';
+      composer.dataset.color = settings.highlightColor;
       composer.innerHTML = `
         <div class="anchor-composer-kicker">New highlight</div>
         <div class="anchor-composer-quote"></div>
         <textarea maxlength="2000" placeholder="Why does this matter? (optional)"></textarea>
+        <div class="anchor-color-row">
+          <span>Highlight color</span>
+          <div class="anchor-color-picker" role="group" aria-label="Highlight color"></div>
+        </div>
         <div class="anchor-composer-actions">
           <button class="anchor-cancel" type="button">Cancel</button>
           <button class="anchor-save" type="button">Save note</button>
         </div>`;
       const quote = composer.querySelector<HTMLElement>('.anchor-composer-quote');
-      if (quote) quote.textContent = `“${selection.toString().trim()}”`;
+      if (quote) quote.textContent = `“${quoteText}”`;
+      const colorPicker = composer.querySelector<HTMLElement>('.anchor-color-picker');
+      if (colorPicker) {
+        const selectComposerColor = (color: HighlightColor) => {
+          composer.dataset.color = color;
+          renderColorPicker(colorPicker, color, selectComposerColor);
+        };
+        renderColorPicker(colorPicker, settings.highlightColor, selectComposerColor);
+      }
       document.body.appendChild(composer);
-      const left = Math.max(12, Math.min(window.innerWidth - 352, rect.left));
-      const top = Math.max(12, Math.min(window.innerHeight - composer.offsetHeight - 12, rect.bottom + 12));
-      Object.assign(composer.style, { left: `${left}px`, top: `${top}px` });
+      positionFloatingElement(composer, rect);
       composer.querySelector<HTMLTextAreaElement>('textarea')?.focus();
       composer.querySelector<HTMLButtonElement>('.anchor-cancel')?.addEventListener('click', () => {
         composer.remove();
@@ -93,7 +133,7 @@ export default defineContentScript({
 
     async function saveSelection(composer: HTMLElement) {
       if (!pendingRange) return;
-      const settings = (await readData()).settings;
+      const now = new Date().toISOString();
       const note = {
         id: crypto.randomUUID(),
         url: location.href,
@@ -104,45 +144,49 @@ export default defineContentScript({
         anchor: makeAnchor(pendingRange),
         pageSnapshot: {
           description: document.querySelector<HTMLMetaElement>('meta[name="description"]')?.content || '',
-          capturedAt: new Date().toISOString(),
+          capturedAt: now,
         },
-        color: settings.highlightColor,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        color: (composer.dataset.color || 'yellow') as HighlightColor,
+        createdAt: now,
+        updatedAt: now,
       } satisfies Omit<AnchorNote, 'tags'>;
+
+      composer.remove();
+      const selector = note.anchor.quote;
+      const liveRange = findTextRange(selector.exact, selector.prefix, selector.suffix);
+      let highlighted = liveRange ? wrapHighlightRange(liveRange, note) : false;
+      pendingRange = null;
+      window.getSelection()?.removeAllRanges();
 
       const response = await browser.runtime.sendMessage({ type: 'SAVE_NOTE', note } satisfies ExtensionMessage) as MessageResponse;
       if (!response?.ok || !response.note) {
+        removeHighlightMarks(note.id);
         showToast(response?.error || 'Could not save note');
         return;
       }
 
-      wrapRange(pendingRange, response.note);
-      composer.remove();
-      pendingRange = null;
-      window.getSelection()?.removeAllRanges();
-      showToast('Highlight anchored');
+      if (!highlighted) {
+        const savedSelector = response.note.anchor.quote;
+        const savedRange = findTextRange(savedSelector.exact, savedSelector.prefix, savedSelector.suffix);
+        highlighted = savedRange ? wrapHighlightRange(savedRange, response.note) : false;
+      }
+      showToast(highlighted ? 'Highlight anchored' : 'Note saved — reload to restore highlight');
     }
 
-    function wrapRange(range: Range, note: AnchorNote): boolean {
-      try {
-        const mark = document.createElement('mark');
-        mark.className = HIGHLIGHT_CLASS;
-        mark.dataset.anchorId = note.id;
-        mark.dataset.anchorColor = note.color;
-        mark.title = note.body || 'Saved in Anchor Notes';
-        range.surroundContents(mark);
-        return true;
-      } catch {
-        return false;
-      }
+    function removeHighlightMarks(id: string) {
+      const parents = new Set<Node>();
+      document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`).forEach((mark) => {
+        if (mark.parentNode) parents.add(mark.parentNode);
+        mark.replaceWith(...mark.childNodes);
+      });
+      parents.forEach((parent) => parent.normalize());
     }
 
     function findTextRange(exact: string, prefix = '', suffix = ''): Range | null {
       if (!exact) return null;
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
-          return node.parentElement?.closest(`script, style, textarea, #anchor-notes-composer, .${HIGHLIGHT_CLASS}`)
+          return node.parentElement?.closest(`script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`)
             ? NodeFilter.FILTER_REJECT
             : NodeFilter.FILTER_ACCEPT;
         },
@@ -187,8 +231,92 @@ export default defineContentScript({
       for (const note of notes) {
         const selector = note.anchor?.quote;
         const range = findTextRange(selector?.exact || note.quote, selector?.prefix, selector?.suffix);
-        if (range) wrapRange(range, note);
+        if (range) wrapHighlightRange(range, note);
       }
+    }
+
+    function positionFloatingElement(element: HTMLElement, rect: DOMRect) {
+      const left = Math.max(12, Math.min(window.innerWidth - element.offsetWidth - 12, rect.left));
+      const below = rect.bottom + 12;
+      const top = below + element.offsetHeight <= window.innerHeight - 12
+        ? below
+        : Math.max(12, rect.top - element.offsetHeight - 12);
+      Object.assign(element.style, { left: `${left}px`, top: `${top}px` });
+    }
+
+    function applyColorToMarks(id: string, color: HighlightColor) {
+      document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`).forEach((mark) => {
+        mark.dataset.anchorColor = color;
+      });
+    }
+
+    async function updateNote(note: AnchorNote): Promise<AnchorNote | null> {
+      const response = await browser.runtime.sendMessage({ type: 'UPDATE_NOTE', note } satisfies ExtensionMessage) as MessageResponse;
+      if (!response.ok || !response.note) {
+        showToast(response.error || 'Could not update note');
+        return null;
+      }
+      return response.note;
+    }
+
+    async function showNotePopover(id: string, rect: DOMRect) {
+      const note = (await readData()).notes.find((item) => item.id === id);
+      if (!note) return;
+      document.getElementById('anchor-notes-composer')?.remove();
+      document.getElementById('anchor-notes-popover')?.remove();
+      const popover = document.createElement('div');
+      popover.id = 'anchor-notes-popover';
+      popover.innerHTML = `
+        <div class="anchor-popover-header">
+          <span class="anchor-composer-kicker">Saved note</span>
+          <button class="anchor-popover-close" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="anchor-composer-quote"></div>
+        <textarea maxlength="2000" placeholder="Add a note…"></textarea>
+        <div class="anchor-popover-tags"></div>
+        <div class="anchor-color-row">
+          <span>Highlight color</span>
+          <div class="anchor-color-picker" role="group" aria-label="Highlight color"></div>
+        </div>
+        <div class="anchor-composer-actions">
+          <button class="anchor-open-library" type="button">Open library</button>
+          <button class="anchor-save" type="button">Save changes</button>
+        </div>`;
+      const quote = popover.querySelector<HTMLElement>('.anchor-composer-quote');
+      if (quote) quote.textContent = `“${note.quote}”`;
+      const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
+      if (textarea) textarea.value = note.body;
+      const tags = popover.querySelector<HTMLElement>('.anchor-popover-tags');
+      for (const tag of note.tags) {
+        const chip = document.createElement('span');
+        chip.textContent = tag;
+        tags?.appendChild(chip);
+      }
+      const colorPicker = popover.querySelector<HTMLElement>('.anchor-color-picker');
+      const selectColor = (color: HighlightColor) => {
+        note.color = color;
+        applyColorToMarks(note.id, color);
+        if (colorPicker) renderColorPicker(colorPicker, color, selectColor);
+        void updateNote(note).then((saved) => {
+          if (saved) showToast('Highlight color updated');
+        });
+      };
+      if (colorPicker) renderColorPicker(colorPicker, note.color, selectColor);
+      document.body.appendChild(popover);
+      positionFloatingElement(popover, rect);
+      popover.querySelector<HTMLButtonElement>('.anchor-popover-close')?.addEventListener('click', () => popover.remove());
+      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void browser.runtime.openOptionsPage());
+      popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
+        note.body = textarea?.value.trim() ?? '';
+        void updateNote(note).then((saved) => {
+          if (!saved) return;
+          document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(note.id)}"]`).forEach((mark) => {
+            mark.title = saved.body || 'Saved in Anchor Notes';
+          });
+          popover.remove();
+          showToast('Note updated');
+        });
+      });
     }
 
     function showToast(message: string) {
@@ -201,7 +329,7 @@ export default defineContentScript({
     }
 
     browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
-      if (message.type === 'CAPTURE_SELECTION') showComposer();
+      if (message.type === 'CAPTURE_SELECTION') void showComposer();
       if (message.type === 'SCROLL_TO_NOTE') {
         document.querySelector<HTMLElement>(`[data-anchor-id="${CSS.escape(message.id)}"]`)
           ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -209,10 +337,24 @@ export default defineContentScript({
       return undefined;
     });
 
+    document.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const mark = target?.closest<HTMLElement>(`.${HIGHLIGHT_CLASS}`);
+      if (mark?.dataset.anchorId) {
+        event.preventDefault();
+        event.stopPropagation();
+        void showNotePopover(mark.dataset.anchorId, mark.getBoundingClientRect());
+        return;
+      }
+      if (!target?.closest('#anchor-notes-popover')) document.getElementById('anchor-notes-popover')?.remove();
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') document.getElementById('anchor-notes-composer')?.remove();
+      if (event.key === 'Escape') {
+        document.getElementById('anchor-notes-composer')?.remove();
+        document.getElementById('anchor-notes-popover')?.remove();
+      }
     });
     void restoreHighlights();
   },
 });
-

@@ -43,6 +43,7 @@ Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm test          # run highlight and LLM integration regression tests
 npm run compile   # run strict TypeScript checks
 npm run build     # create .output/chrome-mv3
 npm run zip       # create a store-ready extension archive
@@ -52,6 +53,8 @@ npm run zip       # create a store-ready extension archive
 
 - Highlight selected webpage text and attach a note.
 - Restore highlights using quote, prefix, and suffix context.
+- Open and edit a note by clicking its highlight on the original page.
+- Choose a default color or recolor individual highlights.
 - Browse notes for the current page from the toolbar popup.
 - Search, sort, filter, edit, delete, and revisit notes in the library.
 - Automatic local topic tags with no network requests.
@@ -61,7 +64,13 @@ npm run zip       # create a store-ready extension archive
 
 ## Optional LLM setup
 
-Open **Anchor Notes → Settings**, choose **Remote LLM**, then enter an OpenAI-compatible chat-completions endpoint, model, and API key. The key is stored in Chrome local extension storage. Only notes created while this mode is enabled are sent to the configured provider.
+Open **Anchor Notes → Settings** and choose an organizer:
+
+- **OpenRouter:** uses `https://openrouter.ai/api/v1/chat/completions` and defaults to the `openrouter/free` router. Add an OpenRouter API key and optionally choose a specific open or free model slug.
+- **Ollama:** connects locally through `http://localhost:11434/v1/chat/completions`. Pull the model in Ollama first, then enter the same model name in Anchor Notes. Local Ollama does not require an API key.
+- **Custom:** accepts any OpenAI-compatible chat-completions endpoint, model, and optional bearer token.
+
+Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
 
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
@@ -84,7 +93,7 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 - Chrome sync is deliberately not used; large note collections can exceed its quota.
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
 - Some browser-internal pages and the Chrome Web Store do not permit content scripts.
-- Enabling remote LLM organization sends the saved quote, note, title, and URL to the provider you configure.
+- Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
 
 ## Roadmap
 
