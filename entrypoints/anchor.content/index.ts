@@ -1,5 +1,6 @@
 import { browser, defineContentScript } from '#imports';
 import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
+import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
 import type {
   AnchorNote,
@@ -272,7 +273,10 @@ export default defineContentScript({
           <button class="anchor-popover-close" type="button" aria-label="Close">×</button>
         </div>
         <div class="anchor-composer-quote"></div>
-        <textarea maxlength="2000" placeholder="Add a note…"></textarea>
+        <label class="anchor-note-field">
+          <span>Current note</span>
+          <textarea maxlength="2000" placeholder="Add a note…"></textarea>
+        </label>
         <div class="anchor-popover-tags"></div>
         <div class="anchor-color-row">
           <span>Highlight color</span>
@@ -285,9 +289,9 @@ export default defineContentScript({
       const quote = popover.querySelector<HTMLElement>('.anchor-composer-quote');
       if (quote) quote.textContent = `“${note.quote}”`;
       const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
-      if (textarea) textarea.value = note.body;
+      if (textarea) populateCurrentNote(textarea, note);
       const tags = popover.querySelector<HTMLElement>('.anchor-popover-tags');
-      for (const tag of note.tags) {
+      for (const tag of note.tags ?? []) {
         const chip = document.createElement('span');
         chip.textContent = tag;
         tags?.appendChild(chip);
