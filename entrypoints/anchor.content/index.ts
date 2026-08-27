@@ -1,7 +1,7 @@
 import { browser, defineContentScript } from '#imports';
 import { normalizeUrl, readData } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, HighlightAnchor, MessageResponse } from '@/lib/types';
-import './style.scss';
+import './style.css';
 
 const HIGHLIGHT_CLASS = 'anchor-note-highlight';
 
@@ -215,3 +215,4 @@ export default defineContentScript({
     void restoreHighlights();
   },
 });
+
