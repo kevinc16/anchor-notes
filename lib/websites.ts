@@ -28,3 +28,13 @@ export function groupNotesByWebsite(notes: AnchorNote[]): WebsiteNoteGroup[] {
     notes: websiteNotes,
   }));
 }
+
+export function toggleCollapsedWebsite(
+  collapsedWebsites: ReadonlySet<string>,
+  website: string,
+): Set<string> {
+  const next = new Set(collapsedWebsites);
+  if (next.has(website)) next.delete(website);
+  else next.add(website);
+  return next;
+}

@@ -9,7 +9,7 @@ import {
   writeData,
 } from '@/lib/storage';
 import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor } from '@/lib/types';
-import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
+import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
 type View = 'library' | 'settings';
 type SortMode = 'newest' | 'oldest' | 'source';
@@ -125,6 +125,7 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [groupMode, setGroupMode] = useState<GroupMode>('website');
+  const [collapsedWebsites, setCollapsedWebsites] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState<AnchorNote | null>(null);
   const [editBody, setEditBody] = useState('');
   const [editTags, setEditTags] = useState('');
@@ -162,6 +163,10 @@ export default function App() {
   }, [data.notes, filter, query, sortMode]);
 
   const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
+
+  function toggleWebsite(website: string) {
+    setCollapsedWebsites((current) => toggleCollapsedWebsite(current, website));
+  }
 
   function startEdit(note: AnchorNote) {
     setEditing(note);
@@ -285,19 +290,37 @@ export default function App() {
 
             {visibleNotes.length ? groupMode === 'website' ? (
               <div className="grid gap-10">
-                {websiteGroups.map((group) => (
-                  <section key={group.website} aria-label={`${group.website} notes`}>
-                    <header className="mb-4 flex items-baseline gap-2 border-b border-line pb-2.5">
-                      <h2 className="font-serif text-xl font-semibold">{group.website}</h2>
-                      <span className="text-[11px] font-bold text-muted">{group.notes.length} note{group.notes.length === 1 ? '' : 's'}</span>
-                    </header>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
-                      {group.notes.map((note) => (
-                        <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
+                {websiteGroups.map((group, index) => {
+                  const isExpanded = !collapsedWebsites.has(group.website);
+                  const panelId = `website-notes-${index}`;
+                  return (
+                    <section key={group.website} aria-label={`${group.website} notes`}>
+                      <header className="mb-4 border-b border-line pb-2.5">
+                        <h2>
+                          <button
+                            className="flex w-full items-center gap-2 text-left"
+                            type="button"
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            onClick={() => toggleWebsite(group.website)}
+                          >
+                            <span className="font-serif text-xl font-semibold">{group.website}</span>
+                            <span className="text-[11px] font-bold text-muted">{group.notes.length} note{group.notes.length === 1 ? '' : 's'}</span>
+                            <span className={`ml-auto text-lg text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`} aria-hidden="true">⌄</span>
+                          </button>
+                        </h2>
+                      </header>
+                      <div
+                        id={panelId}
+                        className={`${isExpanded ? 'grid' : 'hidden'} grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4`}
+                      >
+                        {group.notes.map((note) => (
+                          <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">

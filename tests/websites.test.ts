@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnchorNote } from '../lib/types';
-import { groupNotesByWebsite } from '../lib/websites';
+import { groupNotesByWebsite, toggleCollapsedWebsite } from '../lib/websites';
 
 function note(id: string, url: string): AnchorNote {
   return {
@@ -34,5 +34,15 @@ describe('groupNotesByWebsite', () => {
 
     expect(groups.map((group) => group.website)).toEqual(['example.com', 'docs.test.dev']);
     expect(groups[0]?.notes.map((item) => item.id)).toEqual(['first', 'third']);
+  });
+
+  it('toggles one collapsed website without mutating the previous state', () => {
+    const collapsed = new Set(['example.com']);
+    const expanded = toggleCollapsedWebsite(collapsed, 'example.com');
+    const withAnotherCollapsed = toggleCollapsedWebsite(collapsed, 'docs.test.dev');
+
+    expect(expanded.has('example.com')).toBe(false);
+    expect(withAnotherCollapsed).toEqual(new Set(['example.com', 'docs.test.dev']));
+    expect(collapsed).toEqual(new Set(['example.com']));
   });
 });
