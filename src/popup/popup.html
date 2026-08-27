@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anchor Notes</title>
+    <link rel="stylesheet" href="../ui.css">
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <header>
+      <div class="brand"><span class="brand-mark">A</span><span>Anchor</span></div>
+      <button id="open-library" class="icon-button" title="Open library" aria-label="Open library">↗</button>
+    </header>
+    <main>
+      <section class="page-intro">
+        <div class="eyebrow">On this page</div>
+        <h1 id="page-title">Loading…</h1>
+        <p id="page-host"></p>
+      </section>
+      <div class="capture-tip"><span>Highlight text, then right-click</span><kbd>⌥ ⇧ H</kbd></div>
+      <section>
+        <div class="section-heading"><span id="note-count">0 highlights</span><button id="open-all">View all</button></div>
+        <div id="notes"></div>
+      </section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
+
