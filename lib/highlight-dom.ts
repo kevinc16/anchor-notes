@@ -4,7 +4,7 @@ export const HIGHLIGHT_CLASS = 'anchor-note-highlight';
 
 export function wrapHighlightRange(
   range: Range,
-  note: Pick<AnchorNote, 'id' | 'color' | 'body'>,
+  note: Pick<AnchorNote, 'id' | 'color' | 'body' | 'highlightCoverage'>,
 ): boolean {
   const document = range.startContainer.ownerDocument;
   if (!document?.body) return false;
@@ -38,6 +38,7 @@ export function wrapHighlightRange(
       mark.className = HIGHLIGHT_CLASS;
       mark.dataset.anchorId = note.id;
       mark.dataset.anchorColor = note.color;
+      mark.dataset.anchorCoverage = note.highlightCoverage ?? 'medium';
       mark.title = note.body || 'Saved in Anchor Notes';
       fragmentRange.surroundContents(mark);
       wrapped += 1;

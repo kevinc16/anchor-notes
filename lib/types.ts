@@ -1,4 +1,5 @@
 export type HighlightColor = 'yellow' | 'mint' | 'lilac' | 'coral';
+export type HighlightCoverage = 'small' | 'medium' | 'full';
 export type AiProvider = 'local' | 'openrouter' | 'ollama' | 'custom';
 
 export interface TextQuoteSelector {
@@ -28,6 +29,7 @@ export interface AnchorNote {
     capturedAt: string;
   };
   color: HighlightColor;
+  highlightCoverage?: HighlightCoverage;
   tags: string[];
   summary?: string;
   createdAt: string;

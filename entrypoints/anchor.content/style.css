@@ -1,5 +1,7 @@
 .anchor-note-highlight {
-  background: linear-gradient(transparent 45%, rgba(255, 215, 74, 0.72) 45%) !important;
+  --anchor-highlight-color: rgba(255, 215, 74, 0.72);
+  --anchor-highlight-start: 45%;
+  background: linear-gradient(transparent var(--anchor-highlight-start), var(--anchor-highlight-color) var(--anchor-highlight-start)) !important;
   color: inherit !important;
   border-radius: 2px;
   cursor: pointer;
@@ -7,9 +9,12 @@
   -webkit-box-decoration-break: clone;
 }
 
-.anchor-note-highlight[data-anchor-color="mint"] { background: linear-gradient(transparent 45%, rgba(114, 225, 190, .62) 45%) !important; }
-.anchor-note-highlight[data-anchor-color="lilac"] { background: linear-gradient(transparent 45%, rgba(187, 151, 255, .55) 45%) !important; }
-.anchor-note-highlight[data-anchor-color="coral"] { background: linear-gradient(transparent 45%, rgba(255, 139, 119, .58) 45%) !important; }
+.anchor-note-highlight[data-anchor-color="mint"] { --anchor-highlight-color: rgba(114, 225, 190, .62); }
+.anchor-note-highlight[data-anchor-color="lilac"] { --anchor-highlight-color: rgba(187, 151, 255, .55); }
+.anchor-note-highlight[data-anchor-color="coral"] { --anchor-highlight-color: rgba(255, 139, 119, .58); }
+.anchor-note-highlight[data-anchor-coverage="small"] { --anchor-highlight-start: 72%; }
+.anchor-note-highlight[data-anchor-coverage="medium"] { --anchor-highlight-start: 45%; }
+.anchor-note-highlight[data-anchor-coverage="full"] { --anchor-highlight-start: 0%; }
 
 #anchor-notes-composer, #anchor-notes-popover, #anchor-notes-toast {
   all: initial;

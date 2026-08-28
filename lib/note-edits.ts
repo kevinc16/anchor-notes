@@ -1,10 +1,11 @@
-import type { AnchorNote, HighlightColor } from './types';
+import type { AnchorNote, HighlightColor, HighlightCoverage } from './types';
 
 export interface LibraryNoteEdits {
   body: string;
   summary: string;
   tags: string;
   color: HighlightColor;
+  highlightCoverage: HighlightCoverage;
 }
 
 export function applyLibraryNoteEdits(note: AnchorNote, edits: LibraryNoteEdits): AnchorNote {
@@ -17,6 +18,7 @@ export function applyLibraryNoteEdits(note: AnchorNote, edits: LibraryNoteEdits)
       .split(',')
       .map((tag) => tag.trim().toLowerCase())
       .filter(Boolean),
+    highlightCoverage: edits.highlightCoverage,
   };
 
   if (summary) updated.summary = summary;
