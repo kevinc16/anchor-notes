@@ -204,6 +204,23 @@ export default function App() {
     setToast('Settings saved');
   }
 
+  function toggleAi() {
+    if (settings.aiEnabled) {
+      setSettings({ ...settings, aiEnabled: false });
+      return;
+    }
+    if (settings.aiProvider === 'local') {
+      setSettings({
+        ...settings,
+        aiEnabled: true,
+        aiProvider: 'openrouter',
+        ...providerDefaults.openrouter,
+      });
+      return;
+    }
+    setSettings({ ...settings, aiEnabled: true });
+  }
+
   function selectProvider(provider: AiProvider) {
     if (provider === 'local') {
       setSettings({ ...settings, aiProvider: provider });
@@ -341,19 +358,31 @@ export default function App() {
           <section>
             <header className="max-w-[680px]"><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p><h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1><p className="mt-3 text-[13px] leading-relaxed text-muted">Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.</p></header>
             <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
-              <h2 className="mb-5 font-serif text-xl font-semibold">Organization</h2>
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-xl font-semibold">Organization</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">Local topic tags always remain enabled.</p>
+                </div>
+                <button
+                  className={`${buttonClass} ${settings.aiEnabled ? 'border-[#8b3a32] text-[#8b3a32]' : 'border-ink bg-ink text-white'}`}
+                  type="button"
+                  aria-pressed={settings.aiEnabled}
+                  onClick={toggleAi}
+                >
+                  {settings.aiEnabled ? 'Disable LLM' : 'Enable LLM'}
+                </button>
+              </div>
               <Field label="Default highlight color" help="Used for new highlights. Individual notes can be recolored from the page or library.">
                 <ColorPicker value={settings.highlightColor} onChange={(highlightColor) => setSettings({ ...settings, highlightColor })} />
               </Field>
-              <Field label="Organizer">
+              {settings.aiEnabled && <Field label="LLM provider">
                 <select className={fieldClass} value={settings.aiProvider} onChange={(event) => selectProvider(event.target.value as AiProvider)}>
-                  <option value="local">Private, on-device topic rules</option>
                   <option value="openrouter">OpenRouter — hosted open and free models</option>
                   <option value="ollama">Ollama — local open-source models</option>
                   <option value="custom">Custom OpenAI-compatible endpoint</option>
                 </select>
-              </Field>
-              {settings.aiProvider !== 'local' && <>
+              </Field>}
+              {settings.aiEnabled && settings.aiProvider !== 'local' && <>
                 <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} readOnly={settings.aiProvider !== 'custom'} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
                 <Field label="Model" help={settings.aiProvider === 'openrouter' ? 'Use openrouter/free or any model slug from the OpenRouter catalog.' : settings.aiProvider === 'ollama' ? 'Enter a model you have already pulled with Ollama.' : undefined}><input className={fieldClass} type="text" placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'} value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
                 {settings.aiProvider !== 'ollama' && <Field label="API key" help="New notes are sent to this provider for tags and a short summary. The key remains in local extension storage."><input className={fieldClass} type="password" autoComplete="off" placeholder="Stored locally in this browser" value={settings.aiApiKey} onChange={(event) => setSettings({ ...settings, aiApiKey: event.target.value })} /></Field>}

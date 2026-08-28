@@ -46,7 +46,7 @@ export default defineBackground(() => {
           };
           await saveNote(note);
 
-          if (data.settings.aiProvider !== 'local') {
+          if (data.settings.aiEnabled && data.settings.aiProvider !== 'local') {
             try {
               const organized = await organizeWithAI(note, data.settings);
               await saveNote({ ...note, ...organized });
