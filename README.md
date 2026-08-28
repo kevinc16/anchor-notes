@@ -84,7 +84,7 @@ Open **Anchor Notes → Settings** and choose an organizer:
 
 The LLM organizer can be enabled or disabled without clearing its provider configuration. Only notes created while it is enabled are sent to that provider; local topic rules always remain active.
 
-Remote-provider API keys are encrypted at rest with AES-GCM using a key derived from a user passphrase. The passphrase is never stored. The decrypted API key is kept only in Chrome's non-persistent extension session storage, so it must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the saved API key. This protects the credential on disk, but it cannot protect against a compromised browser profile or malicious extension code running while the key is unlocked.
+Remote-provider API keys are encrypted at rest with AES-GCM using a key derived from a user passphrase. Existing plaintext keys show a migration warning and are encrypted the next time they are saved with a passphrase. The passphrase is never stored. The decrypted API key is kept only in Chrome's non-persistent extension session storage, so it must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the saved API key. This protects the credential on disk, but it cannot protect against a compromised browser profile or malicious extension code running while the key is unlocked.
 
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
