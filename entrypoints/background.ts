@@ -1,6 +1,7 @@
 import { browser, defineBackground } from '#imports';
 import { readSessionApiKey } from '@/lib/credentials';
 import { organizeLocally, organizeWithAI } from '@/lib/organize';
+import { shouldUseAiOrganizer } from '@/lib/settings';
 import { deleteNote, readData, saveNote } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
 
@@ -47,7 +48,7 @@ export default defineBackground(() => {
           };
           await saveNote(note);
 
-          if (data.settings.aiEnabled && data.settings.aiProvider !== 'local') {
+          if (shouldUseAiOrganizer(data.settings)) {
             try {
               const sessionApiKey = await readSessionApiKey();
               const organized = await organizeWithAI(note, {

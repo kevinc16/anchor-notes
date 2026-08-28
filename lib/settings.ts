@@ -25,3 +25,7 @@ export function normalizeSettings(value: unknown): AnchorSettings {
     aiEnabled,
   };
 }
+
+export function shouldUseAiOrganizer(settings: AnchorSettings): boolean {
+  return settings.aiEnabled && settings.aiProvider !== 'local';
+}
