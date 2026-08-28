@@ -82,9 +82,7 @@ Open **Anchor Notes → Settings** and choose an organizer:
 - **Ollama:** connects locally through `http://localhost:11434/v1/chat/completions`. Pull the model in Ollama first, then enter the same model name in Anchor Notes. Local Ollama does not require an API key.
 - **Custom:** accepts any OpenAI-compatible chat-completions endpoint, model, and optional bearer token.
 
-The LLM organizer can be enabled or disabled without clearing its provider configuration. Only notes created while it is enabled are sent to that provider; local topic rules always remain active.
-
-Remote-provider API keys are encrypted at rest with AES-GCM using a key derived from a user passphrase. The passphrase is never stored. The decrypted API key is kept only in Chrome's non-persistent extension session storage, so it must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the saved API key. This protects the credential on disk, but it cannot protect against a compromised browser profile or malicious extension code running while the key is unlocked.
+Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
 
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
@@ -108,7 +106,6 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
 - Some browser-internal pages and the Chrome Web Store do not permit content scripts.
 - Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
-- Chrome extension local storage is not encrypted by the browser. Anchor Notes therefore stores remote-provider keys as passphrase-encrypted ciphertext and keeps unlocked keys only for the current browser session.
 
 ## Roadmap
 
