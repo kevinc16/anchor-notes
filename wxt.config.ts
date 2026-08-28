@@ -9,7 +9,7 @@ export default defineConfig({
   manifest: {
     name: 'Anchor Notes',
     version: '0.3.0',
-    description: 'Highlight the web, keep durable notes, and rediscover what matters.',
+    description: 'Highlight the web, keep durable notes, and remember the important things.',
     permissions: ['storage', 'tabs', 'activeTab', 'contextMenus'],
     host_permissions: ['<all_urls>'],
     action: {
