@@ -260,11 +260,25 @@ export default defineContentScript({
       return response.note;
     }
 
+    async function getSavedNote(id: string): Promise<AnchorNote | null> {
+      try {
+        const response = await browser.runtime.sendMessage({ type: 'GET_NOTE', id } satisfies ExtensionMessage) as MessageResponse;
+        if (!response?.ok || !response.note) {
+          showToast(response?.error || 'Could not load the saved note');
+          return null;
+        }
+        return response.note;
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Could not load the saved note');
+        return null;
+      }
+    }
+
     async function showNotePopover(id: string, rect: DOMRect) {
-      const note = (await readData()).notes.find((item) => item.id === id);
-      if (!note) return;
       document.getElementById('anchor-notes-composer')?.remove();
       document.getElementById('anchor-notes-popover')?.remove();
+      const note = await getSavedNote(id);
+      if (!note) return;
       const popover = document.createElement('div');
       popover.id = 'anchor-notes-popover';
       popover.innerHTML = `
@@ -286,6 +300,7 @@ export default defineContentScript({
           <button class="anchor-open-library" type="button">Open library</button>
           <button class="anchor-save" type="button">Save changes</button>
         </div>`;
+      document.body.appendChild(popover);
       const quote = popover.querySelector<HTMLElement>('.anchor-composer-quote');
       if (quote) quote.textContent = `“${note.quote}”`;
       const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
@@ -306,7 +321,6 @@ export default defineContentScript({
         });
       };
       if (colorPicker) renderColorPicker(colorPicker, note.color, selectColor);
-      document.body.appendChild(popover);
       positionFloatingElement(popover, rect);
       popover.querySelector<HTMLButtonElement>('.anchor-popover-close')?.addEventListener('click', () => popover.remove());
       popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void browser.runtime.openOptionsPage());

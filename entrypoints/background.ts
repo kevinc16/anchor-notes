@@ -70,6 +70,20 @@ export default defineBackground(() => {
         }));
     }
 
+    if (message.type === 'GET_NOTE') {
+      return readData()
+        .then((data) => {
+          const note = data.notes.find((item) => item.id === message.id);
+          return note
+            ? { ok: true, note }
+            : { ok: false, error: 'This saved note could not be found.' };
+        })
+        .catch((error: unknown) => ({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Could not load the saved note.',
+        }));
+    }
+
     if (message.type === 'DELETE_NOTE') {
       return deleteNote(message.id)
         .then(() => ({ ok: true }))

@@ -6,6 +6,7 @@ describe('populateCurrentNote', () => {
   it('prefills the website editor with the latest saved note body', () => {
     const window = new Window();
     const textarea = window.document.createElement('textarea');
+    window.document.body.appendChild(textarea);
 
     populateCurrentNote(textarea as unknown as HTMLTextAreaElement, { body: 'First saved thought' });
     expect(textarea.value).toBe('First saved thought');
