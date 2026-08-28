@@ -149,6 +149,7 @@ export default defineContentScript({
           capturedAt: now,
         },
         color: (composer.dataset.color || 'yellow') as HighlightColor,
+        highlightCoverage: 'medium',
         createdAt: now,
         updatedAt: now,
       } satisfies Omit<AnchorNote, 'tags'>;

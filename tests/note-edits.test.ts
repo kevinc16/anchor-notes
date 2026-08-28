@@ -33,6 +33,7 @@ describe('applyLibraryNoteEdits', () => {
       summary: '  Edited by the user  ',
       tags: original.tags.join(', '),
       color: original.color,
+      highlightCoverage: 'medium',
     });
 
     expect(updated.summary).toBe('Edited by the user');
@@ -45,6 +46,7 @@ describe('applyLibraryNoteEdits', () => {
       summary: 'Manual summary',
       tags: 'Research, Reading',
       color: 'mint',
+      highlightCoverage: 'small',
     });
 
     expect(updated).toMatchObject({
@@ -52,6 +54,7 @@ describe('applyLibraryNoteEdits', () => {
       summary: 'Manual summary',
       tags: ['research', 'reading'],
       color: 'mint',
+      highlightCoverage: 'small',
     });
   });
 
@@ -61,8 +64,10 @@ describe('applyLibraryNoteEdits', () => {
       summary: '   ',
       tags: 'original',
       color: 'yellow',
+      highlightCoverage: 'full',
     });
 
     expect(updated).not.toHaveProperty('summary');
+    expect(updated.highlightCoverage).toBe('full');
   });
 });
