@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
+import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import {
   deleteNote,
   EMPTY_DATA,
@@ -25,21 +27,18 @@ const highlightColors: Array<{ id: HighlightColor; label: string; className: str
   { id: 'coral', label: 'Coral', className: 'bg-[#ff8b77]' },
 ];
 
-const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel' | 'aiApiKey'>> = {
+const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel'>> = {
   openrouter: {
     aiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
     aiModel: 'openrouter/free',
-    aiApiKey: '',
   },
   ollama: {
     aiEndpoint: 'http://localhost:11434/v1/chat/completions',
     aiModel: 'llama3.2',
-    aiApiKey: '',
   },
   custom: {
     aiEndpoint: 'https://api.openai.com/v1/chat/completions',
     aiModel: '',
-    aiApiKey: '',
   },
 };
 
@@ -133,13 +132,18 @@ export default function App() {
   const [editTags, setEditTags] = useState('');
   const [editColor, setEditColor] = useState<HighlightColor>('yellow');
   const [settings, setSettings] = useState<AnchorSettings>(EMPTY_DATA.settings);
+  const [apiKeyDraft, setApiKeyDraft] = useState('');
+  const [vaultPassphrase, setVaultPassphrase] = useState('');
+  const [credentialUnlocked, setCredentialUnlocked] = useState(false);
   const [toast, setToast] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void readData().then((next) => {
+    void Promise.all([readData(), readSessionApiKey()]).then(([next, sessionApiKey]) => {
       setData(next);
       setSettings(next.settings);
+      setApiKeyDraft(next.settings.aiApiKey);
+      setCredentialUnlocked(Boolean(sessionApiKey));
     });
   }, []);
 
@@ -199,9 +203,54 @@ export default function App() {
   }
 
   async function saveSettings() {
-    await updateSettings(settings);
+    let nextSettings = settings;
+    const apiKey = apiKeyDraft.trim();
+    if (apiKey) {
+      try {
+        const aiApiKeyEncrypted = await encryptSecret(apiKey, vaultPassphrase);
+        nextSettings = { ...settings, aiApiKey: '', aiApiKeyEncrypted };
+        await writeSessionApiKey(apiKey);
+        setApiKeyDraft('');
+        setVaultPassphrase('');
+        setCredentialUnlocked(true);
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'Could not encrypt the API key.');
+        return;
+      }
+    } else if (settings.aiApiKey) {
+      nextSettings = { ...settings, aiApiKey: '' };
+      await clearSessionApiKey();
+      setCredentialUnlocked(false);
+    }
+    await updateSettings(nextSettings);
+    setSettings(nextSettings);
     setData(await readData());
     setToast('Settings saved');
+  }
+
+  async function unlockApiKey() {
+    if (!settings.aiApiKeyEncrypted) return;
+    try {
+      const apiKey = await decryptSecret(settings.aiApiKeyEncrypted, vaultPassphrase);
+      await writeSessionApiKey(apiKey);
+      setVaultPassphrase('');
+      setCredentialUnlocked(true);
+      setToast('API key unlocked for this browser session');
+    } catch {
+      window.alert('Could not unlock the API key. Check the passphrase and try again.');
+    }
+  }
+
+  async function forgetApiKey() {
+    if (!window.confirm('Forget the saved LLM API key?')) return;
+    const nextSettings = { ...settings, aiApiKey: '', aiApiKeyEncrypted: undefined };
+    await Promise.all([updateSettings(nextSettings), clearSessionApiKey()]);
+    setSettings(nextSettings);
+    setApiKeyDraft('');
+    setVaultPassphrase('');
+    setCredentialUnlocked(false);
+    setData(await readData());
+    setToast('API key forgotten');
   }
 
   function toggleAi() {
@@ -385,7 +434,25 @@ export default function App() {
               {settings.aiEnabled && settings.aiProvider !== 'local' && <>
                 <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} readOnly={settings.aiProvider !== 'custom'} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
                 <Field label="Model" help={settings.aiProvider === 'openrouter' ? 'Use openrouter/free or any model slug from the OpenRouter catalog.' : settings.aiProvider === 'ollama' ? 'Enter a model you have already pulled with Ollama.' : undefined}><input className={fieldClass} type="text" placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'} value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
-                {settings.aiProvider !== 'ollama' && <Field label="API key" help="New notes are sent to this provider for tags and a short summary. The key remains in local extension storage."><input className={fieldClass} type="password" autoComplete="off" placeholder="Stored locally in this browser" value={settings.aiApiKey} onChange={(event) => setSettings({ ...settings, aiApiKey: event.target.value })} /></Field>}
+                {settings.aiProvider !== 'ollama' && <>
+                  <Field
+                    label="API key"
+                    help={settings.aiApiKeyEncrypted
+                      ? `An encrypted key is saved and ${credentialUnlocked ? 'unlocked for this browser session' : 'locked'}. Enter a value only to replace it.`
+                      : settings.aiApiKey
+                        ? 'This legacy key is still plaintext. Enter a passphrase below and save to encrypt it.'
+                        : 'The key will be encrypted before it is stored locally.'}
+                  >
+                    <input className={fieldClass} type="password" autoComplete="off" placeholder={settings.aiApiKeyEncrypted ? 'Leave blank to keep the encrypted key' : 'Enter provider API key'} value={apiKeyDraft} onChange={(event) => setApiKeyDraft(event.target.value)} />
+                  </Field>
+                  <Field label="Encryption passphrase" help={`At least ${MIN_PASSPHRASE_LENGTH} characters. Anchor Notes never stores this passphrase; use it to unlock the key after restarting Chrome.`}>
+                    <input className={fieldClass} type="password" autoComplete="off" placeholder="Not stored by Anchor Notes" value={vaultPassphrase} onChange={(event) => setVaultPassphrase(event.target.value)} />
+                  </Field>
+                  {settings.aiApiKeyEncrypted && <div className="mb-4 flex flex-wrap gap-2">
+                    {!credentialUnlocked && <button className={buttonClass} type="button" onClick={() => void unlockApiKey()}>Unlock key</button>}
+                    <button className={`${buttonClass} text-[#9c382f]`} type="button" onClick={() => void forgetApiKey()}>Forget key</button>
+                  </div>}
+                </>}
               </>}
               <button className={`${buttonClass} border-ink bg-ink text-white`} type="button" onClick={() => void saveSettings()}>Save settings</button>
             </div>

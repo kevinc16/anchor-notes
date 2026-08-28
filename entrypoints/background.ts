@@ -1,4 +1,5 @@
 import { browser, defineBackground } from '#imports';
+import { readSessionApiKey } from '@/lib/credentials';
 import { organizeLocally, organizeWithAI } from '@/lib/organize';
 import { deleteNote, readData, saveNote } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
@@ -48,7 +49,11 @@ export default defineBackground(() => {
 
           if (data.settings.aiEnabled && data.settings.aiProvider !== 'local') {
             try {
-              const organized = await organizeWithAI(note, data.settings);
+              const sessionApiKey = await readSessionApiKey();
+              const organized = await organizeWithAI(note, {
+                ...data.settings,
+                aiApiKey: sessionApiKey || data.settings.aiApiKey,
+              });
               await saveNote({ ...note, ...organized });
             } catch (error) {
               console.warn('Anchor Notes AI organization failed:', error);

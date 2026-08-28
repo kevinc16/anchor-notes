@@ -34,13 +34,26 @@ export interface AnchorNote {
   updatedAt: string;
 }
 
+export interface EncryptedSecret {
+  version: 1;
+  algorithm: 'AES-GCM';
+  kdf: 'PBKDF2';
+  hash: 'SHA-256';
+  iterations: number;
+  salt: string;
+  iv: string;
+  ciphertext: string;
+}
+
 export interface AnchorSettings {
   highlightColor: HighlightColor;
   aiEnabled: boolean;
   aiProvider: AiProvider;
   aiEndpoint: string;
   aiModel: string;
+  /** @deprecated Plaintext migration field. New credentials use aiApiKeyEncrypted. */
   aiApiKey: string;
+  aiApiKeyEncrypted?: EncryptedSecret;
 }
 
 export interface AnchorData {
