@@ -72,6 +72,10 @@ Open **Anchor Notes → Settings** and choose an organizer:
 
 Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
 
+Remote-provider API keys use Chrome extension local storage by default. That storage is local to the browser profile, but Chrome does not encrypt it for the extension. The Settings page labels this clearly and offers optional passphrase encryption; encryption is never enabled or applied automatically.
+
+When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
+
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
 ## Project layout
@@ -94,6 +98,7 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
 - Some browser-internal pages and the Chrome Web Store do not permit content scripts.
 - Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
+- Remote LLM API keys are plaintext in local extension storage by default. Passphrase encryption is available as an explicit opt-in in Settings.
 
 ## Roadmap
 
