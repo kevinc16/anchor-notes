@@ -1,5 +1,6 @@
 import { browser, defineContentScript } from '#imports';
 import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
+import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
 import type {
   AnchorNote,
@@ -259,11 +260,34 @@ export default defineContentScript({
       return response.note;
     }
 
+    async function getSavedNote(id: string): Promise<AnchorNote | null> {
+      try {
+        const response = await browser.runtime.sendMessage({ type: 'GET_NOTE', id } satisfies ExtensionMessage) as MessageResponse;
+        if (!response?.ok || !response.note) {
+          showToast(response?.error || 'Could not load the saved note');
+          return null;
+        }
+        return response.note;
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Could not load the saved note');
+        return null;
+      }
+    }
+
+    async function openLibrary() {
+      try {
+        const response = await browser.runtime.sendMessage({ type: 'OPEN_LIBRARY' } satisfies ExtensionMessage) as MessageResponse;
+        if (!response?.ok) showToast(response?.error || 'Could not open the library');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Could not open the library');
+      }
+    }
+
     async function showNotePopover(id: string, rect: DOMRect) {
-      const note = (await readData()).notes.find((item) => item.id === id);
-      if (!note) return;
       document.getElementById('anchor-notes-composer')?.remove();
       document.getElementById('anchor-notes-popover')?.remove();
+      const note = await getSavedNote(id);
+      if (!note) return;
       const popover = document.createElement('div');
       popover.id = 'anchor-notes-popover';
       popover.innerHTML = `
@@ -272,7 +296,10 @@ export default defineContentScript({
           <button class="anchor-popover-close" type="button" aria-label="Close">×</button>
         </div>
         <div class="anchor-composer-quote"></div>
-        <textarea maxlength="2000" placeholder="Add a note…"></textarea>
+        <label class="anchor-note-field">
+          <span>Current note</span>
+          <textarea maxlength="2000" placeholder="Add a note…"></textarea>
+        </label>
         <div class="anchor-popover-tags"></div>
         <div class="anchor-color-row">
           <span>Highlight color</span>
@@ -282,12 +309,13 @@ export default defineContentScript({
           <button class="anchor-open-library" type="button">Open library</button>
           <button class="anchor-save" type="button">Save changes</button>
         </div>`;
+      document.body.appendChild(popover);
       const quote = popover.querySelector<HTMLElement>('.anchor-composer-quote');
       if (quote) quote.textContent = `“${note.quote}”`;
       const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
-      if (textarea) textarea.value = note.body;
+      if (textarea) populateCurrentNote(textarea, note);
       const tags = popover.querySelector<HTMLElement>('.anchor-popover-tags');
-      for (const tag of note.tags) {
+      for (const tag of note.tags ?? []) {
         const chip = document.createElement('span');
         chip.textContent = tag;
         tags?.appendChild(chip);
@@ -302,10 +330,9 @@ export default defineContentScript({
         });
       };
       if (colorPicker) renderColorPicker(colorPicker, note.color, selectColor);
-      document.body.appendChild(popover);
       positionFloatingElement(popover, rect);
       popover.querySelector<HTMLButtonElement>('.anchor-popover-close')?.addEventListener('click', () => popover.remove());
-      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void browser.runtime.openOptionsPage());
+      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
         void updateNote(note).then((saved) => {

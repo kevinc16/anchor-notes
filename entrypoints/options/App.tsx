@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   deleteNote,
   EMPTY_DATA,
-  hostFromUrl,
   noteMatches,
   readData,
   saveNote,
@@ -10,9 +9,11 @@ import {
   writeData,
 } from '@/lib/storage';
 import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor } from '@/lib/types';
+import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
 type View = 'library' | 'settings';
 type SortMode = 'newest' | 'oldest' | 'source';
+type GroupMode = 'website' | 'none';
 
 const buttonClass = 'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass = 'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
@@ -123,6 +124,8 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
+  const [groupMode, setGroupMode] = useState<GroupMode>('website');
+  const [collapsedWebsites, setCollapsedWebsites] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState<AnchorNote | null>(null);
   const [editBody, setEditBody] = useState('');
   const [editTags, setEditTags] = useState('');
@@ -158,6 +161,12 @@ export default function App() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [data.notes, filter, query, sortMode]);
+
+  const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
+
+  function toggleWebsite(website: string) {
+    setCollapsedWebsites((current) => toggleCollapsedWebsite(current, website));
+  }
 
   function startEdit(note: AnchorNote) {
     setEditing(note);
@@ -264,16 +273,66 @@ export default function App() {
                   <button key={topic} className={`whitespace-nowrap rounded-full px-3 py-2 text-[11px] font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`} type="button" onClick={() => setFilter(topic)}>{topic === 'all' ? 'All notes' : topic}</button>
                 ))}
               </div>
-              <select className="border-0 bg-transparent text-[11px] font-bold text-muted outline-none" value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
-                <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="source">By source</option>
-              </select>
+              <div className="flex shrink-0 items-center gap-3">
+                <button
+                  className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${groupMode === 'website' ? 'bg-[#eee9df] text-ink' : 'text-muted'}`}
+                  type="button"
+                  aria-pressed={groupMode === 'website'}
+                  onClick={() => setGroupMode(groupMode === 'website' ? 'none' : 'website')}
+                >
+                  Group by website
+                </button>
+                <select className="border-0 bg-transparent text-[11px] font-bold text-muted outline-none" value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
+                  <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="source">By source</option>
+                </select>
+              </div>
             </div>
 
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
-              {visibleNotes.length ? visibleNotes.map((note) => (
-                <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
-              )) : <EmptyState hasNotes={data.notes.length > 0} />}
-            </div>
+            {visibleNotes.length ? groupMode === 'website' ? (
+              <div className="grid gap-10">
+                {websiteGroups.map((group, index) => {
+                  const isExpanded = !collapsedWebsites.has(group.website);
+                  const panelId = `website-notes-${index}`;
+                  return (
+                    <section key={group.website} aria-label={`${group.website} notes`}>
+                      <header className="mb-4 border-b border-line pb-2.5">
+                        <h2>
+                          <button
+                            className="flex w-full items-center gap-2 text-left"
+                            type="button"
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            onClick={() => toggleWebsite(group.website)}
+                          >
+                            <span className="font-serif text-xl font-semibold">{group.website}</span>
+                            <span className="text-[11px] font-bold text-muted">{group.notes.length} note{group.notes.length === 1 ? '' : 's'}</span>
+                            <span className={`ml-auto text-lg text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`} aria-hidden="true">⌄</span>
+                          </button>
+                        </h2>
+                      </header>
+                      <div
+                        id={panelId}
+                        className={`${isExpanded ? 'grid' : 'hidden'} grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4`}
+                      >
+                        {group.notes.map((note) => (
+                          <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
+                {visibleNotes.map((note) => (
+                  <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
+                <EmptyState hasNotes={data.notes.length > 0} />
+              </div>
+            )}
           </section>
         ) : (
           <section>

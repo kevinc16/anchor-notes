@@ -51,6 +51,7 @@ export interface AnchorData {
 export type ExtensionMessage =
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
+  | { type: 'GET_NOTE'; id: string }
   | { type: 'DELETE_NOTE'; id: string }
   | { type: 'OPEN_LIBRARY' }
   | { type: 'CAPTURE_SELECTION' }
