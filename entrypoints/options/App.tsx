@@ -280,21 +280,24 @@ export default function App() {
     setToast('API key forgotten');
   }
 
-  function toggleAi() {
+  async function toggleAi() {
+    let nextSettings: AnchorSettings;
     if (settings.aiEnabled) {
-      setSettings({ ...settings, aiEnabled: false });
-      return;
-    }
-    if (settings.aiProvider === 'local') {
-      setSettings({
+      nextSettings = { ...settings, aiEnabled: false };
+    } else if (settings.aiProvider === 'local') {
+      nextSettings = {
         ...settings,
         aiEnabled: true,
         aiProvider: 'openrouter',
         ...providerDefaults.openrouter,
-      });
-      return;
+      };
+    } else {
+      nextSettings = { ...settings, aiEnabled: true };
     }
-    setSettings({ ...settings, aiEnabled: true });
+    await updateSettings(nextSettings);
+    setSettings(nextSettings);
+    setData(await readData());
+    setToast(nextSettings.aiEnabled ? 'LLM organizer enabled' : 'LLM organizer disabled');
   }
 
   function selectProvider(provider: AiProvider) {
@@ -443,7 +446,7 @@ export default function App() {
                   className={`${buttonClass} ${settings.aiEnabled ? 'border-[#8b3a32] text-[#8b3a32]' : 'border-ink bg-ink text-white'}`}
                   type="button"
                   aria-pressed={settings.aiEnabled}
-                  onClick={toggleAi}
+                  onClick={() => void toggleAi()}
                 >
                   {settings.aiEnabled ? 'Disable LLM' : 'Enable LLM'}
                 </button>
