@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeSettings } from '../lib/settings';
+import { normalizeSettings, shouldUseAiOrganizer } from '../lib/settings';
 
 describe('normalizeSettings', () => {
   it('keeps existing remote-provider installations enabled', () => {
@@ -35,5 +35,15 @@ describe('normalizeSettings', () => {
       aiModel: 'open-model',
       aiApiKey: 'saved-key',
     });
+  });
+
+  it('allows remote organization only when the independent toggle is enabled', () => {
+    const remote = normalizeSettings({ aiEnabled: true, aiProvider: 'openrouter' });
+    const disabled = normalizeSettings({ ...remote, aiEnabled: false });
+    const local = normalizeSettings({ ...remote, aiProvider: 'local' });
+
+    expect(shouldUseAiOrganizer(remote)).toBe(true);
+    expect(shouldUseAiOrganizer(disabled)).toBe(false);
+    expect(shouldUseAiOrganizer(local)).toBe(false);
   });
 });
