@@ -27,7 +27,7 @@ const highlightColors: Array<{ id: HighlightColor; label: string; className: str
 const highlightCoverages: Array<{ id: HighlightCoverage; label: string; detail: string }> = [
   { id: 'small', label: 'Small', detail: '28%' },
   { id: 'medium', label: 'Medium', detail: '55%' },
-  { id: 'full', label: 'Full', detail: '100%' },
+  { id: 'full', label: 'Entire', detail: '100% element' },
 ];
 
 const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel' | 'aiApiKey'>> = {
