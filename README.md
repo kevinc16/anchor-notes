@@ -62,6 +62,18 @@ npm run zip       # create a store-ready extension archive
 - JSON export/import for backups and portability.
 - React UI with a typed WXT build pipeline.
 
+## Local tag generation
+
+Every new note is tagged locally before any optional LLM organization runs:
+
+1. Anchor Notes lowercases the page title, highlighted quote, and note body.
+2. It checks that text against fixed keyword lists for `design`, `engineering`, `research`, `product`, `ideas`, and `learning`.
+3. Each matching keyword contributes one point. The three highest-scoring topics are retained.
+4. A short label derived from the source hostname is appended.
+5. Duplicate tags are removed and the result is limited to four tags.
+
+This path is deterministic and makes no network requests. It uses substring matching and a small English vocabulary, so its suggestions can be broad or incomplete. Tags can be corrected in the library or directly from the saved-highlight editor on the webpage.
+
 ## Optional LLM setup
 
 Open **Anchor Notes → Settings** and choose an organizer:
@@ -70,7 +82,9 @@ Open **Anchor Notes → Settings** and choose an organizer:
 - **Ollama:** connects locally through `http://localhost:11434/v1/chat/completions`. Pull the model in Ollama first, then enter the same model name in Anchor Notes. Local Ollama does not require an API key.
 - **Custom:** accepts any OpenAI-compatible chat-completions endpoint, model, and optional bearer token.
 
-Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
+The LLM organizer can be enabled or disabled without clearing its provider configuration. Only notes created while it is enabled are sent to that provider; local topic rules always remain active.
+
+Remote-provider API keys are encrypted at rest with AES-GCM using a key derived from a user passphrase. The passphrase is never stored. The decrypted API key is kept only in Chrome's non-persistent extension session storage, so it must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the saved API key. This protects the credential on disk, but it cannot protect against a compromised browser profile or malicious extension code running while the key is unlocked.
 
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
@@ -94,6 +108,7 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
 - Some browser-internal pages and the Chrome Web Store do not permit content scripts.
 - Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
+- Chrome extension local storage is not encrypted by the browser. Anchor Notes therefore stores remote-provider keys as passphrase-encrypted ciphertext and keeps unlocked keys only for the current browser session.
 
 ## Roadmap
 
