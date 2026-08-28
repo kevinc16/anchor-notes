@@ -23,6 +23,7 @@ describe('organizeWithAI', () => {
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
       highlightColor: 'yellow',
+      aiEnabled: true,
       aiProvider: 'openrouter',
       aiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
       aiModel: 'openrouter/free',
@@ -45,6 +46,7 @@ describe('organizeWithAI', () => {
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
       highlightColor: 'mint',
+      aiEnabled: true,
       aiProvider: 'ollama',
       aiEndpoint: 'http://localhost:11434/v1/chat/completions',
       aiModel: 'llama3.2',
