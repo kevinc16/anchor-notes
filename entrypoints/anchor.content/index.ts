@@ -2,6 +2,7 @@ import { browser, defineContentScript } from '#imports';
 import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
+import { parseTags } from '@/lib/tags';
 import type {
   AnchorNote,
   ExtensionMessage,
@@ -300,7 +301,10 @@ export default defineContentScript({
           <span>Current note</span>
           <textarea maxlength="2000" placeholder="Add a note…"></textarea>
         </label>
-        <div class="anchor-popover-tags"></div>
+        <label class="anchor-note-field">
+          <span>Tags</span>
+          <input class="anchor-tags-input" maxlength="500" placeholder="research, design, reading" />
+        </label>
         <div class="anchor-color-row">
           <span>Highlight color</span>
           <div class="anchor-color-picker" role="group" aria-label="Highlight color"></div>
@@ -314,12 +318,8 @@ export default defineContentScript({
       if (quote) quote.textContent = `“${note.quote}”`;
       const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
       if (textarea) populateCurrentNote(textarea, note);
-      const tags = popover.querySelector<HTMLElement>('.anchor-popover-tags');
-      for (const tag of note.tags ?? []) {
-        const chip = document.createElement('span');
-        chip.textContent = tag;
-        tags?.appendChild(chip);
-      }
+      const tagsInput = popover.querySelector<HTMLInputElement>('.anchor-tags-input');
+      if (tagsInput) tagsInput.value = (note.tags ?? []).join(', ');
       const colorPicker = popover.querySelector<HTMLElement>('.anchor-color-picker');
       const selectColor = (color: HighlightColor) => {
         note.color = color;
@@ -335,6 +335,7 @@ export default defineContentScript({
       popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
+        note.tags = parseTags(tagsInput?.value ?? '');
         void updateNote(note).then((saved) => {
           if (!saved) return;
           document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(note.id)}"]`).forEach((mark) => {

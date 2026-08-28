@@ -62,6 +62,18 @@ npm run zip       # create a store-ready extension archive
 - JSON export/import for backups and portability.
 - React UI with a typed WXT build pipeline.
 
+## Local tag generation
+
+Every new note is tagged locally before any optional LLM organization runs:
+
+1. Anchor Notes lowercases the page title, highlighted quote, and note body.
+2. It checks that text against fixed keyword lists for `design`, `engineering`, `research`, `product`, `ideas`, and `learning`.
+3. Each matching keyword contributes one point. The three highest-scoring topics are retained.
+4. A short label derived from the source hostname is appended.
+5. Duplicate tags are removed and the result is limited to four tags.
+
+This path is deterministic and makes no network requests. It uses substring matching and a small English vocabulary, so its suggestions can be broad or incomplete. Tags can be corrected in the library or directly from the saved-highlight editor on the webpage.
+
 ## Optional LLM setup
 
 Open **Anchor Notes → Settings** and choose an organizer:
