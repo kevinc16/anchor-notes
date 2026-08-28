@@ -9,6 +9,19 @@ const TOPICS: Record<string, string[]> = {
   learning: ['learn', 'guide', 'tutorial', 'explain', 'course', 'lesson', 'how to'],
 };
 
+/**
+ * Generates deterministic tags without a model or network request.
+ *
+ * The title, quote, and user note are lowercased and scored against the fixed
+ * topic vocabulary above. Each matching vocabulary entry contributes one
+ * point, the three highest-scoring topics are retained, and a short source
+ * label from the hostname is appended. Duplicates are removed and the final
+ * list is limited to four tags.
+ *
+ * This intentionally simple fallback favors privacy and predictable behavior
+ * over language understanding. Substring matching and the fixed English
+ * vocabulary can produce broad or missing tags, which users can edit later.
+ */
 export function organizeLocally(note: Pick<AnchorNote, 'title' | 'quote' | 'body' | 'url'>): string[] {
   const text = `${note.title} ${note.quote} ${note.body}`.toLowerCase();
   const scored = Object.entries(TOPICS)
