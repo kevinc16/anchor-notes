@@ -274,6 +274,15 @@ export default defineContentScript({
       }
     }
 
+    async function openLibrary() {
+      try {
+        const response = await browser.runtime.sendMessage({ type: 'OPEN_LIBRARY' } satisfies ExtensionMessage) as MessageResponse;
+        if (!response?.ok) showToast(response?.error || 'Could not open the library');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Could not open the library');
+      }
+    }
+
     async function showNotePopover(id: string, rect: DOMRect) {
       document.getElementById('anchor-notes-composer')?.remove();
       document.getElementById('anchor-notes-popover')?.remove();
@@ -323,7 +332,7 @@ export default defineContentScript({
       if (colorPicker) renderColorPicker(colorPicker, note.color, selectColor);
       positionFloatingElement(popover, rect);
       popover.querySelector<HTMLButtonElement>('.anchor-popover-close')?.addEventListener('click', () => popover.remove());
-      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void browser.runtime.openOptionsPage());
+      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
         void updateNote(note).then((saved) => {
