@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { organizeWithAI } from '../lib/organize';
+import { organizeLocally, organizeWithAI } from '../lib/organize';
 import type { AnchorSettings } from '../lib/types';
 
 const note = {
@@ -23,6 +23,8 @@ describe('organizeWithAI', () => {
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
       highlightColor: 'yellow',
+      highlightCoverage: 'medium',
+      aiEnabled: true,
       aiProvider: 'openrouter',
       aiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
       aiModel: 'openrouter/free',
@@ -45,6 +47,8 @@ describe('organizeWithAI', () => {
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
       highlightColor: 'mint',
+      highlightCoverage: 'medium',
+      aiEnabled: true,
       aiProvider: 'ollama',
       aiEndpoint: 'http://localhost:11434/v1/chat/completions',
       aiModel: 'llama3.2',
@@ -55,5 +59,18 @@ describe('organizeWithAI', () => {
     const [endpoint, request] = fetchMock.mock.calls[0]!;
     expect(endpoint).toBe(settings.aiEndpoint);
     expect(request.headers).not.toHaveProperty('Authorization');
+  });
+});
+
+describe('organizeLocally', () => {
+  it('scores fixed topic keywords and appends a source tag without fetching', () => {
+    const tags = organizeLocally({
+      title: 'Interface typography research',
+      quote: 'Color layout backed by evidence from a study.',
+      body: '',
+      url: 'https://www.example.com/article',
+    });
+
+    expect(tags).toEqual(['design', 'research', 'example']);
   });
 });

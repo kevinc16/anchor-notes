@@ -12,7 +12,7 @@ import {
   updateSettings,
   writeData,
 } from '@/lib/storage';
-import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor } from '@/lib/types';
+import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor, HighlightCoverage } from '@/lib/types';
 import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
 type View = 'library' | 'settings';
@@ -26,6 +26,11 @@ const highlightColors: Array<{ id: HighlightColor; label: string; className: str
   { id: 'mint', label: 'Mint', className: 'bg-[#72e1be]' },
   { id: 'lilac', label: 'Lilac', className: 'bg-[#bb97ff]' },
   { id: 'coral', label: 'Coral', className: 'bg-[#ff8b77]' },
+];
+const highlightCoverages: Array<{ id: HighlightCoverage; label: string; detail: string }> = [
+  { id: 'small', label: 'Small', detail: '28%' },
+  { id: 'medium', label: 'Medium', detail: '55%' },
+  { id: 'full', label: 'Entire', detail: '100% element' },
 ];
 
 const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel'>> = {
@@ -68,6 +73,25 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
           onClick={() => onChange(color.id)}
         >
           <span className={`size-4 rounded-full ${color.className}`} />{color.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CoveragePicker({ value, onChange }: { value: HighlightCoverage; onChange: (coverage: HighlightCoverage) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label="Highlight coverage">
+      {highlightCoverages.map((coverage) => (
+        <button
+          key={coverage.id}
+          className={`rounded-[10px] border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          type="button"
+          aria-pressed={value === coverage.id}
+          onClick={() => onChange(coverage.id)}
+        >
+          <strong className="block text-xs">{coverage.label}</strong>
+          <span className="mt-0.5 block text-[10px]">{coverage.detail} coverage</span>
         </button>
       ))}
     </div>
@@ -277,6 +301,26 @@ export default function App() {
     setToast('API key forgotten');
   }
 
+  async function toggleAi() {
+    let nextSettings: AnchorSettings;
+    if (settings.aiEnabled) {
+      nextSettings = { ...settings, aiEnabled: false };
+    } else if (settings.aiProvider === 'local') {
+      nextSettings = {
+        ...settings,
+        aiEnabled: true,
+        aiProvider: 'openrouter',
+        ...providerDefaults.openrouter,
+      };
+    } else {
+      nextSettings = { ...settings, aiEnabled: true };
+    }
+    await updateSettings(nextSettings);
+    setSettings(nextSettings);
+    setData(await readData());
+    setToast(nextSettings.aiEnabled ? 'LLM organizer enabled' : 'LLM organizer disabled');
+  }
+
   function selectProvider(provider: AiProvider) {
     if (provider === 'local') {
       setSettings({ ...settings, aiProvider: provider });
@@ -414,19 +458,34 @@ export default function App() {
           <section>
             <header className="max-w-[680px]"><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p><h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1><p className="mt-3 text-[13px] leading-relaxed text-muted">Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.</p></header>
             <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
-              <h2 className="mb-5 font-serif text-xl font-semibold">Organization</h2>
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-xl font-semibold">Organization</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">Local topic tags always remain enabled.</p>
+                </div>
+                <button
+                  className={`${buttonClass} ${settings.aiEnabled ? 'border-[#8b3a32] text-[#8b3a32]' : 'border-ink bg-ink text-white'}`}
+                  type="button"
+                  aria-pressed={settings.aiEnabled}
+                  onClick={() => void toggleAi()}
+                >
+                  {settings.aiEnabled ? 'Disable LLM' : 'Enable LLM'}
+                </button>
+              </div>
               <Field label="Default highlight color" help="Used for new highlights. Individual notes can be recolored from the page or library.">
                 <ColorPicker value={settings.highlightColor} onChange={(highlightColor) => setSettings({ ...settings, highlightColor })} />
               </Field>
-              <Field label="Organizer">
+              <Field label="Highlight coverage" help="Used for all new and restored highlights.">
+                <CoveragePicker value={settings.highlightCoverage} onChange={(highlightCoverage) => setSettings({ ...settings, highlightCoverage })} />
+              </Field>
+              {settings.aiEnabled && <Field label="LLM provider">
                 <select className={fieldClass} value={settings.aiProvider} onChange={(event) => selectProvider(event.target.value as AiProvider)}>
-                  <option value="local">Private, on-device topic rules</option>
                   <option value="openrouter">OpenRouter — hosted open and free models</option>
                   <option value="ollama">Ollama — local open-source models</option>
                   <option value="custom">Custom OpenAI-compatible endpoint</option>
                 </select>
-              </Field>
-              {settings.aiProvider !== 'local' && <>
+              </Field>}
+              {settings.aiEnabled && settings.aiProvider !== 'local' && <>
                 <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} readOnly={settings.aiProvider !== 'custom'} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
                 <Field label="Model" help={settings.aiProvider === 'openrouter' ? 'Use openrouter/free or any model slug from the OpenRouter catalog.' : settings.aiProvider === 'ollama' ? 'Enter a model you have already pulled with Ollama.' : undefined}><input className={fieldClass} type="text" placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'} value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
                 {settings.aiProvider !== 'ollama' && <>

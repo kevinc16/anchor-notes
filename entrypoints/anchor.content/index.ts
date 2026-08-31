@@ -2,6 +2,7 @@ import { browser, defineContentScript } from '#imports';
 import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
+import { parseTags } from '@/lib/tags';
 import type {
   AnchorNote,
   ExtensionMessage,
@@ -155,7 +156,8 @@ export default defineContentScript({
       composer.remove();
       const selector = note.anchor.quote;
       const liveRange = findTextRange(selector.exact, selector.prefix, selector.suffix);
-      let highlighted = liveRange ? wrapHighlightRange(liveRange, note) : false;
+      const { settings } = await readData();
+      let highlighted = liveRange ? wrapHighlightRange(liveRange, note, settings.highlightCoverage) : false;
       pendingRange = null;
       window.getSelection()?.removeAllRanges();
 
@@ -169,7 +171,7 @@ export default defineContentScript({
       if (!highlighted) {
         const savedSelector = response.note.anchor.quote;
         const savedRange = findTextRange(savedSelector.exact, savedSelector.prefix, savedSelector.suffix);
-        highlighted = savedRange ? wrapHighlightRange(savedRange, response.note) : false;
+        highlighted = savedRange ? wrapHighlightRange(savedRange, response.note, settings.highlightCoverage) : false;
       }
       showToast(highlighted ? 'Highlight anchored' : 'Note saved — reload to restore highlight');
     }
@@ -226,13 +228,14 @@ export default defineContentScript({
 
     async function restoreHighlights() {
       const current = normalizeUrl(location.href);
-      const notes = (await readData()).notes.filter(
+      const data = await readData();
+      const notes = data.notes.filter(
         (note) => normalizeUrl(note.url) === current || normalizeUrl(note.canonicalUrl ?? '') === current,
       );
       for (const note of notes) {
         const selector = note.anchor?.quote;
         const range = findTextRange(selector?.exact || note.quote, selector?.prefix, selector?.suffix);
-        if (range) wrapHighlightRange(range, note);
+        if (range) wrapHighlightRange(range, note, data.settings.highlightCoverage);
       }
     }
 
@@ -300,7 +303,10 @@ export default defineContentScript({
           <span>Current note</span>
           <textarea maxlength="2000" placeholder="Add a note…"></textarea>
         </label>
-        <div class="anchor-popover-tags"></div>
+        <label class="anchor-note-field">
+          <span>Tags</span>
+          <input class="anchor-tags-input" maxlength="500" placeholder="research, design, reading" />
+        </label>
         <div class="anchor-color-row">
           <span>Highlight color</span>
           <div class="anchor-color-picker" role="group" aria-label="Highlight color"></div>
@@ -314,12 +320,8 @@ export default defineContentScript({
       if (quote) quote.textContent = `“${note.quote}”`;
       const textarea = popover.querySelector<HTMLTextAreaElement>('textarea');
       if (textarea) populateCurrentNote(textarea, note);
-      const tags = popover.querySelector<HTMLElement>('.anchor-popover-tags');
-      for (const tag of note.tags ?? []) {
-        const chip = document.createElement('span');
-        chip.textContent = tag;
-        tags?.appendChild(chip);
-      }
+      const tagsInput = popover.querySelector<HTMLInputElement>('.anchor-tags-input');
+      if (tagsInput) tagsInput.value = (note.tags ?? []).join(', ');
       const colorPicker = popover.querySelector<HTMLElement>('.anchor-color-picker');
       const selectColor = (color: HighlightColor) => {
         note.color = color;
@@ -335,6 +337,7 @@ export default defineContentScript({
       popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
+        note.tags = parseTags(tagsInput?.value ?? '');
         void updateNote(note).then((saved) => {
           if (!saved) return;
           document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(note.id)}"]`).forEach((mark) => {
