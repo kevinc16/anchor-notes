@@ -17,7 +17,7 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    screenshot: process.env.CI ? 'on' : 'only-on-failure',
     video: 'retain-on-failure',
   },
 });
