@@ -1,4 +1,5 @@
 import { browser, defineBackground } from '#imports';
+import { isEncryptedCredentialLocked, LOCKED_API_KEY_WARNING } from '@/lib/credential-settings';
 import { readSessionApiKey } from '@/lib/credentials';
 import { organizeLocally, organizeWithAI } from '@/lib/organize';
 import { shouldUseAiOrganizer } from '@/lib/settings';
@@ -49,8 +50,11 @@ export default defineBackground(() => {
           await saveNote(note);
 
           if (shouldUseAiOrganizer(data.settings)) {
+            const sessionApiKey = await readSessionApiKey();
+            if (isEncryptedCredentialLocked(data.settings, sessionApiKey)) {
+              return { ok: true, note, warning: LOCKED_API_KEY_WARNING };
+            }
             try {
-              const sessionApiKey = await readSessionApiKey();
               const organized = await organizeWithAI(note, {
                 ...data.settings,
                 aiApiKey: sessionApiKey || data.settings.aiApiKey,

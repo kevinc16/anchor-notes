@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { withEncryptedCredential, withPlaintextCredential } from '../lib/credential-settings';
+import {
+  isEncryptedCredentialLocked,
+  LOCKED_API_KEY_WARNING,
+  withEncryptedCredential,
+  withPlaintextCredential,
+} from '../lib/credential-settings';
 import type { AnchorSettings, EncryptedSecret } from '../lib/types';
 
 const settings: AnchorSettings = {
   highlightColor: 'yellow',
+  highlightCoverage: 'medium',
+  aiEnabled: true,
   aiProvider: 'openrouter',
   aiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
   aiModel: 'openrouter/free',
@@ -22,6 +29,12 @@ const encrypted: EncryptedSecret = {
 };
 
 describe('API-key storage policy', () => {
+  it('identifies an encrypted key that is unavailable until unlocked', () => {
+    expect(isEncryptedCredentialLocked({ aiApiKeyEncrypted: encrypted }, '')).toBe(true);
+    expect(isEncryptedCredentialLocked({ aiApiKeyEncrypted: encrypted }, 'sk-unlocked')).toBe(false);
+    expect(LOCKED_API_KEY_WARNING).toContain('was not used');
+  });
+
   it('uses plaintext local settings unless encryption is explicitly selected', () => {
     const result = withPlaintextCredential(settings, 'sk-plain');
 

@@ -88,6 +88,8 @@ Remote-provider API keys use Chrome extension local storage by default. That sto
 
 When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
 
+If a new highlight is saved while an encrypted API key is locked, Anchor Notes saves the highlight and local tags but tells you that the key was not used. Unlock the key with its passphrase in Settings before relying on AI organization.
+
 For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
 
 ## Project layout

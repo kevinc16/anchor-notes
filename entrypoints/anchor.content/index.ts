@@ -173,7 +173,11 @@ export default defineContentScript({
         const savedRange = findTextRange(savedSelector.exact, savedSelector.prefix, savedSelector.suffix);
         highlighted = savedRange ? wrapHighlightRange(savedRange, response.note, settings.highlightCoverage) : false;
       }
-      showToast(highlighted ? 'Highlight anchored' : 'Note saved — reload to restore highlight');
+      if (response.warning) {
+        showToast(response.warning, 5000);
+      } else {
+        showToast(highlighted ? 'Highlight anchored' : 'Note saved — reload to restore highlight');
+      }
     }
 
     function removeHighlightMarks(id: string) {
@@ -349,13 +353,13 @@ export default defineContentScript({
       });
     }
 
-    function showToast(message: string) {
+    function showToast(message: string, duration = 2200) {
       document.getElementById('anchor-notes-toast')?.remove();
       const toast = document.createElement('div');
       toast.id = 'anchor-notes-toast';
       toast.textContent = message;
       document.body.appendChild(toast);
-      window.setTimeout(() => toast.remove(), 2200);
+      window.setTimeout(() => toast.remove(), duration);
     }
 
     browser.runtime.onMessage.addListener((message: ExtensionMessage) => {

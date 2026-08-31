@@ -75,5 +75,6 @@ export type ExtensionMessage =
 export interface MessageResponse {
   ok: boolean;
   note?: AnchorNote;
+  warning?: string;
   error?: string;
 }
