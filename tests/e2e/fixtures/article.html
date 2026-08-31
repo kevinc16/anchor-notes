@@ -9,8 +9,8 @@
   <body>
     <main id="article" aria-label="Test article"></main>
     <script>
-      const originalMarkup = '<section class="original-shell"><p id="passage">Anchor Notes keeps <strong>important ideas</strong> attached to the page, even when its markup changes.</p></section>';
-      const changedMarkup = '<article class="changed-shell"><header>Updated article structure</header><p id="passage"><span>Anchor Notes keeps important </span><em>ideas</em><span> attached to the page, even when its markup changes.</span></p></article>';
+      const originalMarkup = '<section class="original-shell"><p id="passage">Anchor Notes keeps <strong>important ideas</strong> attached to the page, even when its markup changes.</p><p id="other-passage">A separate saved thought remains visible.</p></section>';
+      const changedMarkup = '<article class="changed-shell"><header>Updated article structure</header><p id="passage"><span>Anchor Notes keeps important </span><em>ideas</em><span> attached to the page, even when its markup changes.</span></p><p id="other-passage">A separate saved thought remains visible.</p></article>';
       document.querySelector('#article').innerHTML = localStorage.getItem('anchor-test-version') === 'changed'
         ? changedMarkup
         : originalMarkup;

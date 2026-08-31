@@ -87,6 +87,80 @@ test('edits a saved highlight from the page editor', async ({
   });
 });
 
+test('removes a saved highlight from the page editor', async ({
+  page,
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const target = makeNote('remove-target', articleUrl, { body: 'Remove this highlight.' });
+  const otherQuote = 'A separate saved thought remains visible.';
+  const other = makeNote('keep-other', articleUrl, {
+    quote: otherQuote,
+    body: 'Keep this other highlight.',
+    anchor: {
+      ...target.anchor,
+      quote: { exact: otherQuote, prefix: '', suffix: '' },
+      endOffset: otherQuote.length,
+    },
+  });
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    notes: [target, other],
+    settings: DEFAULT_SETTINGS,
+  });
+
+  await page.goto(`${articleUrl}#remove`, { waitUntil: 'networkidle' });
+  const targetMarks = page.locator(`mark.anchor-note-highlight[data-anchor-id="${target.id}"]`);
+  const otherMarks = page.locator(`mark.anchor-note-highlight[data-anchor-id="${other.id}"]`);
+  await expect(targetMarks).toHaveCount(3);
+  await expect(otherMarks).toHaveCount(1);
+  await targetMarks.first().click();
+
+  const popover = page.locator('#anchor-notes-popover');
+  await expect(popover).toBeVisible();
+  const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
+  await expect(removeButton).toBeVisible();
+
+  const cancelDialog = page.waitForEvent('dialog');
+  const cancelHandled = cancelDialog.then(async (dialog) => {
+    expect(dialog.type()).toBe('confirm');
+    expect(dialog.message()).toBe('Remove this saved highlight?');
+    await dialog.dismiss();
+  });
+  await removeButton.click();
+  await cancelHandled;
+  await expect(popover).toBeVisible();
+  await expect(targetMarks).toHaveCount(3);
+  expect((await readExtensionData(serviceWorker)).notes.map((note) => note.id)).toEqual(expect.arrayContaining([target.id, other.id]));
+
+  const confirmDialog = page.waitForEvent('dialog');
+  const confirmHandled = confirmDialog.then(async (dialog) => {
+    expect(dialog.type()).toBe('confirm');
+    expect(dialog.message()).toBe('Remove this saved highlight?');
+    await dialog.accept();
+  });
+  await removeButton.click();
+  await confirmHandled;
+  await expect(popover).toBeHidden();
+  await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight removed');
+  await expect(targetMarks).toHaveCount(0);
+  await expect(otherMarks).toHaveCount(1);
+  await expect(otherMarks.first()).toHaveText(otherQuote);
+
+  const savedData = await readExtensionData(serviceWorker);
+  expect(savedData.notes.map((note) => note.id)).toEqual([other.id]);
+
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  try {
+    await expect(library.getByText(PASSAGE, { exact: false })).toBeHidden();
+    await expect(library.getByText(otherQuote, { exact: false })).toBeVisible();
+  } finally {
+    await library.close();
+  }
+});
+
 test('shows only the active page notes in the popup and can scroll to one', async ({
   page,
   context,
