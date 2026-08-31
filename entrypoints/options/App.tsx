@@ -9,7 +9,7 @@ import {
   updateSettings,
   writeData,
 } from '@/lib/storage';
-import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor } from '@/lib/types';
+import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor, HighlightCoverage } from '@/lib/types';
 import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
 type View = 'library' | 'settings';
@@ -23,6 +23,11 @@ const highlightColors: Array<{ id: HighlightColor; label: string; className: str
   { id: 'mint', label: 'Mint', className: 'bg-[#72e1be]' },
   { id: 'lilac', label: 'Lilac', className: 'bg-[#bb97ff]' },
   { id: 'coral', label: 'Coral', className: 'bg-[#ff8b77]' },
+];
+const highlightCoverages: Array<{ id: HighlightCoverage; label: string; detail: string }> = [
+  { id: 'small', label: 'Small', detail: '28%' },
+  { id: 'medium', label: 'Medium', detail: '55%' },
+  { id: 'full', label: 'Entire', detail: '100% element' },
 ];
 
 const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings, 'aiEndpoint' | 'aiModel' | 'aiApiKey'>> = {
@@ -68,6 +73,25 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
           onClick={() => onChange(color.id)}
         >
           <span className={`size-4 rounded-full ${color.className}`} />{color.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CoveragePicker({ value, onChange }: { value: HighlightCoverage; onChange: (coverage: HighlightCoverage) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label="Highlight coverage">
+      {highlightCoverages.map((coverage) => (
+        <button
+          key={coverage.id}
+          className={`rounded-[10px] border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          type="button"
+          aria-pressed={value === coverage.id}
+          onClick={() => onChange(coverage.id)}
+        >
+          <strong className="block text-xs">{coverage.label}</strong>
+          <span className="mt-0.5 block text-[10px]">{coverage.detail} coverage</span>
         </button>
       ))}
     </div>
@@ -377,6 +401,9 @@ export default function App() {
               </div>
               <Field label="Default highlight color" help="Used for new highlights. Individual notes can be recolored from the page or library.">
                 <ColorPicker value={settings.highlightColor} onChange={(highlightColor) => setSettings({ ...settings, highlightColor })} />
+              </Field>
+              <Field label="Highlight coverage" help="Used for all new and restored highlights.">
+                <CoveragePicker value={settings.highlightCoverage} onChange={(highlightCoverage) => setSettings({ ...settings, highlightCoverage })} />
               </Field>
               {settings.aiEnabled && <Field label="LLM provider">
                 <select className={fieldClass} value={settings.aiProvider} onChange={(event) => selectProvider(event.target.value as AiProvider)}>

@@ -156,7 +156,8 @@ export default defineContentScript({
       composer.remove();
       const selector = note.anchor.quote;
       const liveRange = findTextRange(selector.exact, selector.prefix, selector.suffix);
-      let highlighted = liveRange ? wrapHighlightRange(liveRange, note) : false;
+      const { settings } = await readData();
+      let highlighted = liveRange ? wrapHighlightRange(liveRange, note, settings.highlightCoverage) : false;
       pendingRange = null;
       window.getSelection()?.removeAllRanges();
 
@@ -170,7 +171,7 @@ export default defineContentScript({
       if (!highlighted) {
         const savedSelector = response.note.anchor.quote;
         const savedRange = findTextRange(savedSelector.exact, savedSelector.prefix, savedSelector.suffix);
-        highlighted = savedRange ? wrapHighlightRange(savedRange, response.note) : false;
+        highlighted = savedRange ? wrapHighlightRange(savedRange, response.note, settings.highlightCoverage) : false;
       }
       showToast(highlighted ? 'Highlight anchored' : 'Note saved — reload to restore highlight');
     }
@@ -227,13 +228,14 @@ export default defineContentScript({
 
     async function restoreHighlights() {
       const current = normalizeUrl(location.href);
-      const notes = (await readData()).notes.filter(
+      const data = await readData();
+      const notes = data.notes.filter(
         (note) => normalizeUrl(note.url) === current || normalizeUrl(note.canonicalUrl ?? '') === current,
       );
       for (const note of notes) {
         const selector = note.anchor?.quote;
         const range = findTextRange(selector?.exact || note.quote, selector?.prefix, selector?.suffix);
-        if (range) wrapHighlightRange(range, note);
+        if (range) wrapHighlightRange(range, note, data.settings.highlightCoverage);
       }
     }
 

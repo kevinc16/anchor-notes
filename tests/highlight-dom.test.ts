@@ -26,5 +26,23 @@ describe('wrapHighlightRange', () => {
     expect(marks.map((mark) => mark.textContent).join('')).toBe('pha beta gam');
     expect(marks.every((mark) => mark.getAttribute('data-anchor-id') === 'note-1')).toBe(true);
     expect(marks.every((mark) => mark.getAttribute('data-anchor-color') === 'mint')).toBe(true);
+    expect(marks.every((mark) => mark.getAttribute('data-anchor-coverage') === 'medium')).toBe(true);
+  });
+
+  it.each(['small', 'medium', 'full'] as const)('renders %s highlight coverage', (highlightCoverage) => {
+    const window = new Window();
+    const { document } = window;
+    document.body.innerHTML = '<p>Coverage example</p>';
+    const text = document.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.selectNodeContents(text);
+
+    wrapHighlightRange(range as unknown as Range, {
+      id: `note-${highlightCoverage}`,
+      color: 'yellow',
+      body: '',
+    }, highlightCoverage);
+
+    expect(document.querySelector('mark')?.getAttribute('data-anchor-coverage')).toBe(highlightCoverage);
   });
 });

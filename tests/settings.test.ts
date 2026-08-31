@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { normalizeSettings, shouldUseAiOrganizer } from '../lib/settings';
 
 describe('normalizeSettings', () => {
+  it('defaults global highlight coverage to medium', () => {
+    expect(normalizeSettings({}).highlightCoverage).toBe('medium');
+    expect(normalizeSettings({ highlightCoverage: 'full' }).highlightCoverage).toBe('full');
+    expect(normalizeSettings({ highlightCoverage: 'invalid' }).highlightCoverage).toBe('medium');
+  });
+
   it('keeps existing remote-provider installations enabled', () => {
     const settings = normalizeSettings({
       aiProvider: 'openrouter',

@@ -1,4 +1,5 @@
 export type HighlightColor = 'yellow' | 'mint' | 'lilac' | 'coral';
+export type HighlightCoverage = 'small' | 'medium' | 'full';
 export type AiProvider = 'local' | 'openrouter' | 'ollama' | 'custom';
 
 export interface TextQuoteSelector {
@@ -36,6 +37,7 @@ export interface AnchorNote {
 
 export interface AnchorSettings {
   highlightColor: HighlightColor;
+  highlightCoverage: HighlightCoverage;
   aiEnabled: boolean;
   aiProvider: AiProvider;
   aiEndpoint: string;
