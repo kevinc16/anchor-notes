@@ -20,18 +20,8 @@ function fromBase64(value: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-async function deriveKey(
-  passphrase: string,
-  salt: Uint8Array<ArrayBuffer>,
-  usages: KeyUsage[],
-): Promise<CryptoKey> {
-  const material = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(passphrase),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  );
+async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>, usages: KeyUsage[]): Promise<CryptoKey> {
+  const material = await crypto.subtle.importKey('raw', encoder.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: PBKDF2_ITERATIONS },
     material,
@@ -50,11 +40,7 @@ export async function encryptSecret(secret: string, passphrase: string): Promise
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt, ['encrypt']);
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoder.encode(secret),
-  );
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(secret));
 
   return {
     version: 1,
@@ -69,11 +55,13 @@ export async function encryptSecret(secret: string, passphrase: string): Promise
 }
 
 export async function decryptSecret(encrypted: EncryptedSecret, passphrase: string): Promise<string> {
-  if (encrypted.version !== 1
-    || encrypted.algorithm !== 'AES-GCM'
-    || encrypted.kdf !== 'PBKDF2'
-    || encrypted.hash !== 'SHA-256'
-    || encrypted.iterations !== PBKDF2_ITERATIONS) {
+  if (
+    encrypted.version !== 1 ||
+    encrypted.algorithm !== 'AES-GCM' ||
+    encrypted.kdf !== 'PBKDF2' ||
+    encrypted.hash !== 'SHA-256' ||
+    encrypted.iterations !== PBKDF2_ITERATIONS
+  ) {
     throw new Error('This encrypted credential format is not supported.');
   }
 

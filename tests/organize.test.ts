@@ -10,9 +10,16 @@ const note = {
 };
 
 function mockCompletion() {
-  return vi.fn().mockResolvedValue(new Response(JSON.stringify({
-    choices: [{ message: { content: 'Here is the JSON: {"tags":["ai","open-source"],"summary":"Local model setup"}' } }],
-  }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  return vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        choices: [
+          { message: { content: 'Here is the JSON: {"tags":["ai","open-source"],"summary":"Local model setup"}' } },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ),
+  );
 }
 
 afterEach(() => vi.unstubAllGlobals());

@@ -3,13 +3,7 @@ import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
-import type {
-  AnchorNote,
-  ExtensionMessage,
-  HighlightAnchor,
-  HighlightColor,
-  MessageResponse,
-} from '@/lib/types';
+import type { AnchorNote, ExtensionMessage, HighlightAnchor, HighlightColor, MessageResponse } from '@/lib/types';
 import './style.css';
 
 const COLORS: HighlightColor[] = ['yellow', 'mint', 'lilac', 'coral'];
@@ -46,9 +40,7 @@ export default defineContentScript({
           break;
         }
         const parent: Element | null = current.parentElement;
-        const siblings = parent
-          ? [...parent.children].filter((item) => item.tagName === current?.tagName)
-          : [];
+        const siblings = parent ? [...parent.children].filter((item) => item.tagName === current?.tagName) : [];
         if (siblings.length > 1) selector += `:nth-of-type(${siblings.indexOf(current) + 1})`;
         parts.unshift(selector);
         current = parent;
@@ -133,7 +125,9 @@ export default defineContentScript({
         composer.remove();
         pendingRange = null;
       });
-      composer.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => void saveSelection(composer));
+      composer
+        .querySelector<HTMLButtonElement>('.anchor-save')
+        ?.addEventListener('click', () => void saveSelection(composer));
     }
 
     async function saveSelection(composer: HTMLElement) {
@@ -164,7 +158,10 @@ export default defineContentScript({
       pendingRange = null;
       window.getSelection()?.removeAllRanges();
 
-      const response = await browser.runtime.sendMessage({ type: 'SAVE_NOTE', note } satisfies ExtensionMessage) as MessageResponse;
+      const response = (await browser.runtime.sendMessage({
+        type: 'SAVE_NOTE',
+        note,
+      } satisfies ExtensionMessage)) as MessageResponse;
       if (!response?.ok || !response.note) {
         removeHighlightMarks(note.id);
         showToast(response?.error || 'Could not save note');
@@ -185,10 +182,12 @@ export default defineContentScript({
 
     function removeHighlightMarks(id: string) {
       const parents = new Set<Node>();
-      document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`).forEach((mark) => {
-        if (mark.parentNode) parents.add(mark.parentNode);
-        mark.replaceWith(...mark.childNodes);
-      });
+      document
+        .querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`)
+        .forEach((mark) => {
+          if (mark.parentNode) parents.add(mark.parentNode);
+          mark.replaceWith(...mark.childNodes);
+        });
       parents.forEach((parent) => parent.normalize());
     }
 
@@ -196,7 +195,9 @@ export default defineContentScript({
       if (!exact) return null;
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
-          return node.parentElement?.closest(`script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`)
+          return node.parentElement?.closest(
+            `script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`,
+          )
             ? NodeFilter.FILTER_REJECT
             : NodeFilter.FILTER_ACCEPT;
         },
@@ -218,8 +219,8 @@ export default defineContentScript({
       if (!matches.length) return null;
       const start = matches.sort((a, b) => {
         const score = (index: number) =>
-          (prefix && text.slice(Math.max(0, index - prefix.length), index).endsWith(prefix) ? 2 : 0)
-          + (suffix && text.slice(index + exact.length, index + exact.length + suffix.length).startsWith(suffix) ? 2 : 0);
+          (prefix && text.slice(Math.max(0, index - prefix.length), index).endsWith(prefix) ? 2 : 0) +
+          (suffix && text.slice(index + exact.length, index + exact.length + suffix.length).startsWith(suffix) ? 2 : 0);
         return score(b) - score(a);
       })[0];
       if (start === undefined) return null;
@@ -249,20 +250,26 @@ export default defineContentScript({
     function positionFloatingElement(element: HTMLElement, rect: DOMRect) {
       const left = Math.max(12, Math.min(window.innerWidth - element.offsetWidth - 12, rect.left));
       const below = rect.bottom + 12;
-      const top = below + element.offsetHeight <= window.innerHeight - 12
-        ? below
-        : Math.max(12, rect.top - element.offsetHeight - 12);
+      const top =
+        below + element.offsetHeight <= window.innerHeight - 12
+          ? below
+          : Math.max(12, rect.top - element.offsetHeight - 12);
       Object.assign(element.style, { left: `${left}px`, top: `${top}px` });
     }
 
     function applyColorToMarks(id: string, color: HighlightColor) {
-      document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`).forEach((mark) => {
-        mark.dataset.anchorColor = color;
-      });
+      document
+        .querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`)
+        .forEach((mark) => {
+          mark.dataset.anchorColor = color;
+        });
     }
 
     async function updateNote(note: AnchorNote): Promise<AnchorNote | null> {
-      const response = await browser.runtime.sendMessage({ type: 'UPDATE_NOTE', note } satisfies ExtensionMessage) as MessageResponse;
+      const response = (await browser.runtime.sendMessage({
+        type: 'UPDATE_NOTE',
+        note,
+      } satisfies ExtensionMessage)) as MessageResponse;
       if (!response.ok || !response.note) {
         showToast(response.error || 'Could not update note');
         return null;
@@ -272,7 +279,10 @@ export default defineContentScript({
 
     async function getSavedNote(id: string): Promise<AnchorNote | null> {
       try {
-        const response = await browser.runtime.sendMessage({ type: 'GET_NOTE', id } satisfies ExtensionMessage) as MessageResponse;
+        const response = (await browser.runtime.sendMessage({
+          type: 'GET_NOTE',
+          id,
+        } satisfies ExtensionMessage)) as MessageResponse;
         if (!response?.ok || !response.note) {
           showToast(response?.error || 'Could not load the saved note');
           return null;
@@ -286,7 +296,9 @@ export default defineContentScript({
 
     async function openLibrary() {
       try {
-        const response = await browser.runtime.sendMessage({ type: 'OPEN_LIBRARY' } satisfies ExtensionMessage) as MessageResponse;
+        const response = (await browser.runtime.sendMessage({
+          type: 'OPEN_LIBRARY',
+        } satisfies ExtensionMessage)) as MessageResponse;
         if (!response?.ok) showToast(response?.error || 'Could not open the library');
       } catch (error) {
         showToast(error instanceof Error ? error.message : 'Could not open the library');
@@ -340,16 +352,22 @@ export default defineContentScript({
       };
       if (colorPicker) renderColorPicker(colorPicker, note.color, selectColor);
       positionFloatingElement(popover, rect);
-      popover.querySelector<HTMLButtonElement>('.anchor-popover-close')?.addEventListener('click', () => popover.remove());
-      popover.querySelector<HTMLButtonElement>('.anchor-open-library')?.addEventListener('click', () => void openLibrary());
+      popover
+        .querySelector<HTMLButtonElement>('.anchor-popover-close')
+        ?.addEventListener('click', () => popover.remove());
+      popover
+        .querySelector<HTMLButtonElement>('.anchor-open-library')
+        ?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
         note.tags = parseTags(tagsInput?.value ?? '');
         void updateNote(note).then((saved) => {
           if (!saved) return;
-          document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(note.id)}"]`).forEach((mark) => {
-            mark.title = saved.body || 'Saved in Anchor Notes';
-          });
+          document
+            .querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(note.id)}"]`)
+            .forEach((mark) => {
+              mark.title = saved.body || 'Saved in Anchor Notes';
+            });
           popover.remove();
           showToast('Note updated');
         });
@@ -368,7 +386,8 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
       if (message.type === 'CAPTURE_SELECTION') void showComposer();
       if (message.type === 'SCROLL_TO_NOTE') {
-        document.querySelector<HTMLElement>(`[data-anchor-id="${CSS.escape(message.id)}"]`)
+        document
+          .querySelector<HTMLElement>(`[data-anchor-id="${CSS.escape(message.id)}"]`)
           ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       return undefined;
