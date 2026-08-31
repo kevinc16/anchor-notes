@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="description" content="A deterministic article used by Anchor Notes browser tests." />
+    <link rel="canonical" href="http://127.0.0.1:4173/article" />
+    <title>Anchor Notes E2E fixture</title>
+  </head>
+  <body>
+    <main id="article" aria-label="Test article"></main>
+    <script>
+      const originalMarkup = '<section class="original-shell"><p id="passage">Anchor Notes keeps <strong>important ideas</strong> attached to the page, even when its markup changes.</p></section>';
+      const changedMarkup = '<article class="changed-shell"><header>Updated article structure</header><p id="passage"><span>Anchor Notes keeps important </span><em>ideas</em><span> attached to the page, even when its markup changes.</span></p></article>';
+      document.querySelector('#article').innerHTML = localStorage.getItem('anchor-test-version') === 'changed'
+        ? changedMarkup
+        : originalMarkup;
+    </script>
+  </body>
+</html>
