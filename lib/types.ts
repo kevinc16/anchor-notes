@@ -29,7 +29,6 @@ export interface AnchorNote {
     capturedAt: string;
   };
   color: HighlightColor;
-  highlightCoverage?: HighlightCoverage;
   tags: string[];
   summary?: string;
   createdAt: string;
@@ -38,6 +37,7 @@ export interface AnchorNote {
 
 export interface AnchorSettings {
   highlightColor: HighlightColor;
+  highlightCoverage: HighlightCoverage;
   aiEnabled: boolean;
   aiProvider: AiProvider;
   aiEndpoint: string;

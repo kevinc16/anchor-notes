@@ -41,8 +41,7 @@ describe('wrapHighlightRange', () => {
       id: `note-${highlightCoverage}`,
       color: 'yellow',
       body: '',
-      highlightCoverage,
-    });
+    }, highlightCoverage);
 
     expect(document.querySelector('mark')?.getAttribute('data-anchor-coverage')).toBe(highlightCoverage);
   });
