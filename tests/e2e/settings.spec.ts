@@ -21,12 +21,7 @@ function customEndpoint(articleUrl: string): string {
   return new URL('/v1/chat/completions', articleUrl).href;
 }
 
-async function saveFixtureHighlight(
-  page: Page,
-  serviceWorker: Worker,
-  articleUrl: string,
-  body: string,
-) {
+async function saveFixtureHighlight(page: Page, serviceWorker: Worker, articleUrl: string, body: string) {
   await page.goto(`${articleUrl}#settings-e2e`, { waitUntil: 'networkidle' });
   await page.bringToFront();
   await page.locator('#passage').selectText();
@@ -86,14 +81,21 @@ test('saves global highlight defaults and organizes a new note with a custom pro
     aiApiKey: API_KEY,
   });
 
-  await saveFixtureHighlight(page, serviceWorker, articleUrl, 'Use the local provider to organize this API architecture note.');
+  await saveFixtureHighlight(
+    page,
+    serviceWorker,
+    articleUrl,
+    'Use the local provider to organize this API architecture note.',
+  );
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight anchored');
 
-  await expect.poll(async () => (await readExtensionData(serviceWorker)).notes[0]).toMatchObject({
-    body: 'Use the local provider to organize this API architecture note.',
-    tags: ['e2e', 'ai'],
-    summary: 'Organized by the local E2E provider.',
-  });
+  await expect
+    .poll(async () => (await readExtensionData(serviceWorker)).notes[0])
+    .toMatchObject({
+      body: 'Use the local provider to organize this API architecture note.',
+      tags: ['e2e', 'ai'],
+      summary: 'Organized by the local E2E provider.',
+    });
 });
 
 test('encrypts, unlocks, and disables encryption for an API key', async ({

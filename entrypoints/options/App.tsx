@@ -7,24 +7,25 @@ import {
 } from '@/lib/credential-settings';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
-import {
-  deleteNote,
-  EMPTY_DATA,
-  noteMatches,
-  readData,
-  saveNote,
-  updateSettings,
-  writeData,
-} from '@/lib/storage';
-import type { AiProvider, AnchorData, AnchorNote, AnchorSettings, HighlightColor, HighlightCoverage } from '@/lib/types';
+import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
+import type {
+  AiProvider,
+  AnchorData,
+  AnchorNote,
+  AnchorSettings,
+  HighlightColor,
+  HighlightCoverage,
+} from '@/lib/types';
 import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
 type View = 'library' | 'settings';
 type SortMode = 'newest' | 'oldest' | 'source';
 type GroupMode = 'website' | 'none';
 
-const buttonClass = 'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
-const fieldClass = 'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+const buttonClass =
+  'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
+const fieldClass =
+  'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-[#ffd74a]' },
   { id: 'mint', label: 'Mint', className: 'bg-[#72e1be]' },
@@ -55,7 +56,9 @@ const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2 text-[19px] font-extrabold tracking-[-0.03em]">
-      <span className="grid size-8 -rotate-2 place-items-center rounded-[10px] bg-ink font-serif text-lg text-anchor">A</span>
+      <span className="grid size-8 -rotate-2 place-items-center rounded-[10px] bg-ink font-serif text-lg text-anchor">
+        A
+      </span>
       <span>Anchor</span>
     </div>
   );
@@ -76,14 +79,21 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
           aria-pressed={value === color.id}
           onClick={() => onChange(color.id)}
         >
-          <span className={`size-4 rounded-full ${color.className}`} />{color.label}
+          <span className={`size-4 rounded-full ${color.className}`} />
+          {color.label}
         </button>
       ))}
     </div>
   );
 }
 
-function CoveragePicker({ value, onChange }: { value: HighlightCoverage; onChange: (coverage: HighlightCoverage) => void }) {
+function CoveragePicker({
+  value,
+  onChange,
+}: {
+  value: HighlightCoverage;
+  onChange: (coverage: HighlightCoverage) => void;
+}) {
   return (
     <div className="grid grid-cols-3 gap-2" role="group" aria-label="Highlight coverage">
       {highlightCoverages.map((coverage) => (
@@ -118,19 +128,40 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
     <article className="flex min-h-60 flex-col overflow-hidden rounded-[17px] border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(51,43,31,.07)]">
       <header className="flex items-center justify-between text-[10px] font-bold text-muted">
         <span>{hostFromUrl(note.url)}</span>
-        <time>{new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+        <time>
+          {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+        </time>
       </header>
       <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-[#312d27]">
-        <span className="-ml-2 text-[#c38b00]">“</span>{note.quote}<span className="text-[#c38b00]">”</span>
+        <span className="-ml-2 text-[#c38b00]">“</span>
+        {note.quote}
+        <span className="text-[#c38b00]">”</span>
       </blockquote>
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
-      {note.summary && <p className="mb-4 rounded-lg bg-[#f5f1e8] p-2.5 text-[11px] leading-relaxed text-muted">{note.summary}</p>}
-      <div className="mt-auto flex flex-wrap gap-1.5">{note.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}</div>
+      {note.summary && (
+        <p className="mb-4 rounded-lg bg-[#f5f1e8] p-2.5 text-[11px] leading-relaxed text-muted">{note.summary}</p>
+      )}
+      <div className="mt-auto flex flex-wrap gap-1.5">
+        {note.tags.map((tag) => (
+          <Tag key={tag}>{tag}</Tag>
+        ))}
+      </div>
       <footer className="mt-[18px] flex items-center justify-between border-t border-[#eee9df] pt-3">
-        <a className="text-[11px] font-extrabold text-ink no-underline" href={note.url} target="_blank" rel="noreferrer">Return to source ↗</a>
+        <a
+          className="text-[11px] font-extrabold text-ink no-underline"
+          href={note.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Return to source ↗
+        </a>
         <div className="flex gap-2">
-          <button className="text-[11px] font-bold text-muted" type="button" onClick={onEdit}>Edit</button>
-          <button className="text-[11px] font-bold text-[#9c382f]" type="button" onClick={onDelete}>Delete</button>
+          <button className="text-[11px] font-bold text-muted" type="button" onClick={onEdit}>
+            Edit
+          </button>
+          <button className="text-[11px] font-bold text-[#9c382f]" type="button" onClick={onDelete}>
+            Delete
+          </button>
         </div>
       </footer>
     </article>
@@ -187,11 +218,16 @@ export default function App() {
   const topics = useMemo(() => {
     const counts = new Map<string, number>();
     data.notes.flatMap((note) => note.tags).forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1));
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([tag]) => tag);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7)
+      .map(([tag]) => tag);
   }, [data.notes]);
 
   const visibleNotes = useMemo(() => {
-    const notes = data.notes.filter((note) => (filter === 'all' || note.tags.includes(filter)) && noteMatches(note, query));
+    const notes = data.notes.filter(
+      (note) => (filter === 'all' || note.tags.includes(filter)) && noteMatches(note, query),
+    );
     return [...notes].sort((a, b) => {
       if (sortMode === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortMode === 'source') return hostFromUrl(a.url).localeCompare(hostFromUrl(b.url));
@@ -215,12 +251,14 @@ export default function App() {
 
   async function persistEdit() {
     if (!editing) return;
-    await saveNote(applyLibraryNoteEdits(editing, {
-      body: editBody,
-      summary: editSummary,
-      color: editColor,
-      tags: editTags,
-    }));
+    await saveNote(
+      applyLibraryNoteEdits(editing, {
+        body: editBody,
+        summary: editSummary,
+        color: editColor,
+        tags: editTags,
+      }),
+    );
     setData(await readData());
     setEditing(null);
     setToast('Changes saved');
@@ -368,20 +406,31 @@ export default function App() {
       <aside className="fixed inset-y-0 left-0 flex w-[220px] flex-col border-r border-line bg-[#f4efe5] px-[18px] pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
         <Brand />
         <nav className="mt-10 grid gap-1 max-[760px]:ml-auto max-[760px]:mt-0 max-[760px]:flex">
-          {([['library', '⌂', 'Library'], ['settings', '⚙', 'Settings']] as const).map(([id, icon, label]) => (
+          {(
+            [
+              ['library', '⌂', 'Library'],
+              ['settings', '⚙', 'Settings'],
+            ] as const
+          ).map(([id, icon, label]) => (
             <button
               key={id}
               className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[13px] font-bold ${view === id ? 'bg-[#fffaf0] text-ink shadow-sm' : 'text-muted'}`}
               type="button"
               onClick={() => setView(id)}
             >
-              <span>{icon}</span>{label}
+              <span>{icon}</span>
+              {label}
             </button>
           ))}
         </nav>
         <div className="mt-auto grid gap-3.5 border-t border-[#ded6c8] px-2 pt-[18px] max-[760px]:hidden">
-          <div className="flex items-baseline gap-1.5"><strong className="font-serif text-2xl font-semibold">{data.notes.length}</strong><span className="text-[11px] text-muted">saved ideas</span></div>
-          <button className={buttonClass} type="button" onClick={exportData}>Export backup</button>
+          <div className="flex items-baseline gap-1.5">
+            <strong className="font-serif text-2xl font-semibold">{data.notes.length}</strong>
+            <span className="text-[11px] text-muted">saved ideas</span>
+          </div>
+          <button className={buttonClass} type="button" onClick={exportData}>
+            Export backup
+          </button>
         </div>
       </aside>
 
@@ -389,17 +438,35 @@ export default function App() {
         {view === 'library' ? (
           <section>
             <header className="flex items-end justify-between gap-8 max-[760px]:flex-col max-[760px]:items-stretch">
-              <div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Your second memory</p><h1 className="mt-2 font-serif text-[clamp(32px,4vw,48px)] font-semibold leading-none tracking-[-0.035em]">Saved from the web</h1></div>
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Your second memory</p>
+                <h1 className="mt-2 font-serif text-[clamp(32px,4vw,48px)] font-semibold leading-none tracking-[-0.035em]">
+                  Saved from the web
+                </h1>
+              </div>
               <label className="flex h-11 w-[min(360px,35vw)] items-center gap-2 rounded-full border border-line bg-card px-3.5 max-[760px]:w-full">
                 <span className="text-xl text-muted">⌕</span>
-                <input className="w-full border-0 bg-transparent text-[13px] outline-none" type="search" placeholder="Search notes, tags, or sources…" value={query} onChange={(event) => setQuery(event.target.value)} />
+                <input
+                  className="w-full border-0 bg-transparent text-[13px] outline-none"
+                  type="search"
+                  placeholder="Search notes, tags, or sources…"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
               </label>
             </header>
 
             <div className="my-8 flex items-center justify-between gap-5 border-b border-line pb-3.5">
               <div className="flex gap-2 overflow-x-auto">
                 {['all', ...topics].map((topic) => (
-                  <button key={topic} className={`whitespace-nowrap rounded-full px-3 py-2 text-[11px] font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`} type="button" onClick={() => setFilter(topic)}>{topic === 'all' ? 'All notes' : topic}</button>
+                  <button
+                    key={topic}
+                    className={`whitespace-nowrap rounded-full px-3 py-2 text-[11px] font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`}
+                    type="button"
+                    onClick={() => setFilter(topic)}
+                  >
+                    {topic === 'all' ? 'All notes' : topic}
+                  </button>
                 ))}
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -411,52 +478,77 @@ export default function App() {
                 >
                   Group by website
                 </button>
-                <select className="border-0 bg-transparent text-[11px] font-bold text-muted outline-none" value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
-                  <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="source">By source</option>
+                <select
+                  className="border-0 bg-transparent text-[11px] font-bold text-muted outline-none"
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="source">By source</option>
                 </select>
               </div>
             </div>
 
-            {visibleNotes.length ? groupMode === 'website' ? (
-              <div className="grid gap-10">
-                {websiteGroups.map((group, index) => {
-                  const isExpanded = !collapsedWebsites.has(group.website);
-                  const panelId = `website-notes-${index}`;
-                  return (
-                    <section key={group.website} aria-label={`${group.website} notes`}>
-                      <header className="mb-4 border-b border-line pb-2.5">
-                        <h2>
-                          <button
-                            className="flex w-full items-center gap-2 text-left"
-                            type="button"
-                            aria-expanded={isExpanded}
-                            aria-controls={panelId}
-                            onClick={() => toggleWebsite(group.website)}
-                          >
-                            <span className="font-serif text-xl font-semibold">{group.website}</span>
-                            <span className="text-[11px] font-bold text-muted">{group.notes.length} note{group.notes.length === 1 ? '' : 's'}</span>
-                            <span className={`ml-auto text-lg text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`} aria-hidden="true">⌄</span>
-                          </button>
-                        </h2>
-                      </header>
-                      <div
-                        id={panelId}
-                        className={`${isExpanded ? 'grid' : 'hidden'} grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4`}
-                      >
-                        {group.notes.map((note) => (
-                          <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
-                {visibleNotes.map((note) => (
-                  <NoteCard key={note.id} note={note} onEdit={() => startEdit(note)} onDelete={() => void removeNote(note)} />
-                ))}
-              </div>
+            {visibleNotes.length ? (
+              groupMode === 'website' ? (
+                <div className="grid gap-10">
+                  {websiteGroups.map((group, index) => {
+                    const isExpanded = !collapsedWebsites.has(group.website);
+                    const panelId = `website-notes-${index}`;
+                    return (
+                      <section key={group.website} aria-label={`${group.website} notes`}>
+                        <header className="mb-4 border-b border-line pb-2.5">
+                          <h2>
+                            <button
+                              className="flex w-full items-center gap-2 text-left"
+                              type="button"
+                              aria-expanded={isExpanded}
+                              aria-controls={panelId}
+                              onClick={() => toggleWebsite(group.website)}
+                            >
+                              <span className="font-serif text-xl font-semibold">{group.website}</span>
+                              <span className="text-[11px] font-bold text-muted">
+                                {group.notes.length} note{group.notes.length === 1 ? '' : 's'}
+                              </span>
+                              <span
+                                className={`ml-auto text-lg text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`}
+                                aria-hidden="true"
+                              >
+                                ⌄
+                              </span>
+                            </button>
+                          </h2>
+                        </header>
+                        <div
+                          id={panelId}
+                          className={`${isExpanded ? 'grid' : 'hidden'} grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4`}
+                        >
+                          {group.notes.map((note) => (
+                            <NoteCard
+                              key={note.id}
+                              note={note}
+                              onEdit={() => startEdit(note)}
+                              onDelete={() => void removeNote(note)}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
+                  {visibleNotes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onEdit={() => startEdit(note)}
+                      onDelete={() => void removeNote(note)}
+                    />
+                  ))}
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
                 <EmptyState hasNotes={data.notes.length > 0} />
@@ -465,7 +557,13 @@ export default function App() {
           </section>
         ) : (
           <section>
-            <header className="max-w-[680px]"><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p><h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1><p className="mt-3 text-[13px] leading-relaxed text-muted">Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.</p></header>
+            <header className="max-w-[680px]">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p>
+              <h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1>
+              <p className="mt-3 text-[13px] leading-relaxed text-muted">
+                Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.
+              </p>
+            </header>
             <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
@@ -481,87 +579,252 @@ export default function App() {
                   {settings.aiEnabled ? 'Disable LLM' : 'Enable LLM'}
                 </button>
               </div>
-              <Field label="Default highlight color" help="Used for new highlights. Individual notes can be recolored from the page or library.">
-                <ColorPicker value={settings.highlightColor} onChange={(highlightColor) => setSettings({ ...settings, highlightColor })} />
+              <Field
+                label="Default highlight color"
+                help="Used for new highlights. Individual notes can be recolored from the page or library."
+              >
+                <ColorPicker
+                  value={settings.highlightColor}
+                  onChange={(highlightColor) => setSettings({ ...settings, highlightColor })}
+                />
               </Field>
               <Field label="Highlight coverage" help="Used for all new and restored highlights.">
-                <CoveragePicker value={settings.highlightCoverage} onChange={(highlightCoverage) => setSettings({ ...settings, highlightCoverage })} />
+                <CoveragePicker
+                  value={settings.highlightCoverage}
+                  onChange={(highlightCoverage) => setSettings({ ...settings, highlightCoverage })}
+                />
               </Field>
-              {settings.aiEnabled && <Field label="LLM provider">
-                <select className={fieldClass} value={settings.aiProvider} onChange={(event) => selectProvider(event.target.value as AiProvider)}>
-                  <option value="openrouter">OpenRouter — hosted open and free models</option>
-                  <option value="ollama">Ollama — local open-source models</option>
-                  <option value="custom">Custom OpenAI-compatible endpoint</option>
-                </select>
-              </Field>}
-              {settings.aiEnabled && settings.aiProvider !== 'local' && <>
-                <Field label="API endpoint"><input className={fieldClass} type="url" value={settings.aiEndpoint} readOnly={settings.aiProvider !== 'custom'} onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })} /></Field>
-                <Field label="Model" help={settings.aiProvider === 'openrouter' ? 'Use openrouter/free or any model slug from the OpenRouter catalog.' : settings.aiProvider === 'ollama' ? 'Enter a model you have already pulled with Ollama.' : undefined}><input className={fieldClass} type="text" placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'} value={settings.aiModel} onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })} /></Field>
-                {settings.aiProvider !== 'ollama' && <>
-                  <Field
-                    label="API key"
-                    help={encryptCredential
-                      ? settings.aiApiKeyEncrypted
-                        ? `An encrypted key is saved and ${credentialUnlocked ? 'unlocked for this browser session' : 'locked'}. Enter a value only to replace it.`
-                        : 'The key will be encrypted when you save.'
-                      : 'Stored unencrypted in Chrome extension local storage. Enable encryption below if you prefer passphrase protection.'}
+              {settings.aiEnabled && (
+                <Field label="LLM provider">
+                  <select
+                    className={fieldClass}
+                    value={settings.aiProvider}
+                    onChange={(event) => selectProvider(event.target.value as AiProvider)}
                   >
-                    <input className={fieldClass} type="password" autoComplete="off" placeholder={settings.aiApiKeyEncrypted ? 'Leave blank to keep the encrypted key' : 'Enter provider API key'} value={apiKeyDraft} onChange={(event) => setApiKeyDraft(event.target.value)} />
-                  </Field>
-                  <label className="mb-4 flex items-start gap-3 rounded-[10px] border border-line bg-stone-50 p-3">
+                    <option value="openrouter">OpenRouter — hosted open and free models</option>
+                    <option value="ollama">Ollama — local open-source models</option>
+                    <option value="custom">Custom OpenAI-compatible endpoint</option>
+                  </select>
+                </Field>
+              )}
+              {settings.aiEnabled && settings.aiProvider !== 'local' && (
+                <>
+                  <Field label="API endpoint">
                     <input
-                      className="mt-0.5 size-4 accent-[#29251f]"
-                      type="checkbox"
-                      checked={encryptCredential}
-                      onChange={(event) => setEncryptCredential(event.target.checked)}
+                      className={fieldClass}
+                      type="url"
+                      value={settings.aiEndpoint}
+                      readOnly={settings.aiProvider !== 'custom'}
+                      onChange={(event) => setSettings({ ...settings, aiEndpoint: event.target.value })}
                     />
-                    <span>
-                      <strong className="block text-xs text-ink">Encrypt this API key with a passphrase</strong>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted">Optional and off by default. You will need to unlock the key again after Chrome restarts.</span>
-                    </span>
-                  </label>
-                  {(encryptCredential
-                    ? !settings.aiApiKeyEncrypted || !credentialUnlocked
-                    : Boolean(settings.aiApiKeyEncrypted)) && <Field
-                    label="Encryption passphrase"
-                    help={!encryptCredential
-                      ? 'Enter the passphrase again to move the existing key to plaintext storage, or enter a replacement key above. Anchor Notes never stores this passphrase.'
-                      : `At least ${MIN_PASSPHRASE_LENGTH} characters. Anchor Notes never stores this passphrase.`}
+                  </Field>
+                  <Field
+                    label="Model"
+                    help={
+                      settings.aiProvider === 'openrouter'
+                        ? 'Use openrouter/free or any model slug from the OpenRouter catalog.'
+                        : settings.aiProvider === 'ollama'
+                          ? 'Enter a model you have already pulled with Ollama.'
+                          : undefined
+                    }
                   >
-                    <input className={fieldClass} type="password" autoComplete="off" placeholder={!encryptCredential ? 'Enter passphrase to disable encryption' : settings.aiApiKeyEncrypted && !apiKeyDraft ? 'Enter passphrase to unlock' : 'Required to encrypt the key'} value={vaultPassphrase} onChange={(event) => setVaultPassphrase(event.target.value)} />
-                  </Field>}
-                  {settings.aiApiKeyEncrypted && <div className="mb-4 flex flex-wrap gap-2">
-                    {!credentialUnlocked && <button className={buttonClass} type="button" onClick={() => void unlockApiKey()}>Unlock key</button>}
-                    <button className={`${buttonClass} text-[#9c382f]`} type="button" onClick={() => void forgetApiKey()}>Forget key</button>
-                  </div>}
-                </>}
-              </>}
-              <button className={`${buttonClass} border-ink bg-ink text-white`} type="button" onClick={() => void saveSettings()}>Save settings</button>
+                    <input
+                      className={fieldClass}
+                      type="text"
+                      placeholder={settings.aiProvider === 'ollama' ? 'llama3.2' : 'provider/model'}
+                      value={settings.aiModel}
+                      onChange={(event) => setSettings({ ...settings, aiModel: event.target.value })}
+                    />
+                  </Field>
+                  {settings.aiProvider !== 'ollama' && (
+                    <>
+                      <Field
+                        label="API key"
+                        help={
+                          encryptCredential
+                            ? settings.aiApiKeyEncrypted
+                              ? `An encrypted key is saved and ${credentialUnlocked ? 'unlocked for this browser session' : 'locked'}. Enter a value only to replace it.`
+                              : 'The key will be encrypted when you save.'
+                            : 'Stored unencrypted in Chrome extension local storage. Enable encryption below if you prefer passphrase protection.'
+                        }
+                      >
+                        <input
+                          className={fieldClass}
+                          type="password"
+                          autoComplete="off"
+                          placeholder={
+                            settings.aiApiKeyEncrypted
+                              ? 'Leave blank to keep the encrypted key'
+                              : 'Enter provider API key'
+                          }
+                          value={apiKeyDraft}
+                          onChange={(event) => setApiKeyDraft(event.target.value)}
+                        />
+                      </Field>
+                      <label className="mb-4 flex items-start gap-3 rounded-[10px] border border-line bg-stone-50 p-3">
+                        <input
+                          className="mt-0.5 size-4 accent-[#29251f]"
+                          type="checkbox"
+                          checked={encryptCredential}
+                          onChange={(event) => setEncryptCredential(event.target.checked)}
+                        />
+                        <span>
+                          <strong className="block text-xs text-ink">Encrypt this API key with a passphrase</strong>
+                          <span className="mt-1 block text-xs leading-relaxed text-muted">
+                            Optional and off by default. You will need to unlock the key again after Chrome restarts.
+                          </span>
+                        </span>
+                      </label>
+                      {(encryptCredential
+                        ? !settings.aiApiKeyEncrypted || !credentialUnlocked
+                        : Boolean(settings.aiApiKeyEncrypted)) && (
+                        <Field
+                          label="Encryption passphrase"
+                          help={
+                            !encryptCredential
+                              ? 'Enter the passphrase again to move the existing key to plaintext storage, or enter a replacement key above. Anchor Notes never stores this passphrase.'
+                              : `At least ${MIN_PASSPHRASE_LENGTH} characters. Anchor Notes never stores this passphrase.`
+                          }
+                        >
+                          <input
+                            className={fieldClass}
+                            type="password"
+                            autoComplete="off"
+                            placeholder={
+                              !encryptCredential
+                                ? 'Enter passphrase to disable encryption'
+                                : settings.aiApiKeyEncrypted && !apiKeyDraft
+                                  ? 'Enter passphrase to unlock'
+                                  : 'Required to encrypt the key'
+                            }
+                            value={vaultPassphrase}
+                            onChange={(event) => setVaultPassphrase(event.target.value)}
+                          />
+                        </Field>
+                      )}
+                      {settings.aiApiKeyEncrypted && (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          {!credentialUnlocked && (
+                            <button className={buttonClass} type="button" onClick={() => void unlockApiKey()}>
+                              Unlock key
+                            </button>
+                          )}
+                          <button
+                            className={`${buttonClass} text-[#9c382f]`}
+                            type="button"
+                            onClick={() => void forgetApiKey()}
+                          >
+                            Forget key
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+              <button
+                className={`${buttonClass} border-ink bg-ink text-white`}
+                type="button"
+                onClick={() => void saveSettings()}
+              >
+                Save settings
+              </button>
             </div>
             <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
               <h2 className="mb-3 font-serif text-xl font-semibold">Data</h2>
-              <p className="mb-5 text-[13px] leading-relaxed text-muted">Use JSON backups to move your library or keep an independent copy.</p>
-              <div className="flex gap-2"><button className={buttonClass} type="button" onClick={exportData}>Export JSON</button><button className={buttonClass} type="button" onClick={() => importRef.current?.click()}>Import JSON</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => void importData(event.target.files?.[0])} /></div>
+              <p className="mb-5 text-[13px] leading-relaxed text-muted">
+                Use JSON backups to move your library or keep an independent copy.
+              </p>
+              <div className="flex gap-2">
+                <button className={buttonClass} type="button" onClick={exportData}>
+                  Export JSON
+                </button>
+                <button className={buttonClass} type="button" onClick={() => importRef.current?.click()}>
+                  Import JSON
+                </button>
+                <input
+                  ref={importRef}
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={(event) => void importData(event.target.files?.[0])}
+                />
+              </div>
             </div>
           </section>
         )}
       </main>
 
       {editing && (
-        <div className="fixed inset-0 z-20 grid place-items-center bg-ink/35 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}>
-          <section className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-[18px] border border-line bg-paper p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <div
+          className="fixed inset-0 z-20 grid place-items-center bg-ink/35 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setEditing(null);
+          }}
+        >
+          <section
+            className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-[18px] border border-line bg-paper p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-title"
+          >
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Edit note</p>
-            <blockquote id="edit-title" className="my-5 font-serif text-lg font-medium leading-relaxed">“{editing.quote}”</blockquote>
-            <Field label="Your note"><textarea className={fieldClass} rows={5} value={editBody} onChange={(event) => setEditBody(event.target.value)} /></Field>
-            <Field label="Summary" help="Generated by your organizer when available. You can edit, replace, or clear it."><textarea className={fieldClass} rows={3} maxLength={500} value={editSummary} onChange={(event) => setEditSummary(event.target.value)} /></Field>
-            <Field label="Tags (comma separated)"><input className={fieldClass} type="text" value={editTags} onChange={(event) => setEditTags(event.target.value)} /></Field>
-            <Field label="Highlight color"><ColorPicker value={editColor} onChange={setEditColor} /></Field>
-            <footer className="flex justify-end gap-2"><button className={buttonClass} type="button" onClick={() => setEditing(null)}>Cancel</button><button className={`${buttonClass} border-ink bg-ink text-white`} type="button" onClick={() => void persistEdit()}>Save changes</button></footer>
+            <blockquote id="edit-title" className="my-5 font-serif text-lg font-medium leading-relaxed">
+              “{editing.quote}”
+            </blockquote>
+            <Field label="Your note">
+              <textarea
+                className={fieldClass}
+                rows={5}
+                value={editBody}
+                onChange={(event) => setEditBody(event.target.value)}
+              />
+            </Field>
+            <Field
+              label="Summary"
+              help="Generated by your organizer when available. You can edit, replace, or clear it."
+            >
+              <textarea
+                className={fieldClass}
+                rows={3}
+                maxLength={500}
+                value={editSummary}
+                onChange={(event) => setEditSummary(event.target.value)}
+              />
+            </Field>
+            <Field label="Tags (comma separated)">
+              <input
+                className={fieldClass}
+                type="text"
+                value={editTags}
+                onChange={(event) => setEditTags(event.target.value)}
+              />
+            </Field>
+            <Field label="Highlight color">
+              <ColorPicker value={editColor} onChange={setEditColor} />
+            </Field>
+            <footer className="flex justify-end gap-2">
+              <button className={buttonClass} type="button" onClick={() => setEditing(null)}>
+                Cancel
+              </button>
+              <button
+                className={`${buttonClass} border-ink bg-ink text-white`}
+                type="button"
+                onClick={() => void persistEdit()}
+              >
+                Save changes
+              </button>
+            </footer>
           </section>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-white shadow-xl">{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-white shadow-xl">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

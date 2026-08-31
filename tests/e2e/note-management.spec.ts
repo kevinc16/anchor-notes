@@ -12,11 +12,7 @@ import {
 
 const PASSAGE = 'Anchor Notes keeps important ideas attached to the page, even when its markup changes.';
 
-function makeNote(
-  id: string,
-  url: string,
-  overrides: Partial<AnchorNote> = {},
-): AnchorNote {
+function makeNote(id: string, url: string, overrides: Partial<AnchorNote> = {}): AnchorNote {
   const now = new Date().toISOString();
   return {
     id,
@@ -48,11 +44,7 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
-test('edits a saved highlight from the page editor', async ({
-  page,
-  serviceWorker,
-  articleUrl,
-}) => {
+test('edits a saved highlight from the page editor', async ({ page, serviceWorker, articleUrl }) => {
   const note = makeNote('page-editor-note', articleUrl, { body: 'Original note', tags: ['research'] });
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
@@ -95,7 +87,9 @@ test('shows only the active page notes in the popup and can scroll to one', asyn
   articleUrl,
 }) => {
   const activeNote = makeNote('popup-note', articleUrl, { body: 'Visible on the current page.' });
-  const otherNote = makeNote('other-page-note', 'https://other.example/notes', { body: 'Hidden from the current page.' });
+  const otherNote = makeNote('other-page-note', 'https://other.example/notes', {
+    body: 'Hidden from the current page.',
+  });
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
     notes: [activeNote, otherNote],

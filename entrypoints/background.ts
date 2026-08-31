@@ -19,7 +19,9 @@ export default defineBackground(() => {
 
   browser.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === 'anchor-save-selection' && tab?.id) {
-      void browser.tabs.sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage).catch(() => undefined);
+      void browser.tabs
+        .sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage)
+        .catch(() => undefined);
     }
   });
 
@@ -32,7 +34,9 @@ export default defineBackground(() => {
     if (command === 'save-highlight') {
       void browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
         if (tab?.id) {
-          void browser.tabs.sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage).catch(() => undefined);
+          void browser.tabs
+            .sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage)
+            .catch(() => undefined);
         }
       });
     }
@@ -84,9 +88,7 @@ export default defineBackground(() => {
       return readData()
         .then((data) => {
           const note = data.notes.find((item) => item.id === message.id);
-          return note
-            ? { ok: true, note }
-            : { ok: false, error: 'This saved note could not be found.' };
+          return note ? { ok: true, note } : { ok: false, error: 'This saved note could not be found.' };
         })
         .catch((error: unknown) => ({
           ok: false,
@@ -104,7 +106,8 @@ export default defineBackground(() => {
     }
 
     if (message.type === 'OPEN_LIBRARY') {
-      return browser.runtime.openOptionsPage()
+      return browser.runtime
+        .openOptionsPage()
         .then(() => ({ ok: true }))
         .catch((error: unknown) => ({
           ok: false,

@@ -41,68 +41,72 @@ type WorkerFixtures = {
 };
 
 export const test = base.extend<Fixtures, WorkerFixtures>({
-  fixtureServer: [async ({}, use) => {
-    const server = createServer((request, response) => {
-      const pathname = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`).pathname;
+  fixtureServer: [
+    async ({}, use) => {
+      const server = createServer((request, response) => {
+        const pathname = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`).pathname;
 
-      if (pathname === '/v1/chat/completions') {
-        const corsHeaders = {
-          'access-control-allow-headers': 'Content-Type, Authorization',
-          'access-control-allow-methods': 'POST, OPTIONS',
-          'access-control-allow-origin': '*',
-        };
-        if (request.method === 'OPTIONS') {
-          response.writeHead(204, corsHeaders);
-          response.end();
+        if (pathname === '/v1/chat/completions') {
+          const corsHeaders = {
+            'access-control-allow-headers': 'Content-Type, Authorization',
+            'access-control-allow-methods': 'POST, OPTIONS',
+            'access-control-allow-origin': '*',
+          };
+          if (request.method === 'OPTIONS') {
+            response.writeHead(204, corsHeaders);
+            response.end();
+            return;
+          }
+          if (request.method === 'POST') {
+            response.writeHead(200, { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' });
+            response.end(
+              JSON.stringify({
+                choices: [
+                  {
+                    message: {
+                      content: JSON.stringify({
+                        tags: ['e2e', 'ai'],
+                        summary: 'Organized by the local E2E provider.',
+                      }),
+                    },
+                  },
+                ],
+              }),
+            );
+            return;
+          }
+        }
+
+        if (pathname === '/' || pathname === '/article') {
+          response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+          response.end(articleHtml);
           return;
         }
-        if (request.method === 'POST') {
-          response.writeHead(200, { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' });
-          response.end(JSON.stringify({
-            choices: [{
-              message: {
-                content: JSON.stringify({
-                  tags: ['e2e', 'ai'],
-                  summary: 'Organized by the local E2E provider.',
-                }),
-              },
-            }],
-          }));
-          return;
-        }
+
+        response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+        response.end('Not found');
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(4173, '127.0.0.1', () => resolve());
+      });
+
+      try {
+        await use();
+      } finally {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
       }
-
-      if (pathname === '/' || pathname === '/article') {
-        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        response.end(articleHtml);
-        return;
-      }
-
-      response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      response.end('Not found');
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      server.once('error', reject);
-      server.listen(4173, '127.0.0.1', () => resolve());
-    });
-
-    try {
-      await use();
-    } finally {
-      server.closeAllConnections();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
-  }, { scope: 'worker', auto: true }],
+    },
+    { scope: 'worker', auto: true },
+  ],
 
   context: async ({ headless }, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       headless,
-      args: [
-        `--disable-extensions-except=${pathToExtension}`,
-        `--load-extension=${pathToExtension}`,
-      ],
+      args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
     });
 
     try {
@@ -137,20 +141,19 @@ export async function resetExtensionStorage(serviceWorker: Worker): Promise<void
   });
 }
 
-export async function seedExtensionData(
-  serviceWorker: Worker,
-  data: AnchorData,
-  sessionApiKey = '',
-): Promise<void> {
-  await serviceWorker.evaluate(async ({ data: nextData, sessionApiKey: nextSessionApiKey }: { data: AnchorData; sessionApiKey: string }) => {
-    const chromeApi = (globalThis as unknown as { chrome: ChromeExtensionApi }).chrome;
-    await chromeApi.storage.local.set({ anchorNotesData: nextData });
-    if (nextSessionApiKey) {
-      await chromeApi.storage.session.set({ anchorNotesAiApiKey: nextSessionApiKey });
-    } else {
-      await chromeApi.storage.session.remove('anchorNotesAiApiKey');
-    }
-  }, { data, sessionApiKey });
+export async function seedExtensionData(serviceWorker: Worker, data: AnchorData, sessionApiKey = ''): Promise<void> {
+  await serviceWorker.evaluate(
+    async ({ data: nextData, sessionApiKey: nextSessionApiKey }: { data: AnchorData; sessionApiKey: string }) => {
+      const chromeApi = (globalThis as unknown as { chrome: ChromeExtensionApi }).chrome;
+      await chromeApi.storage.local.set({ anchorNotesData: nextData });
+      if (nextSessionApiKey) {
+        await chromeApi.storage.session.set({ anchorNotesAiApiKey: nextSessionApiKey });
+      } else {
+        await chromeApi.storage.session.remove('anchorNotesAiApiKey');
+      }
+    },
+    { data, sessionApiKey },
+  );
 }
 
 export async function readExtensionData(serviceWorker: Worker): Promise<AnchorData> {

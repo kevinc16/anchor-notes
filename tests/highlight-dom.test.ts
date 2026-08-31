@@ -37,11 +37,15 @@ describe('wrapHighlightRange', () => {
     const range = document.createRange();
     range.selectNodeContents(text);
 
-    wrapHighlightRange(range as unknown as Range, {
-      id: `note-${highlightCoverage}`,
-      color: 'yellow',
-      body: '',
-    }, highlightCoverage);
+    wrapHighlightRange(
+      range as unknown as Range,
+      {
+        id: `note-${highlightCoverage}`,
+        color: 'yellow',
+        body: '',
+      },
+      highlightCoverage,
+    );
 
     expect(document.querySelector('mark')?.getAttribute('data-anchor-coverage')).toBe(highlightCoverage);
   });

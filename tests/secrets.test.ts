@@ -16,8 +16,6 @@ describe('encrypted API keys', () => {
   });
 
   it('requires a passphrase of the configured minimum length', async () => {
-    await expect(encryptSecret('sk-test', 'short')).rejects.toThrow(
-      `at least ${MIN_PASSPHRASE_LENGTH} characters`,
-    );
+    await expect(encryptSecret('sk-test', 'short')).rejects.toThrow(`at least ${MIN_PASSPHRASE_LENGTH} characters`);
   });
 });
