@@ -38,11 +38,15 @@ Chrome does not inject extensions into already-open tabs after installation. Ref
 - **React** powers the toolbar popup and full-page notes library.
 - **TypeScript** provides strict types for notes, storage, messages, and browser APIs.
 - **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
+- **ESLint** checks TypeScript and TSX with the recommended `typescript-eslint` rules.
+- **Stylelint** checks project CSS while recognizing Tailwind CSS v4 directives.
 
 Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run lint      # lint TypeScript, TSX, and CSS
+npm run lint:fix  # automatically fix lint violations where supported
 npm test          # run highlight and LLM integration regression tests
 npm run compile   # run strict TypeScript checks
 npm run build     # create .output/chrome-mv3

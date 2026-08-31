@@ -14,7 +14,6 @@ import {
   triggerCaptureSelection,
 } from './fixtures';
 
-const PASSAGE = 'Anchor Notes keeps important ideas attached to the page, even when its markup changes.';
 const API_KEY = 'e2e-test-api-key';
 const PASSPHRASE = 'correct horse battery';
 
