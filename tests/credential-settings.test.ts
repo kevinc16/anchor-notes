@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isEncryptedCredentialLocked,
   LOCKED_API_KEY_WARNING,
+  needsPassphraseToDisableEncryption,
   withEncryptedCredential,
   withPlaintextCredential,
 } from '../lib/credential-settings';
@@ -33,6 +34,11 @@ describe('API-key storage policy', () => {
     expect(isEncryptedCredentialLocked({ aiApiKeyEncrypted: encrypted }, '')).toBe(true);
     expect(isEncryptedCredentialLocked({ aiApiKeyEncrypted: encrypted }, 'sk-unlocked')).toBe(false);
     expect(LOCKED_API_KEY_WARNING).toContain('was not used');
+  });
+
+  it('requires the passphrase before converting an existing encrypted key to plaintext', () => {
+    expect(needsPassphraseToDisableEncryption({ aiApiKeyEncrypted: encrypted }, '')).toBe(true);
+    expect(needsPassphraseToDisableEncryption({ aiApiKeyEncrypted: encrypted }, 'sk-replacement')).toBe(false);
   });
 
   it('uses plaintext local settings unless encryption is explicitly selected', () => {

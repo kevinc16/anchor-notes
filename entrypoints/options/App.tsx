@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
-import { withEncryptedCredential, withPlaintextCredential } from '@/lib/credential-settings';
+import {
+  needsPassphraseToDisableEncryption,
+  withEncryptedCredential,
+  withPlaintextCredential,
+} from '@/lib/credential-settings';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import {
@@ -254,10 +258,15 @@ export default function App() {
       }
     } else {
       let plaintextApiKey = apiKey;
-      if (!plaintextApiKey && settings.aiApiKeyEncrypted) {
-        plaintextApiKey = await readSessionApiKey();
-        if (!plaintextApiKey) {
-          window.alert('Unlock the encrypted key or enter a replacement before disabling encryption.');
+      if (needsPassphraseToDisableEncryption(settings, plaintextApiKey)) {
+        if (!vaultPassphrase) {
+          window.alert('Enter the passphrase again to disable encryption, or enter a replacement API key.');
+          return;
+        }
+        try {
+          plaintextApiKey = await decryptSecret(settings.aiApiKeyEncrypted!, vaultPassphrase);
+        } catch {
+          window.alert('Could not verify the passphrase. The encrypted key remains protected.');
           return;
         }
       }
@@ -511,8 +520,13 @@ export default function App() {
                       <span className="mt-1 block text-xs leading-relaxed text-muted">Optional and off by default. You will need to unlock the key again after Chrome restarts.</span>
                     </span>
                   </label>
-                  {(encryptCredential || Boolean(settings.aiApiKeyEncrypted && !credentialUnlocked)) && <Field label="Encryption passphrase" help={`At least ${MIN_PASSPHRASE_LENGTH} characters. Anchor Notes never stores this passphrase.`}>
-                    <input className={fieldClass} type="password" autoComplete="off" placeholder={settings.aiApiKeyEncrypted && !apiKeyDraft ? 'Enter passphrase to unlock' : 'Required to encrypt the key'} value={vaultPassphrase} onChange={(event) => setVaultPassphrase(event.target.value)} />
+                  {(encryptCredential || Boolean(settings.aiApiKeyEncrypted)) && <Field
+                    label="Encryption passphrase"
+                    help={!encryptCredential
+                      ? 'Enter the passphrase again to move the existing key to plaintext storage, or enter a replacement key above. Anchor Notes never stores this passphrase.'
+                      : `At least ${MIN_PASSPHRASE_LENGTH} characters. Anchor Notes never stores this passphrase.`}
+                  >
+                    <input className={fieldClass} type="password" autoComplete="off" placeholder={!encryptCredential ? 'Enter passphrase to disable encryption' : settings.aiApiKeyEncrypted && !apiKeyDraft ? 'Enter passphrase to unlock' : 'Required to encrypt the key'} value={vaultPassphrase} onChange={(event) => setVaultPassphrase(event.target.value)} />
                   </Field>}
                   {settings.aiApiKeyEncrypted && <div className="mb-4 flex flex-wrap gap-2">
                     {!credentialUnlocked && <button className={buttonClass} type="button" onClick={() => void unlockApiKey()}>Unlock key</button>}

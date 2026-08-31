@@ -9,6 +9,13 @@ export function isEncryptedCredentialLocked(
   return Boolean(settings.aiApiKeyEncrypted && !sessionApiKey);
 }
 
+export function needsPassphraseToDisableEncryption(
+  settings: Pick<AnchorSettings, 'aiApiKeyEncrypted'>,
+  replacementApiKey: string,
+): boolean {
+  return Boolean(settings.aiApiKeyEncrypted && !replacementApiKey);
+}
+
 export function withPlaintextCredential(
   settings: AnchorSettings,
   apiKey: string,
