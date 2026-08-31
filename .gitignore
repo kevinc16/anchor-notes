@@ -7,3 +7,5 @@ node_modules/
 .wxt/
 coverage/
 .vscode/
+playwright-report/
+test-results/
