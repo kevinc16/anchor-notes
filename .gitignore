@@ -6,4 +6,4 @@ node_modules/
 .output/
 .wxt/
 coverage/
-
+.vscode/
