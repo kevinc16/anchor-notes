@@ -40,13 +40,16 @@ Chrome does not inject extensions into already-open tabs after installation. Ref
 - **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
 - **ESLint** checks TypeScript and TSX with the recommended `typescript-eslint` rules.
 - **Stylelint** checks project CSS while recognizing Tailwind CSS v4 directives.
+- **Prettier** formats TypeScript, TSX, and CSS consistently.
 
 Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run format    # format TypeScript, TSX, and CSS
+npm run format:check # check formatting without changing files
 npm run lint      # lint TypeScript, TSX, and CSS
-npm run lint:fix  # automatically fix lint violations where supported
+npm run lint:fix  # format and automatically fix lint violations where supported
 npm test          # run highlight and LLM integration regression tests
 npm run compile   # run strict TypeScript checks
 npm run build     # create .output/chrome-mv3
