@@ -80,7 +80,10 @@ export default defineContentScript({
         button.title = `${color[0]?.toUpperCase()}${color.slice(1)}`;
         button.setAttribute('aria-label', `Use ${color} highlight`);
         button.setAttribute('aria-pressed', String(color === selected));
-        button.addEventListener('click', () => onSelect(color));
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          onSelect(color);
+        });
         container.appendChild(button);
       }
     }
