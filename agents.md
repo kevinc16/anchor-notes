@@ -43,6 +43,8 @@ npm run dev                 # watch and rebuild the unpacked extension
 npm test                    # run the Vitest suite once
 npm run compile             # strict TypeScript check; emits no files
 npm run build               # build .output/chrome-mv3
+npm run test:e2e            # build the extension and run Playwright Chromium tests
+npm run test:e2e:headed     # build the extension and run Playwright with a visible browser
 npm run zip                 # create a store-ready extension archive
 ```
 
@@ -89,7 +91,7 @@ npm test
 npm run compile
 ```
 
-Run `npm run build` when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load `.output/chrome-mv3` in Chrome and verify the affected flow on a normal webpage.
+Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness. The GitHub Actions workflow in `.github/workflows/ci.yml` runs the unit suite, strict compile, production build, and Playwright Chromium tests on pushes and pull requests targeting `main`; it uses `npm ci` and does not require repository secrets. Run `npm run build` separately when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load `.output/chrome-mv3` in Chrome and verify the affected flow on a normal webpage.
 
 ## GitHub workflow
 
