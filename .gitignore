@@ -7,5 +7,7 @@ node_modules/
 .wxt/
 coverage/
 .vscode/
-playwright-report/
-test-results/
+.gh-token
+
+playwright-report
+test-results
