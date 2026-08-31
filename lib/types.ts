@@ -38,6 +38,7 @@ export interface AnchorNote {
 
 export interface AnchorSettings {
   highlightColor: HighlightColor;
+  aiEnabled: boolean;
   aiProvider: AiProvider;
   aiEndpoint: string;
   aiModel: string;

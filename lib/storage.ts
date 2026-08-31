@@ -1,4 +1,5 @@
 import { storage } from '#imports';
+import { DEFAULT_SETTINGS, normalizeSettings } from './settings';
 import type { AnchorData, AnchorNote, AnchorSettings } from './types';
 
 export { hostFromUrl } from './websites';
@@ -6,13 +7,7 @@ export { hostFromUrl } from './websites';
 export const EMPTY_DATA: AnchorData = {
   schemaVersion: 1,
   notes: [],
-  settings: {
-    highlightColor: 'yellow',
-    aiProvider: 'local',
-    aiEndpoint: 'https://api.openai.com/v1/chat/completions',
-    aiModel: 'gpt-4o-mini',
-    aiApiKey: '',
-  },
+  settings: DEFAULT_SETTINGS,
 };
 
 const dataItem = storage.defineItem<AnchorData>('local:anchorNotesData', {
@@ -58,14 +53,10 @@ export async function updateSettings(patch: Partial<AnchorSettings>): Promise<An
 export function normalizeData(value: unknown): AnchorData {
   if (!value || typeof value !== 'object') return structuredClone(EMPTY_DATA);
   const candidate = value as Partial<AnchorData>;
-  const legacySettings = (candidate.settings ?? {}) as Partial<AnchorSettings> & { aiMode?: 'local' | 'remote' };
-  const { aiMode, ...currentSettings } = legacySettings;
-  const aiProvider = currentSettings.aiProvider
-    ?? (aiMode === 'remote' ? 'custom' : 'local');
   return {
     schemaVersion: 1,
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
-    settings: { ...EMPTY_DATA.settings, ...currentSettings, aiProvider },
+    settings: normalizeSettings(candidate.settings),
   };
 }
 

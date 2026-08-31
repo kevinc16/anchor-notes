@@ -1,4 +1,5 @@
 import type { AnchorNote, HighlightColor, HighlightCoverage } from './types';
+import { parseTags } from './tags';
 
 export interface LibraryNoteEdits {
   body: string;
@@ -14,10 +15,7 @@ export function applyLibraryNoteEdits(note: AnchorNote, edits: LibraryNoteEdits)
     ...note,
     body: edits.body.trim(),
     color: edits.color,
-    tags: edits.tags
-      .split(',')
-      .map((tag) => tag.trim().toLowerCase())
-      .filter(Boolean),
+    tags: parseTags(edits.tags),
     highlightCoverage: edits.highlightCoverage,
   };
 
