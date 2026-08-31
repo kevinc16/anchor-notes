@@ -1,4 +1,4 @@
-import { chromium, test as base, type BrowserContext, type Worker } from '@playwright/test';
+import { chromium, test as base, type BrowserContext, type Page, type Worker } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
@@ -22,8 +22,10 @@ interface ChromeExtensionApi {
     session: StorageArea;
   };
   tabs: {
+    create(createProperties: { active?: boolean; url: string }): Promise<{ id?: number }>;
     query(queryInfo: { active?: boolean; currentWindow?: boolean }): Promise<Array<{ id?: number }>>;
     sendMessage(tabId: number, message: unknown): Promise<unknown>;
+    update(tabId: number, updateProperties: { active?: boolean }): Promise<unknown>;
   };
 }
 
@@ -147,4 +149,35 @@ export async function triggerCaptureSelection(serviceWorker: Worker): Promise<vo
     if (!tab?.id) throw new Error('Could not find the active fixture tab.');
     await chromeApi.tabs.sendMessage(tab.id, { type: 'CAPTURE_SELECTION' });
   });
+}
+
+export async function openExtensionPage(
+  context: BrowserContext,
+  extensionId: string,
+  pageName: 'options.html' | 'popup.html',
+): Promise<Page> {
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/${pageName}`, { waitUntil: 'networkidle' });
+  return page;
+}
+
+export async function openPopupInInactiveTab(
+  context: BrowserContext,
+  extensionId: string,
+  serviceWorker: Worker,
+): Promise<Page> {
+  const popupUrl = `chrome-extension://${extensionId}/popup.html`;
+  const [popupPage] = await Promise.all([
+    context.waitForEvent('page'),
+    serviceWorker.evaluate(async (url) => {
+      const chromeApi = (globalThis as unknown as { chrome: ChromeExtensionApi }).chrome;
+      const [activeTab] = await chromeApi.tabs.query({ active: true, currentWindow: true });
+      const tab = await chromeApi.tabs.create({ active: false, url });
+      if (!tab.id) throw new Error('Could not open the popup test tab.');
+      if (activeTab?.id !== undefined) await chromeApi.tabs.update(activeTab.id, { active: true });
+    }, popupUrl),
+  ]);
+  await popupPage.waitForLoadState('networkidle');
+  await popupPage.reload({ waitUntil: 'networkidle' });
+  return popupPage;
 }
