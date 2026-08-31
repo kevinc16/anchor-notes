@@ -39,6 +39,11 @@ jobs:
       - name: Lint TypeScript and CSS
         run: npm run lint
 
+      - name: Check lint autofix is clean
+        run: |
+          npm run lint:fix
+          git diff --exit-code
+
       - name: Run unit tests
         run: npm test
 
