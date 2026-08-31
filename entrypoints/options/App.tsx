@@ -520,7 +520,9 @@ export default function App() {
                       <span className="mt-1 block text-xs leading-relaxed text-muted">Optional and off by default. You will need to unlock the key again after Chrome restarts.</span>
                     </span>
                   </label>
-                  {(encryptCredential || Boolean(settings.aiApiKeyEncrypted)) && <Field
+                  {(encryptCredential
+                    ? !settings.aiApiKeyEncrypted || !credentialUnlocked
+                    : Boolean(settings.aiApiKeyEncrypted)) && <Field
                     label="Encryption passphrase"
                     help={!encryptCredential
                       ? 'Enter the passphrase again to move the existing key to plaintext storage, or enter a replacement key above. Anchor Notes never stores this passphrase.'
