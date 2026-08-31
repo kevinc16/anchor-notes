@@ -45,6 +45,33 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const server = createServer((request, response) => {
       const pathname = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`).pathname;
 
+      if (pathname === '/v1/chat/completions') {
+        const corsHeaders = {
+          'access-control-allow-headers': 'Content-Type, Authorization',
+          'access-control-allow-methods': 'POST, OPTIONS',
+          'access-control-allow-origin': '*',
+        };
+        if (request.method === 'OPTIONS') {
+          response.writeHead(204, corsHeaders);
+          response.end();
+          return;
+        }
+        if (request.method === 'POST') {
+          response.writeHead(200, { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' });
+          response.end(JSON.stringify({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  tags: ['e2e', 'ai'],
+                  summary: 'Organized by the local E2E provider.',
+                }),
+              },
+            }],
+          }));
+          return;
+        }
+      }
+
       if (pathname === '/' || pathname === '/article') {
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         response.end(articleHtml);
