@@ -67,20 +67,23 @@ test('edits a saved highlight from the page editor', async ({
 
   const popover = page.locator('#anchor-notes-popover');
   await expect(popover).toBeVisible();
+  await popover.getByRole('button', { name: 'Use coral highlight' }).click();
+  await expect(popover).toBeVisible();
+  await expect.poll(async () => (await readExtensionData(serviceWorker)).notes[0]?.color).toBe('coral');
   await popover.locator('textarea').fill('Updated from the page editor.');
   await popover.locator('.anchor-tags-input').fill('UI, research, ui');
   await popover.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(popover).toBeHidden();
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Note updated');
-  await expect(mark).toHaveAttribute('data-anchor-color', 'yellow');
+  await expect(mark).toHaveAttribute('data-anchor-color', 'coral');
 
   const savedData = await readExtensionData(serviceWorker);
   expect(savedData.notes[0]).toMatchObject({
     id: note.id,
     body: 'Updated from the page editor.',
     tags: ['ui', 'research'],
-    color: 'yellow',
+    color: 'coral',
   });
 });
 
