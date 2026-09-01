@@ -25,12 +25,12 @@ type GroupMode = 'website' | 'none';
 const buttonClass =
   'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass =
-  'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[13px] text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+  'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
-  { id: 'yellow', label: 'Yellow', className: 'bg-[#ffd74a]' },
-  { id: 'mint', label: 'Mint', className: 'bg-[#72e1be]' },
-  { id: 'lilac', label: 'Lilac', className: 'bg-[#bb97ff]' },
-  { id: 'coral', label: 'Coral', className: 'bg-[#ff8b77]' },
+  { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
+  { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
+  { id: 'lilac', label: 'Lilac', className: 'bg-highlight-lilac' },
+  { id: 'coral', label: 'Coral', className: 'bg-highlight-coral' },
 ];
 const highlightCoverages: Array<{ id: HighlightCoverage; label: string; detail: string }> = [
   { id: 'small', label: 'Small', detail: '28%' },
@@ -55,8 +55,8 @@ const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-2 text-[19px] font-extrabold tracking-[-0.03em]">
-      <span className="grid size-8 -rotate-2 place-items-center rounded-[10px] bg-ink font-serif text-lg text-anchor">
+    <div className="flex items-center gap-2.5 px-2 text-brand font-extrabold tracking-[-0.03em]">
+      <span className="grid size-8 -rotate-2 place-items-center rounded-lg bg-ink font-serif text-lg text-anchor">
         A
       </span>
       <span>Anchor</span>
@@ -65,7 +65,9 @@ function Brand() {
 }
 
 function Tag({ children }: { children: string }) {
-  return <span className="rounded-full bg-[#eee9df] px-2 py-1 text-[10px] font-bold text-[#605a51]">{children}</span>;
+  return (
+    <span className="rounded-full bg-tag-background px-2 py-1 text-overline font-bold text-tag-text">{children}</span>
+  );
 }
 
 function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (color: HighlightColor) => void }) {
@@ -74,7 +76,7 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
       {highlightColors.map((color) => (
         <button
           key={color.id}
-          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-meta font-bold transition ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === color.id}
           onClick={() => onChange(color.id)}
@@ -99,13 +101,13 @@ function CoveragePicker({
       {highlightCoverages.map((coverage) => (
         <button
           key={coverage.id}
-          className={`rounded-[10px] border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`rounded-lg border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === coverage.id}
           onClick={() => onChange(coverage.id)}
         >
           <strong className="block text-xs">{coverage.label}</strong>
-          <span className="mt-0.5 block text-[10px]">{coverage.detail} coverage</span>
+          <span className="mt-0.5 block text-overline">{coverage.detail} coverage</span>
         </button>
       ))}
     </div>
@@ -125,41 +127,38 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
   return (
-    <article className="flex min-h-60 flex-col overflow-hidden rounded-[17px] border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(51,43,31,.07)]">
-      <header className="flex items-center justify-between text-[10px] font-bold text-muted">
+    <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
+      <header className="flex items-center justify-between text-overline font-bold text-muted">
         <span>{hostFromUrl(note.url)}</span>
         <time>
           {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </time>
       </header>
-      <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-[#312d27]">
-        <span className="-ml-2 text-[#c38b00]">“</span>
+      <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-library-quote">
+        <span className="-ml-2 text-library-quote-accent">“</span>
         {note.quote}
-        <span className="text-[#c38b00]">”</span>
+        <span className="text-library-quote-accent">”</span>
       </blockquote>
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
-        <p className="mb-4 rounded-lg bg-[#f5f1e8] p-2.5 text-[11px] leading-relaxed text-muted">{note.summary}</p>
+        <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
+          {note.summary}
+        </p>
       )}
       <div className="mt-auto flex flex-wrap gap-1.5">
         {note.tags.map((tag) => (
           <Tag key={tag}>{tag}</Tag>
         ))}
       </div>
-      <footer className="mt-[18px] flex items-center justify-between border-t border-[#eee9df] pt-3">
-        <a
-          className="text-[11px] font-extrabold text-ink no-underline"
-          href={note.url}
-          target="_blank"
-          rel="noreferrer"
-        >
+      <footer className="mt-4xl flex items-center justify-between border-t border-subtle-border pt-3">
+        <a className="text-meta font-extrabold text-ink no-underline" href={note.url} target="_blank" rel="noreferrer">
           Return to source ↗
         </a>
         <div className="flex gap-2">
-          <button className="text-[11px] font-bold text-muted" type="button" onClick={onEdit}>
+          <button className="text-meta font-bold text-muted" type="button" onClick={onEdit}>
             Edit
           </button>
-          <button className="text-[11px] font-bold text-[#9c382f]" type="button" onClick={onDelete}>
+          <button className="text-meta font-bold text-danger" type="button" onClick={onDelete}>
             Delete
           </button>
         </div>
@@ -171,7 +170,7 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
 function Field({ label, children, help }: { label: string; children: React.ReactNode; help?: string }) {
   return (
     <label className="mb-4 grid gap-2">
-      <span className="text-[11px] font-extrabold text-[#4c463e]">{label}</span>
+      <span className="text-meta font-extrabold text-label">{label}</span>
       {children}
       {help && <span className="text-xs leading-relaxed text-muted">{help}</span>}
     </label>
@@ -403,7 +402,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <aside className="fixed inset-y-0 left-0 flex w-[220px] flex-col border-r border-line bg-[#f4efe5] px-[18px] pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
+      <aside className="fixed inset-y-0 left-0 flex w-[var(--layout-sidebar-width)] flex-col border-r border-line bg-sidebar px-4xl pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
         <Brand />
         <nav className="mt-10 grid gap-1 max-[760px]:ml-auto max-[760px]:mt-0 max-[760px]:flex">
           {(
@@ -414,7 +413,7 @@ export default function App() {
           ).map(([id, icon, label]) => (
             <button
               key={id}
-              className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[13px] font-bold ${view === id ? 'bg-[#fffaf0] text-ink shadow-sm' : 'text-muted'}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body font-bold ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
               type="button"
               onClick={() => setView(id)}
             >
@@ -423,10 +422,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="mt-auto grid gap-3.5 border-t border-[#ded6c8] px-2 pt-[18px] max-[760px]:hidden">
+        <div className="mt-auto grid gap-3.5 border-t border-divider px-2 pt-4xl max-[760px]:hidden">
           <div className="flex items-baseline gap-1.5">
             <strong className="font-serif text-2xl font-semibold">{data.notes.length}</strong>
-            <span className="text-[11px] text-muted">saved ideas</span>
+            <span className="text-meta text-muted">saved ideas</span>
           </div>
           <button className={buttonClass} type="button" onClick={exportData}>
             Export backup
@@ -434,20 +433,22 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="ml-[220px] px-[clamp(32px,6vw,88px)] pb-[70px] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8">
+      <main className="ml-[var(--layout-sidebar-width)] px-[var(--layout-content-gutter)] pb-[var(--layout-content-bottom)] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8">
         {view === 'library' ? (
           <section>
             <header className="flex items-end justify-between gap-8 max-[760px]:flex-col max-[760px]:items-stretch">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Your second memory</p>
-                <h1 className="mt-2 font-serif text-[clamp(32px,4vw,48px)] font-semibold leading-none tracking-[-0.035em]">
+                <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">
+                  Your second memory
+                </p>
+                <h1 className="mt-2 font-serif text-library-title font-semibold leading-none tracking-[-0.035em]">
                   Saved from the web
                 </h1>
               </div>
               <label className="flex h-11 w-[min(360px,35vw)] items-center gap-2 rounded-full border border-line bg-card px-3.5 max-[760px]:w-full">
                 <span className="text-xl text-muted">⌕</span>
                 <input
-                  className="w-full border-0 bg-transparent text-[13px] outline-none"
+                  className="w-full border-0 bg-transparent text-body outline-none"
                   type="search"
                   placeholder="Search notes, tags, or sources…"
                   value={query}
@@ -461,7 +462,7 @@ export default function App() {
                 {['all', ...topics].map((topic) => (
                   <button
                     key={topic}
-                    className={`whitespace-nowrap rounded-full px-3 py-2 text-[11px] font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`}
+                    className={`whitespace-nowrap rounded-full px-3 py-2 text-meta font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`}
                     type="button"
                     onClick={() => setFilter(topic)}
                   >
@@ -471,7 +472,7 @@ export default function App() {
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <button
-                  className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${groupMode === 'website' ? 'bg-[#eee9df] text-ink' : 'text-muted'}`}
+                  className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink' : 'text-muted'}`}
                   type="button"
                   aria-pressed={groupMode === 'website'}
                   onClick={() => setGroupMode(groupMode === 'website' ? 'none' : 'website')}
@@ -479,7 +480,7 @@ export default function App() {
                   Group by website
                 </button>
                 <select
-                  className="border-0 bg-transparent text-[11px] font-bold text-muted outline-none"
+                  className="border-0 bg-transparent text-meta font-bold text-muted outline-none"
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
                 >
@@ -508,7 +509,7 @@ export default function App() {
                               onClick={() => toggleWebsite(group.website)}
                             >
                               <span className="font-serif text-xl font-semibold">{group.website}</span>
-                              <span className="text-[11px] font-bold text-muted">
+                              <span className="text-meta font-bold text-muted">
                                 {group.notes.length} note{group.notes.length === 1 ? '' : 's'}
                               </span>
                               <span
@@ -558,20 +559,20 @@ export default function App() {
         ) : (
           <section>
             <header className="max-w-[680px]">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p>
+              <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p>
               <h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1>
-              <p className="mt-3 text-[13px] leading-relaxed text-muted">
+              <p className="mt-3 text-body leading-relaxed text-muted">
                 Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.
               </p>
             </header>
-            <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
+            <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-xl font-semibold">Organization</h2>
                   <p className="mt-1 text-xs leading-relaxed text-muted">Local topic tags always remain enabled.</p>
                 </div>
                 <button
-                  className={`${buttonClass} ${settings.aiEnabled ? 'border-[#8b3a32] text-[#8b3a32]' : 'border-ink bg-ink text-white'}`}
+                  className={`${buttonClass} ${settings.aiEnabled ? 'border-provider-danger text-provider-danger' : 'border-ink bg-ink text-white'}`}
                   type="button"
                   aria-pressed={settings.aiEnabled}
                   onClick={() => void toggleAi()}
@@ -661,9 +662,9 @@ export default function App() {
                           onChange={(event) => setApiKeyDraft(event.target.value)}
                         />
                       </Field>
-                      <label className="mb-4 flex items-start gap-3 rounded-[10px] border border-line bg-stone-50 p-3">
+                      <label className="mb-4 flex items-start gap-3 rounded-lg border border-line bg-stone-50 p-3">
                         <input
-                          className="mt-0.5 size-4 accent-[#29251f]"
+                          className="mt-0.5 size-4 accent-input-accent"
                           type="checkbox"
                           checked={encryptCredential}
                           onChange={(event) => setEncryptCredential(event.target.checked)}
@@ -710,7 +711,7 @@ export default function App() {
                             </button>
                           )}
                           <button
-                            className={`${buttonClass} text-[#9c382f]`}
+                            className={`${buttonClass} text-danger`}
                             type="button"
                             onClick={() => void forgetApiKey()}
                           >
@@ -730,9 +731,9 @@ export default function App() {
                 Save settings
               </button>
             </div>
-            <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
+            <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <h2 className="mb-3 font-serif text-xl font-semibold">Data</h2>
-              <p className="mb-5 text-[13px] leading-relaxed text-muted">
+              <p className="mb-5 text-body leading-relaxed text-muted">
                 Use JSON backups to move your library or keep an independent copy.
               </p>
               <div className="flex gap-2">
@@ -764,12 +765,12 @@ export default function App() {
           }}
         >
           <section
-            className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-[18px] border border-line bg-paper p-6 shadow-2xl"
+            className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-2xl border border-line bg-paper p-6 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-title"
           >
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Edit note</p>
+            <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">Edit note</p>
             <blockquote id="edit-title" className="my-5 font-serif text-lg font-medium leading-relaxed">
               “{editing.quote}”
             </blockquote>
