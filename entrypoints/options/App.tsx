@@ -6,6 +6,7 @@ import {
   withPlaintextCredential,
 } from '@/lib/credential-settings';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
+import { getLibraryCardPreview } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
 import type {
@@ -126,6 +127,9 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 }
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
+  const bodyPreview = getLibraryCardPreview(note.body);
+  const summaryPreview = note.summary ? getLibraryCardPreview(note.summary) : '';
+
   return (
     <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
@@ -139,10 +143,10 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
         {note.quote}
         <span className="text-library-quote-accent">”</span>
       </blockquote>
-      {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
-      {note.summary && (
-        <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
-          {note.summary}
+      {bodyPreview && <p className="mb-4 whitespace-pre-line text-xs leading-relaxed text-muted">{bodyPreview}</p>}
+      {summaryPreview && (
+        <p className="mb-4 whitespace-pre-line rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
+          {summaryPreview}
         </p>
       )}
       <div className="mt-auto flex flex-wrap gap-1.5">

@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS } from '../../lib/settings';
+import { getLibraryCardPreview } from '../../lib/note-preview';
 import type { AnchorData, AnchorNote } from '../../lib/types';
 import {
   expect,
@@ -184,6 +185,34 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     library.once('dialog', (browserDialog) => browserDialog.accept());
     await newerCard.getByRole('button', { name: 'Delete' }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
+  } finally {
+    await library.close();
+  }
+});
+
+test('cleans and bounds library card previews without changing the editable note', async ({
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const body = `<p>First line <strong>with markup</strong></p>\n\nSecond line\n\n\n${'A long trailing note. '.repeat(20)}`;
+  const note = makeNote('preview-note', articleUrl, { body });
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    notes: [note],
+    settings: DEFAULT_SETTINGS,
+  });
+
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  try {
+    const card = library.locator('article').first();
+    const preview = card.locator('p').first();
+    await expect(preview).toBeVisible();
+    expect(await preview.textContent()).toBe(getLibraryCardPreview(body));
+
+    await card.getByRole('button', { name: 'Edit' }).click();
+    await expect(library.getByRole('dialog').getByLabel('Your note')).toHaveValue(body);
   } finally {
     await library.close();
   }
