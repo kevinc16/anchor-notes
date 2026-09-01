@@ -96,6 +96,7 @@ Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness.
 ## GitHub workflow
 
 - Create a GitHub issue for every feature request and every bug before implementation. Use the issue to capture the problem, expected behavior, scope, and acceptance criteria.
+- Use the in-repository templates when creating GitHub work items: `.github/ISSUE_TEMPLATE/feature_request.md` for features, `.github/ISSUE_TEMPLATE/bug_report.md` for bugs, and `.github/pull_request_template.md` for pull requests. Complete the relevant sections and checklists, remove template comments before submitting, and follow the privacy/security guidance in each template.
 - Keep feature work and bug fixes in separate pull requests. Do not combine a new feature with an unrelated bug fix in one PR.
 - Use clear Markdown in issue and PR descriptions, including headings, bullets or checklists, and links where useful. Each PR should have one clear purpose, link its GitHub issue, summarize user-visible behavior, and list tests/manual verification performed.
 - Keep commits focused and avoid unrelated refactors or generated output. Do not commit `node_modules/`, `.output/`, `.wxt/`, coverage data, or ZIP artifacts.
