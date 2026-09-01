@@ -101,6 +101,7 @@ Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness.
 - Use clear Markdown in issue and PR descriptions, including headings, bullets or checklists, and links where useful. Each PR should have one clear purpose, link its GitHub issue, summarize user-visible behavior, and list tests/manual verification performed.
 - Keep commits focused and avoid unrelated refactors or generated output. Do not commit `node_modules/`, `.output/`, `.wxt/`, coverage data, or ZIP artifacts.
 - If work reveals a separate bug or feature, record it as a new GitHub issue and handle it in its own PR.
+- Branch names should be concise but descriptive of the issue.
 
 ## Review checklist
 
