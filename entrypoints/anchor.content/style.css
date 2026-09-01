@@ -2,6 +2,19 @@
  * These tokens are scoped to extension-owned nodes because this stylesheet is
  * injected into arbitrary pages and must not expose generic global variables.
  */
+.anchor-note-highlight,
+#anchor-notes-composer,
+#anchor-notes-popover,
+#anchor-notes-toast {
+  --anchor-radius-xs: 2px;
+  --anchor-radius-sm: 6px;
+  --anchor-radius-md: 8px;
+  --anchor-radius-lg: 10px;
+  --anchor-radius-xl: 14px;
+  --anchor-radius-2xl: 18px;
+  --anchor-radius-full: 9999px;
+}
+
 .anchor-note-highlight {
   --anchor-highlight-yellow: rgba(255, 215, 74, 0.72);
   --anchor-highlight-mint: rgba(114, 225, 190, 0.62);
@@ -14,7 +27,7 @@
     var(--anchor-highlight-color) var(--anchor-highlight-start)
   ) !important;
   color: inherit !important;
-  border-radius: 2px;
+  border-radius: var(--anchor-radius-xs);
   cursor: pointer;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
@@ -45,11 +58,25 @@
   all: initial;
   --anchor-font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --anchor-font-serif: Georgia, Cambria, 'Times New Roman', serif;
-  --anchor-font-size-label: 11px;
-  --anchor-font-size-quote: 14px;
-  --anchor-font-size-body: 13px;
-  --anchor-font-size-button: 12px;
-  --anchor-font-size-close: 21px;
+  --anchor-font-size-label: 10px;
+  --anchor-font-size-quote: 12px;
+  --anchor-font-size-body: 12px;
+  --anchor-font-size-button: 10px;
+  --anchor-font-size-close: 16px;
+  --anchor-font-weight-regular: 400;
+  --anchor-font-weight-medium: 500;
+  --anchor-font-weight-semibold: 600;
+  --anchor-font-weight-bold: 700;
+  --anchor-font-weight-extrabold: 800;
+  --anchor-spacing-zero: 0px;
+  --anchor-spacing-xs: 4px;
+  --anchor-spacing-sm: 6px;
+  --anchor-spacing-md: 8px;
+  --anchor-spacing-lg: 10px;
+  --anchor-spacing-xl: 12px;
+  --anchor-spacing-2xl: 14px;
+  --anchor-spacing-3xl: 16px;
+  --anchor-spacing-4xl: 18px;
   --anchor-color-panel-border: rgba(28, 26, 22, 0.12);
   --anchor-color-surface: #fffdf8;
   --anchor-color-ink: #211f1b;
@@ -86,9 +113,9 @@
 #anchor-notes-composer,
 #anchor-notes-popover {
   width: 340px;
-  padding: 18px;
+  padding: var(--anchor-spacing-4xl);
   border: 1px solid var(--anchor-color-panel-border);
-  border-radius: 18px;
+  border-radius: var(--anchor-radius-2xl);
   background: var(--anchor-color-surface);
   color: var(--anchor-color-ink);
   box-shadow: var(--anchor-panel-shadow);
@@ -96,16 +123,16 @@
 .anchor-composer-kicker {
   color: var(--anchor-color-kicker);
   font-size: var(--anchor-font-size-label);
-  font-weight: 750;
+  font-weight: var(--anchor-font-weight-extrabold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .anchor-composer-quote {
-  margin: 10px 0 12px;
+  margin: var(--anchor-spacing-lg) var(--anchor-spacing-zero) var(--anchor-spacing-xl);
   color: var(--anchor-color-quote);
   font-family: var(--anchor-font-serif);
   font-size: var(--anchor-font-size-quote);
-  font-weight: 500;
+  font-weight: var(--anchor-font-weight-medium);
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -114,24 +141,24 @@
 }
 .anchor-note-field {
   display: grid;
-  gap: 7px;
+  gap: var(--anchor-spacing-sm);
   color: var(--anchor-color-muted);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-label);
-  font-weight: 700;
+  font-weight: var(--anchor-font-weight-bold);
   line-height: 1;
 }
 .anchor-note-field + .anchor-note-field {
-  margin-top: 10px;
+  margin-top: var(--anchor-spacing-lg);
 }
 #anchor-notes-composer textarea,
 #anchor-notes-popover textarea {
   width: 100%;
   min-height: 82px;
-  padding: 11px 12px;
+  padding: var(--anchor-spacing-xl);
   resize: vertical;
   border: 1px solid var(--anchor-color-field-border);
-  border-radius: 11px;
+  border-radius: var(--anchor-radius-lg);
   outline: none;
   background: var(--anchor-color-input-surface);
   color: var(--anchor-color-ink);
@@ -142,9 +169,9 @@
 .anchor-tags-input {
   width: 100%;
   height: 38px;
-  padding: 8px 11px;
+  padding: var(--anchor-spacing-md) var(--anchor-spacing-xl);
   border: 1px solid var(--anchor-color-field-border);
-  border-radius: 11px;
+  border-radius: var(--anchor-radius-lg);
   outline: none;
   background: var(--anchor-color-input-surface);
   color: var(--anchor-color-ink);
@@ -162,23 +189,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
+  margin-top: var(--anchor-spacing-xl);
   color: var(--anchor-color-muted);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-label);
-  font-weight: 700;
+  font-weight: var(--anchor-font-weight-bold);
   line-height: 1;
 }
 .anchor-color-picker {
   display: flex;
-  gap: 6px;
+  gap: var(--anchor-spacing-sm);
 }
 .anchor-color-swatch {
   width: 21px;
   height: 21px;
-  padding: 0;
+  padding: var(--anchor-spacing-zero);
   border: 2px solid var(--anchor-color-swatch-border) !important;
-  border-radius: 50% !important;
+  border-radius: var(--anchor-radius-full) !important;
   box-shadow: 0 0 0 1px var(--anchor-color-swatch-shadow);
   cursor: pointer;
 }
@@ -200,17 +227,17 @@
 .anchor-composer-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--anchor-spacing-md);
+  margin-top: var(--anchor-spacing-xl);
 }
 .anchor-composer-actions button {
   border: 0;
-  border-radius: 999px;
-  padding: 9px 14px;
+  border-radius: var(--anchor-radius-full);
+  padding: var(--anchor-spacing-lg) var(--anchor-spacing-2xl);
   cursor: pointer;
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-button);
-  font-weight: 700;
+  font-weight: var(--anchor-font-weight-bold);
   line-height: 1;
 }
 .anchor-cancel {
@@ -234,28 +261,28 @@
 .anchor-popover-close {
   width: 28px;
   height: 28px;
-  padding: 0;
+  padding: var(--anchor-spacing-zero);
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--anchor-radius-full);
   background: transparent;
   color: var(--anchor-color-muted);
   cursor: pointer;
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-close);
-  font-weight: 400;
+  font-weight: var(--anchor-font-weight-regular);
   line-height: 1;
 }
 #anchor-notes-toast {
   left: 50%;
   bottom: 30px;
   transform: translateX(-50%);
-  padding: 11px 16px;
-  border-radius: 999px;
+  padding: var(--anchor-spacing-xl) var(--anchor-spacing-3xl);
+  border-radius: var(--anchor-radius-full);
   background: var(--anchor-color-dark);
   color: var(--anchor-color-white);
   box-shadow: var(--anchor-toast-shadow);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-body);
-  font-weight: 650;
+  font-weight: var(--anchor-font-weight-semibold);
   line-height: 1;
 }

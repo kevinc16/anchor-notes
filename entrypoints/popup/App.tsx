@@ -12,7 +12,7 @@ interface PageState {
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 font-extrabold tracking-[-0.03em]">
-      <span className="grid size-8 -rotate-2 place-items-center rounded-[10px] bg-ink font-serif text-lg font-extrabold text-anchor">
+      <span className="grid size-8 -rotate-2 place-items-center rounded-lg bg-ink font-serif text-lg font-extrabold text-anchor">
         A
       </span>
       <span>Anchor</span>
@@ -47,7 +47,7 @@ export default function App() {
 
   return (
     <div className="max-h-[600px] min-h-[480px] w-[390px] overflow-y-auto bg-paper text-ink">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-[18px] py-[15px] backdrop-blur-xl">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-4xl py-3xl backdrop-blur-xl">
         <Brand />
         <button
           className="grid size-[34px] place-items-center rounded-full border border-line text-muted transition hover:border-stone-400 hover:text-ink"
@@ -60,7 +60,7 @@ export default function App() {
         </button>
       </header>
 
-      <main className="px-[18px] py-5">
+      <main className="px-4xl py-5">
         <section>
           <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">On this page</p>
           <h1 className="mt-2 truncate font-serif text-popup-title font-semibold leading-[1.14] tracking-[-0.02em]">
@@ -69,9 +69,9 @@ export default function App() {
           <p className="mt-1 text-xs text-muted">{page.url ? hostFromUrl(page.url) : ''}</p>
         </section>
 
-        <div className="my-5 flex items-center justify-between rounded-[13px] border border-callout-border bg-callout-background px-[13px] py-3 text-xs font-semibold text-callout-text">
+        <div className="my-5 flex items-center justify-between rounded-xl border border-callout-border bg-callout-background px-2xl py-3 text-xs font-semibold text-callout-text">
           <span>Highlight text, then right-click</span>
-          <kbd className="rounded-md border border-b-2 border-callout-key-border bg-callout-key-background px-2 py-1 font-mono text-overline font-bold">
+          <kbd className="rounded-sm border border-b-2 border-callout-key-border bg-callout-key-background px-2 py-1 font-mono text-overline font-bold">
             ⌥ ⇧ H
           </kbd>
         </div>
@@ -98,7 +98,7 @@ export default function App() {
           ) : (
             <div className="grid gap-2.5">
               {notes.map((note) => (
-                <article key={note.id} className="rounded-[14px] border border-line bg-card p-[14px]">
+                <article key={note.id} className="rounded-xl border border-line bg-card p-2xl">
                   <blockquote className="font-serif text-sm font-medium leading-[1.45] text-quote">
                     <span className="text-quote-accent">“</span>
                     {note.quote}

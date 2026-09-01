@@ -25,7 +25,7 @@ type GroupMode = 'website' | 'none';
 const buttonClass =
   'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass =
-  'w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+  'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -56,7 +56,7 @@ const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2 text-brand font-extrabold tracking-[-0.03em]">
-      <span className="grid size-8 -rotate-2 place-items-center rounded-[10px] bg-ink font-serif text-lg text-anchor">
+      <span className="grid size-8 -rotate-2 place-items-center rounded-lg bg-ink font-serif text-lg text-anchor">
         A
       </span>
       <span>Anchor</span>
@@ -101,7 +101,7 @@ function CoveragePicker({
       {highlightCoverages.map((coverage) => (
         <button
           key={coverage.id}
-          className={`rounded-[10px] border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`rounded-lg border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === coverage.id}
           onClick={() => onChange(coverage.id)}
@@ -127,7 +127,7 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
   return (
-    <article className="flex min-h-60 flex-col overflow-hidden rounded-[17px] border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
+    <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
         <span>{hostFromUrl(note.url)}</span>
         <time>
@@ -141,7 +141,7 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
       </blockquote>
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
-        <p className="mb-4 rounded-lg bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
+        <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
           {note.summary}
         </p>
       )}
@@ -150,7 +150,7 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
           <Tag key={tag}>{tag}</Tag>
         ))}
       </div>
-      <footer className="mt-[18px] flex items-center justify-between border-t border-subtle-border pt-3">
+      <footer className="mt-4xl flex items-center justify-between border-t border-subtle-border pt-3">
         <a className="text-meta font-extrabold text-ink no-underline" href={note.url} target="_blank" rel="noreferrer">
           Return to source ↗
         </a>
@@ -402,7 +402,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <aside className="fixed inset-y-0 left-0 flex w-[220px] flex-col border-r border-line bg-sidebar px-[18px] pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
+      <aside className="fixed inset-y-0 left-0 flex w-[var(--layout-sidebar-width)] flex-col border-r border-line bg-sidebar px-4xl pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
         <Brand />
         <nav className="mt-10 grid gap-1 max-[760px]:ml-auto max-[760px]:mt-0 max-[760px]:flex">
           {(
@@ -413,7 +413,7 @@ export default function App() {
           ).map(([id, icon, label]) => (
             <button
               key={id}
-              className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-body font-bold ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body font-bold ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
               type="button"
               onClick={() => setView(id)}
             >
@@ -422,7 +422,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="mt-auto grid gap-3.5 border-t border-divider px-2 pt-[18px] max-[760px]:hidden">
+        <div className="mt-auto grid gap-3.5 border-t border-divider px-2 pt-4xl max-[760px]:hidden">
           <div className="flex items-baseline gap-1.5">
             <strong className="font-serif text-2xl font-semibold">{data.notes.length}</strong>
             <span className="text-meta text-muted">saved ideas</span>
@@ -433,7 +433,7 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="ml-[220px] px-[clamp(32px,6vw,88px)] pb-[70px] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8">
+      <main className="ml-[var(--layout-sidebar-width)] px-[var(--layout-content-gutter)] pb-[var(--layout-content-bottom)] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8">
         {view === 'library' ? (
           <section>
             <header className="flex items-end justify-between gap-8 max-[760px]:flex-col max-[760px]:items-stretch">
@@ -565,7 +565,7 @@ export default function App() {
                 Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.
               </p>
             </header>
-            <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
+            <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-xl font-semibold">Organization</h2>
@@ -662,7 +662,7 @@ export default function App() {
                           onChange={(event) => setApiKeyDraft(event.target.value)}
                         />
                       </Field>
-                      <label className="mb-4 flex items-start gap-3 rounded-[10px] border border-line bg-stone-50 p-3">
+                      <label className="mb-4 flex items-start gap-3 rounded-lg border border-line bg-stone-50 p-3">
                         <input
                           className="mt-0.5 size-4 accent-input-accent"
                           type="checkbox"
@@ -731,7 +731,7 @@ export default function App() {
                 Save settings
               </button>
             </div>
-            <div className="mt-7 max-w-[680px] rounded-[17px] border border-line bg-card p-6">
+            <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <h2 className="mb-3 font-serif text-xl font-semibold">Data</h2>
               <p className="mb-5 text-body leading-relaxed text-muted">
                 Use JSON backups to move your library or keep an independent copy.
@@ -765,7 +765,7 @@ export default function App() {
           }}
         >
           <section
-            className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-[18px] border border-line bg-paper p-6 shadow-2xl"
+            className="max-h-[calc(100vh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-2xl border border-line bg-paper p-6 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-title"
