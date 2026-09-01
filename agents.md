@@ -110,3 +110,7 @@ Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness.
 - Are sensitive note/provider values protected from logs and accidental network calls?
 - Do `npm test` and `npm run compile` pass?
 - If applicable, was the built extension manually checked in Chrome?
+
+## For Windows Codex
+
+- if there is a local .gh-token file, use it to authenticate to GitHub
