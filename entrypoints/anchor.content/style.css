@@ -1,5 +1,13 @@
+/*
+ * These tokens are scoped to extension-owned nodes because this stylesheet is
+ * injected into arbitrary pages and must not expose generic global variables.
+ */
 .anchor-note-highlight {
-  --anchor-highlight-color: rgba(255, 215, 74, 0.72);
+  --anchor-highlight-yellow: rgba(255, 215, 74, 0.72);
+  --anchor-highlight-mint: rgba(114, 225, 190, 0.62);
+  --anchor-highlight-lilac: rgba(187, 151, 255, 0.55);
+  --anchor-highlight-coral: rgba(255, 139, 119, 0.58);
+  --anchor-highlight-color: var(--anchor-highlight-yellow);
   --anchor-highlight-start: 45%;
   background: linear-gradient(
     transparent var(--anchor-highlight-start),
@@ -13,13 +21,13 @@
 }
 
 .anchor-note-highlight[data-anchor-color='mint'] {
-  --anchor-highlight-color: rgba(114, 225, 190, 0.62);
+  --anchor-highlight-color: var(--anchor-highlight-mint);
 }
 .anchor-note-highlight[data-anchor-color='lilac'] {
-  --anchor-highlight-color: rgba(187, 151, 255, 0.55);
+  --anchor-highlight-color: var(--anchor-highlight-lilac);
 }
 .anchor-note-highlight[data-anchor-color='coral'] {
-  --anchor-highlight-color: rgba(255, 139, 119, 0.58);
+  --anchor-highlight-color: var(--anchor-highlight-coral);
 }
 .anchor-note-highlight[data-anchor-coverage='small'] {
   --anchor-highlight-start: 72%;
@@ -35,14 +43,38 @@
 #anchor-notes-popover,
 #anchor-notes-toast {
   all: initial;
+  --anchor-font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --anchor-font-serif: Georgia, Cambria, 'Times New Roman', serif;
+  --anchor-font-size-label: 11px;
+  --anchor-font-size-quote: 14px;
+  --anchor-font-size-body: 13px;
+  --anchor-font-size-button: 12px;
+  --anchor-font-size-close: 21px;
+  --anchor-color-panel-border: rgba(28, 26, 22, 0.12);
+  --anchor-color-surface: #fffdf8;
+  --anchor-color-ink: #211f1b;
+  --anchor-color-muted: #777066;
+  --anchor-color-kicker: #827b70;
+  --anchor-color-quote: #39352f;
+  --anchor-color-field-border: #ded8ce;
+  --anchor-color-input-surface: #fff;
+  --anchor-color-focus: #7a735d;
+  --anchor-focus-shadow: 0 0 0 3px rgba(122, 115, 93, 0.12);
+  --anchor-color-swatch-border: #fff;
+  --anchor-color-swatch-shadow: #d8d1c6;
+  --anchor-color-dark: #24211d;
+  --anchor-color-white: #fff;
+  --anchor-color-cancel: #6c665d;
+  --anchor-color-open-library: #4f4941;
+  --anchor-color-open-library-surface: #eee9df;
+  --anchor-swatch-yellow: #ffd74a;
+  --anchor-swatch-mint: #72e1be;
+  --anchor-swatch-lilac: #bb97ff;
+  --anchor-swatch-coral: #ff8b77;
+  --anchor-panel-shadow: 0 18px 60px rgba(33, 31, 27, 0.22);
+  --anchor-toast-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--anchor-font-family);
   position: fixed;
   z-index: 2147483647;
 }
@@ -55,25 +87,26 @@
 #anchor-notes-popover {
   width: 340px;
   padding: 18px;
-  border: 1px solid rgba(28, 26, 22, 0.12);
+  border: 1px solid var(--anchor-color-panel-border);
   border-radius: 18px;
-  background: #fffdf8;
-  color: #211f1b;
-  box-shadow: 0 18px 60px rgba(33, 31, 27, 0.22);
+  background: var(--anchor-color-surface);
+  color: var(--anchor-color-ink);
+  box-shadow: var(--anchor-panel-shadow);
 }
 .anchor-composer-kicker {
-  color: #827b70;
-  font-size: 11px;
+  color: var(--anchor-color-kicker);
+  font-size: var(--anchor-font-size-label);
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .anchor-composer-quote {
   margin: 10px 0 12px;
-  color: #39352f;
-  font:
-    500 14px/1.45 Georgia,
-    serif;
+  color: var(--anchor-color-quote);
+  font-family: var(--anchor-font-serif);
+  font-size: var(--anchor-font-size-quote);
+  font-weight: 500;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -82,9 +115,9 @@
 .anchor-note-field {
   display: grid;
   gap: 7px;
-  color: #777066;
-  font-family: inherit;
-  font-size: 11px;
+  color: var(--anchor-color-muted);
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-label);
   font-weight: 700;
   line-height: 1;
 }
@@ -97,42 +130,42 @@
   min-height: 82px;
   padding: 11px 12px;
   resize: vertical;
-  border: 1px solid #ded8ce;
+  border: 1px solid var(--anchor-color-field-border);
   border-radius: 11px;
   outline: none;
-  background: white;
-  color: #211f1b;
-  font-family: inherit;
-  font-size: 13px;
+  background: var(--anchor-color-input-surface);
+  color: var(--anchor-color-ink);
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-body);
   line-height: 1.45;
 }
 .anchor-tags-input {
   width: 100%;
   height: 38px;
   padding: 8px 11px;
-  border: 1px solid #ded8ce;
+  border: 1px solid var(--anchor-color-field-border);
   border-radius: 11px;
   outline: none;
-  background: white;
-  color: #211f1b;
-  font-family: inherit;
-  font-size: 13px;
+  background: var(--anchor-color-input-surface);
+  color: var(--anchor-color-ink);
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-body);
   line-height: 1.2;
 }
 #anchor-notes-composer textarea:focus,
 #anchor-notes-popover textarea:focus,
 .anchor-tags-input:focus {
-  border-color: #7a735d;
-  box-shadow: 0 0 0 3px rgba(122, 115, 93, 0.12);
+  border-color: var(--anchor-color-focus);
+  box-shadow: var(--anchor-focus-shadow);
 }
 .anchor-color-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 12px;
-  color: #777066;
-  font-family: inherit;
-  font-size: 11px;
+  color: var(--anchor-color-muted);
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-label);
   font-weight: 700;
   line-height: 1;
 }
@@ -144,25 +177,25 @@
   width: 21px;
   height: 21px;
   padding: 0;
-  border: 2px solid #fff !important;
+  border: 2px solid var(--anchor-color-swatch-border) !important;
   border-radius: 50% !important;
-  box-shadow: 0 0 0 1px #d8d1c6;
+  box-shadow: 0 0 0 1px var(--anchor-color-swatch-shadow);
   cursor: pointer;
 }
 .anchor-color-swatch[data-color='yellow'] {
-  background: #ffd74a !important;
+  background: var(--anchor-swatch-yellow) !important;
 }
 .anchor-color-swatch[data-color='mint'] {
-  background: #72e1be !important;
+  background: var(--anchor-swatch-mint) !important;
 }
 .anchor-color-swatch[data-color='lilac'] {
-  background: #bb97ff !important;
+  background: var(--anchor-swatch-lilac) !important;
 }
 .anchor-color-swatch[data-color='coral'] {
-  background: #ff8b77 !important;
+  background: var(--anchor-swatch-coral) !important;
 }
 .anchor-color-swatch[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px #24211d;
+  box-shadow: 0 0 0 2px var(--anchor-color-dark);
 }
 .anchor-composer-actions {
   display: flex;
@@ -175,23 +208,23 @@
   border-radius: 999px;
   padding: 9px 14px;
   cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-button);
   font-weight: 700;
   line-height: 1;
 }
 .anchor-cancel {
-  color: #6c665d;
+  color: var(--anchor-color-cancel);
   background: transparent;
 }
 .anchor-save {
-  color: #fff;
-  background: #24211d;
+  color: var(--anchor-color-white);
+  background: var(--anchor-color-dark);
 }
 .anchor-open-library {
   margin-right: auto;
-  color: #4f4941;
-  background: #eee9df;
+  color: var(--anchor-color-open-library);
+  background: var(--anchor-color-open-library-surface);
 }
 .anchor-popover-header {
   display: flex;
@@ -205,10 +238,10 @@
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #777066;
+  color: var(--anchor-color-muted);
   cursor: pointer;
-  font-family: inherit;
-  font-size: 21px;
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-close);
   font-weight: 400;
   line-height: 1;
 }
@@ -218,11 +251,11 @@
   transform: translateX(-50%);
   padding: 11px 16px;
   border-radius: 999px;
-  background: #24211d;
-  color: white;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  font-family: inherit;
-  font-size: 13px;
+  background: var(--anchor-color-dark);
+  color: var(--anchor-color-white);
+  box-shadow: var(--anchor-toast-shadow);
+  font-family: var(--anchor-font-family);
+  font-size: var(--anchor-font-size-body);
   font-weight: 650;
   line-height: 1;
 }

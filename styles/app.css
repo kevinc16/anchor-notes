@@ -8,7 +8,40 @@
   --color-line: #e6dfd4;
   --color-anchor: #ffcf4a;
   --color-mint: #9bddc8;
+  --color-highlight-yellow: #ffd74a;
+  --color-highlight-mint: #72e1be;
+  --color-highlight-lilac: #bb97ff;
+  --color-highlight-coral: #ff8b77;
+  --color-callout-background: #fff7d9;
+  --color-callout-border: #e5d6a4;
+  --color-callout-text: #5d5131;
+  --color-callout-key-background: #fffdf4;
+  --color-callout-key-border: #ded0a0;
+  --color-quote: #38332d;
+  --color-quote-accent: #c48e00;
+  --color-library-quote: #312d27;
+  --color-library-quote-accent: #c38b00;
+  --color-tag-background: #eee9df;
+  --color-tag-text: #605a51;
+  --color-summary-background: #f5f1e8;
+  --color-subtle-border: #eee9df;
+  --color-danger: #9c382f;
+  --color-label: #4c463e;
+  --color-sidebar: #f4efe5;
+  --color-active: #fffaf0;
+  --color-divider: #ded6c8;
+  --color-provider-danger: #8b3a32;
+  --color-input-accent: #29251f;
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-serif: Georgia, Cambria, 'Times New Roman', serif;
+  --text-overline: 10px;
+  --text-meta: 11px;
+  --text-control: 12px;
+  --text-body: 13px;
+  --text-brand: 19px;
+  --text-popup-title: 25px;
+  --text-library-title: clamp(32px, 4vw, 48px);
+  --shadow-note: 0 12px 30px rgba(51, 43, 31, 0.07);
 }
 
 @layer base {
@@ -19,13 +52,7 @@
     margin: 0;
     background: var(--color-paper);
     color: var(--color-ink);
-    font-family:
-      Inter,
-      ui-sans-serif,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      sans-serif;
+    font-family: var(--font-sans);
   }
   button {
     cursor: pointer;
