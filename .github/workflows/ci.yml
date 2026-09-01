@@ -46,7 +46,7 @@ jobs:
           git diff --exit-code
 
   unit:
-    name: Unit tests and typecheck
+    name: Unit tests, coverage, and typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -65,8 +65,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Add coverage summary to workflow summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          {
+            echo "## Unit test coverage"
+            echo
+            if [ -f coverage/coverage-summary.txt ]; then
+              echo '```text'
+              cat coverage/coverage-summary.txt
+              echo '```'
+            else
+              echo "Coverage report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Check TypeScript
         run: npm run compile
