@@ -6,6 +6,7 @@ import {
   withPlaintextCredential,
 } from '@/lib/credential-settings';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
+import { getLibraryCardPreview, isLibraryCardPreviewTruncated } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
 import type {
@@ -126,6 +127,10 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 }
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
+  const quotePreview = getLibraryCardPreview(note.quote);
+  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
+  const [quoteExpanded, setQuoteExpanded] = useState(false);
+
   return (
     <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
@@ -134,10 +139,38 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
           {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </time>
       </header>
-      <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-library-quote">
+      <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
-        {note.quote}
+        {quoteExpanded ? (
+          note.quote
+        ) : quoteTruncated ? (
+          <>
+            {quotePreview.slice(0, -1)}
+            <button
+              className="border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-2"
+              type="button"
+              aria-expanded="false"
+              aria-label="Show full quote"
+              onClick={() => setQuoteExpanded(true)}
+            >
+              …
+            </button>
+          </>
+        ) : (
+          quotePreview
+        )}
         <span className="text-library-quote-accent">”</span>
+        {quoteExpanded && quoteTruncated && (
+          <button
+            className="ml-2 border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-2"
+            type="button"
+            aria-expanded="true"
+            aria-label="Collapse quote"
+            onClick={() => setQuoteExpanded(false)}
+          >
+            Show less
+          </button>
+        )}
       </blockquote>
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
