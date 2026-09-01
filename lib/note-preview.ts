@@ -64,3 +64,7 @@ export function getLibraryCardPreview(value: string, maxLength = LIBRARY_CARD_PR
   const availableCharacters = Math.max(0, limit - PREVIEW_ELLIPSIS.length);
   return `${characters.slice(0, availableCharacters).join('').trimEnd()}${PREVIEW_ELLIPSIS}`;
 }
+
+export function isLibraryCardPreviewTruncated(value: string, maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH): boolean {
+  return getLibraryCardPreview(value, maxLength) !== normalizePreviewText(value);
+}

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { getLibraryCardPreview, LIBRARY_CARD_PREVIEW_MAX_LENGTH, normalizePreviewText } from '../lib/note-preview';
+import {
+  getLibraryCardPreview,
+  isLibraryCardPreviewTruncated,
+  LIBRARY_CARD_PREVIEW_MAX_LENGTH,
+  normalizePreviewText,
+} from '../lib/note-preview';
 
 describe('library card previews', () => {
   it('strips markup, normalizes whitespace, and keeps meaningful line breaks', () => {
@@ -22,6 +27,11 @@ describe('library card previews', () => {
 
   it('does not append an ellipsis when the normalized text fits', () => {
     expect(getLibraryCardPreview('First\n\nSecond', 12)).toBe('First\nSecond');
+  });
+
+  it('reports whether a preview needs a reveal control', () => {
+    expect(isLibraryCardPreviewTruncated('Short quote', 20)).toBe(false);
+    expect(isLibraryCardPreviewTruncated('A quote that is too long', 10)).toBe(true);
   });
 
   it('enforces the default limit without changing the source content', () => {
