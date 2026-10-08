@@ -17,6 +17,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:headed": "npm run build && playwright test --headed",
+    "build:firefox": "wxt build --browser firefox",
+    "validate:firefox": "node scripts/validate-firefox-build.mjs",
+    "zip:firefox": "wxt zip --browser firefox",
     "zip": "wxt zip",
     "postinstall": "wxt prepare"
   },

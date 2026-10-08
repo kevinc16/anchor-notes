@@ -1,3 +1,4 @@
+import { browser } from '#imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
 import {
@@ -5,6 +6,7 @@ import {
   withEncryptedCredential,
   withPlaintextCredential,
 } from '@/lib/credential-settings';
+import { requestFirefoxDataCollectionPermission, type FirefoxDataCollectionApi } from '@/lib/firefox-permissions';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
@@ -361,6 +363,17 @@ export default function App() {
     } else {
       nextSettings = { ...settings, aiEnabled: true };
     }
+
+    if (!settings.aiEnabled && nextSettings.aiProvider !== 'local') {
+      const permissionGranted = await requestFirefoxDataCollectionPermission(
+        browser.permissions as unknown as FirefoxDataCollectionApi,
+      );
+      if (!permissionGranted) {
+        setToast('Firefox data permission is required for remote organization');
+        return;
+      }
+    }
+
     await updateSettings(nextSettings);
     setSettings(nextSettings);
     setData(await readData());
@@ -562,14 +575,17 @@ export default function App() {
               <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p>
               <h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1>
               <p className="mt-3 text-body leading-relaxed text-muted">
-                Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.
+                Your highlights stay in browser local storage unless you export them or enable an LLM provider.
               </p>
             </header>
             <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-xl font-semibold">Organization</h2>
-                  <p className="mt-1 text-xs leading-relaxed text-muted">Local topic tags always remain enabled.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    Local topic tags always remain enabled. Remote providers receive the selected quote, note, title,
+                    and URL.
+                  </p>
                 </div>
                 <button
                   className={`${buttonClass} ${settings.aiEnabled ? 'border-provider-danger text-provider-danger' : 'border-ink bg-ink text-white'}`}
@@ -646,7 +662,7 @@ export default function App() {
                             ? settings.aiApiKeyEncrypted
                               ? `An encrypted key is saved and ${credentialUnlocked ? 'unlocked for this browser session' : 'locked'}. Enter a value only to replace it.`
                               : 'The key will be encrypted when you save.'
-                            : 'Stored unencrypted in Chrome extension local storage. Enable encryption below if you prefer passphrase protection.'
+                            : 'Stored unencrypted in browser extension local storage. Enable encryption below if you prefer passphrase protection.'
                         }
                       >
                         <input
@@ -672,7 +688,8 @@ export default function App() {
                         <span>
                           <strong className="block text-xs text-ink">Encrypt this API key with a passphrase</strong>
                           <span className="mt-1 block text-xs leading-relaxed text-muted">
-                            Optional and off by default. You will need to unlock the key again after Chrome restarts.
+                            Optional and off by default. You will need to unlock the key again after the browser
+                            restarts.
                           </span>
                         </span>
                       </label>
