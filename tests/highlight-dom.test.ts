@@ -70,4 +70,24 @@ describe('wrapHighlightRange', () => {
       'Before the blank line.After the blank line.',
     );
   });
+
+  it('does not create empty marks around a block quote', () => {
+    const window = new Window();
+    const { document } = window;
+    document.body.innerHTML =
+      '<blockquote class="highlight-middle">\n  <p>Read: <strong><em><a href="https://example.com">How to Install a Japanese Keyboard</a></em></strong></p>\n</blockquote>';
+
+    const range = findTextRange(document.body as unknown as Node, 'Read: How to Install a Japanese Keyboard');
+    expect(range).not.toBeNull();
+
+    wrapHighlightRange(range!, {
+      id: 'blockquote-note',
+      color: 'lilac',
+      body: '',
+    });
+
+    const marks = [...document.querySelectorAll(`.${HIGHLIGHT_CLASS}`)];
+    expect(marks).toHaveLength(2);
+    expect(marks.every((mark) => Boolean(mark.textContent?.trim()))).toBe(true);
+  });
 });

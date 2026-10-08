@@ -11,7 +11,7 @@ export function wrapHighlightRange(
   if (!document?.body) return false;
   const walker = document.createTreeWalker(document.body, 4, {
     acceptNode(node) {
-      if (!node.nodeValue?.length) return 2;
+      if (!node.nodeValue?.trim()) return 2;
       if (
         node.parentElement?.closest(
           `script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`,
