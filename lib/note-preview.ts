@@ -1,5 +1,5 @@
 export const LIBRARY_CARD_PREVIEW_MAX_LENGTH = 240;
-const PREVIEW_ELLIPSIS = '…';
+const PREVIEW_SUFFIX = '...';
 
 const BLOCK_TAG_PATTERN =
   /<\/?(?:address|article|aside|blockquote|dd|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)\b[^>]*>/gi;
@@ -61,8 +61,18 @@ export function getLibraryCardPreview(value: string, maxLength = LIBRARY_CARD_PR
   const characters = Array.from(normalized);
   if (characters.length <= limit) return normalized;
 
-  const availableCharacters = Math.max(0, limit - PREVIEW_ELLIPSIS.length);
-  return `${characters.slice(0, availableCharacters).join('').trimEnd()}${PREVIEW_ELLIPSIS}`;
+  const availableCharacters = limit - PREVIEW_SUFFIX.length;
+  if (availableCharacters <= 0) return PREVIEW_SUFFIX.slice(0, limit);
+
+  const candidate = characters.slice(0, availableCharacters).join('');
+  const nextCharacter = characters[availableCharacters];
+  if (nextCharacter && !/\s/.test(nextCharacter)) {
+    const lastWhitespaceIndex = candidate.search(/\s[^\s]*$/);
+    const wholeWords = lastWhitespaceIndex >= 0 ? candidate.slice(0, lastWhitespaceIndex + 1) : '';
+    return `${wholeWords.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
+  }
+
+  return `${candidate.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
 }
 
 export function isLibraryCardPreviewTruncated(value: string, maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH): boolean {

@@ -27,6 +27,8 @@ const buttonClass =
   'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+const quoteToggleClass =
+  'font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 transition hover:text-ink';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -141,37 +143,21 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
       </header>
       <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
-        {quoteExpanded ? (
-          note.quote
-        ) : quoteTruncated ? (
-          <>
-            {quotePreview.slice(0, -1)}
-            <button
-              className="border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-2"
-              type="button"
-              aria-expanded="false"
-              aria-label="Show full quote"
-              onClick={() => setQuoteExpanded(true)}
-            >
-              …
-            </button>
-          </>
-        ) : (
-          quotePreview
-        )}
+        {quoteExpanded ? note.quote : quotePreview}
         <span className="text-library-quote-accent">”</span>
-        {quoteExpanded && quoteTruncated && (
-          <button
-            className="ml-2 border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-2"
-            type="button"
-            aria-expanded="true"
-            aria-label="Collapse quote"
-            onClick={() => setQuoteExpanded(false)}
-          >
-            Show less
-          </button>
-        )}
       </blockquote>
+      {quoteTruncated && (
+        <div className="mb-4">
+          <button
+            className={quoteToggleClass}
+            type="button"
+            aria-expanded={quoteExpanded}
+            onClick={() => setQuoteExpanded((expanded) => !expanded)}
+          >
+            {quoteExpanded ? 'Show less' : 'Show more'}
+          </button>
+        </div>
+      )}
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
         <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">

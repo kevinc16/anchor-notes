@@ -17,12 +17,18 @@ describe('library card previews', () => {
     expect(normalizePreviewText('First line\nSecond line\n\n\nThird line')).toBe('First line\nSecond line\nThird line');
   });
 
-  it('truncates normalized text to the per-card limit and adds an ellipsis', () => {
-    const source = 'First line\n\nSecond line with more words';
+  it('truncates at a word boundary and adds a three-dot suffix', () => {
+    const source = 'First line with more words';
     const preview = getLibraryCardPreview(source, 16);
 
-    expect(preview).toBe('First line\nSeco…');
-    expect(Array.from(preview)).toHaveLength(16);
+    expect(preview).toBe('First line...');
+    expect(Array.from(preview).length).toBeLessThanOrEqual(16);
+  });
+
+  it('preserves meaningful spaces and line breaks before the suffix', () => {
+    const source = 'First line\nSecond line with more words';
+
+    expect(getLibraryCardPreview(source, 16)).toBe('First line\n...');
   });
 
   it('does not append an ellipsis when the normalized text fits', () => {
@@ -35,9 +41,12 @@ describe('library card previews', () => {
   });
 
   it('enforces the default limit without changing the source content', () => {
-    const source = 'x'.repeat(LIBRARY_CARD_PREVIEW_MAX_LENGTH + 20);
+    const source = `${'A useful phrase. '.repeat(20)}A final phrase.`;
+    const sourceLength = source.length;
+    const preview = getLibraryCardPreview(source);
 
-    expect(getLibraryCardPreview(source)).toBe(`${'x'.repeat(LIBRARY_CARD_PREVIEW_MAX_LENGTH - 1)}…`);
-    expect(source).toHaveLength(LIBRARY_CARD_PREVIEW_MAX_LENGTH + 20);
+    expect(Array.from(preview).length).toBeLessThanOrEqual(LIBRARY_CARD_PREVIEW_MAX_LENGTH);
+    expect(preview.endsWith('...')).toBe(true);
+    expect(source).toHaveLength(sourceLength);
   });
 });

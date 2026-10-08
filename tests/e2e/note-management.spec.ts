@@ -210,11 +210,22 @@ test('cleans and bounds library card previews without changing the editable note
     const card = library.locator('article').first();
     const quotePreview = card.locator('blockquote');
     await expect(quotePreview).toBeVisible();
-    expect(await quotePreview.textContent()).toContain(getLibraryCardPreview(quote).slice(0, -1));
-    await expect(card.getByRole('button', { name: 'Show full quote' })).toBeVisible();
-    await card.getByRole('button', { name: 'Show full quote' }).click();
+    expect(await quotePreview.textContent()).toContain(getLibraryCardPreview(quote));
+    expect(await quotePreview.textContent()).toContain('...');
+    expect(await quotePreview.textContent()).not.toContain('…');
+    await expect(quotePreview.getByRole('button')).toHaveCount(0);
+    const quoteToggle = card.getByRole('button', { name: 'Show more' });
+    await expect(quoteToggle).toBeVisible();
+    await expect(quoteToggle).toHaveClass(/font-sans/);
+    await expect(quoteToggle).toHaveClass(/text-meta/);
+    const quoteToggleClass = await quoteToggle.getAttribute('class');
+    await quoteToggle.click();
     expect(await quotePreview.textContent()).toContain(quote);
-    await expect(card.getByRole('button', { name: 'Collapse quote' })).toBeVisible();
+    const collapseQuoteToggle = card.getByRole('button', { name: 'Show less' });
+    await expect(collapseQuoteToggle).toBeVisible();
+    await expect(collapseQuoteToggle).toHaveClass(/font-sans/);
+    await expect(collapseQuoteToggle).toHaveClass(/text-meta/);
+    expect(await collapseQuoteToggle.getAttribute('class')).toBe(quoteToggleClass);
     await expect(card.locator('p').first()).toHaveText(body);
 
     await card.getByRole('button', { name: 'Edit' }).click();
