@@ -12,11 +12,7 @@ import {
 
 const PASSAGE = 'Anchor Notes keeps important ideas attached to the page, even when its markup changes.';
 
-function makeNote(
-  id: string,
-  url: string,
-  overrides: Partial<AnchorNote> = {},
-): AnchorNote {
+function makeNote(id: string, url: string, overrides: Partial<AnchorNote> = {}): AnchorNote {
   const now = new Date().toISOString();
   return {
     id,
@@ -48,11 +44,7 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
-test('edits a saved highlight from the page editor', async ({
-  page,
-  serviceWorker,
-  articleUrl,
-}) => {
+test('edits a saved highlight from the page editor', async ({ page, serviceWorker, articleUrl }) => {
   const note = makeNote('page-editor-note', articleUrl, { body: 'Original note', tags: ['research'] });
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
@@ -111,9 +103,9 @@ test('removes a saved highlight from the page editor', async ({
     settings: DEFAULT_SETTINGS,
   });
 
-  await page.goto(`${articleUrl}#remove`, { waitUntil: 'networkidle' });
-  const targetMarks = page.locator(`mark.anchor-note-highlight[data-anchor-id="${target.id}"]`);
-  const otherMarks = page.locator(`mark.anchor-note-highlight[data-anchor-id="${other.id}"]`);
+  await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
+  const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
+  const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
   await expect(otherMarks).toHaveCount(1);
   await targetMarks.first().click();
@@ -133,7 +125,9 @@ test('removes a saved highlight from the page editor', async ({
   await cancelHandled;
   await expect(popover).toBeVisible();
   await expect(targetMarks).toHaveCount(3);
-  expect((await readExtensionData(serviceWorker)).notes.map((note) => note.id)).toEqual(expect.arrayContaining([target.id, other.id]));
+  expect((await readExtensionData(serviceWorker)).notes.map((note) => note.id)).toEqual(
+    expect.arrayContaining([target.id, other.id]),
+  );
 
   const confirmDialog = page.waitForEvent('dialog');
   const confirmHandled = confirmDialog.then(async (dialog) => {
@@ -169,7 +163,9 @@ test('shows only the active page notes in the popup and can scroll to one', asyn
   articleUrl,
 }) => {
   const activeNote = makeNote('popup-note', articleUrl, { body: 'Visible on the current page.' });
-  const otherNote = makeNote('other-page-note', 'https://other.example/notes', { body: 'Hidden from the current page.' });
+  const otherNote = makeNote('other-page-note', 'https://other.example/notes', {
+    body: 'Hidden from the current page.',
+  });
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
     notes: [activeNote, otherNote],

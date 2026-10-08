@@ -48,11 +48,7 @@ test('saves a selected passage with a note and renders the configured highlight'
   expect(savedData.notes[0]?.tags).toEqual(expect.arrayContaining(['research', 'engineering']));
 });
 
-test('restores a highlight after a same-url markup change', async ({
-  page,
-  serviceWorker,
-  articleUrl,
-}) => {
+test('restores a highlight after a same-url markup change', async ({ page, serviceWorker, articleUrl }) => {
   const now = new Date().toISOString();
   const note: AnchorNote = {
     id: 'restore-note',
@@ -94,6 +90,7 @@ test('restores a highlight after a same-url markup change', async ({
   await expect.poll(() => marks.count()).toBeGreaterThan(0);
   await expect(marks.first()).toHaveAttribute('data-anchor-color', 'coral');
   await expect(marks.first()).toHaveAttribute('data-anchor-coverage', 'full');
-  await expect.poll(async () => marks.evaluateAll((items) => items.map((item) => item.textContent ?? '').join('')))
+  await expect
+    .poll(async () => marks.evaluateAll((items) => items.map((item) => item.textContent ?? '').join('')))
     .toBe(PASSAGE);
 });

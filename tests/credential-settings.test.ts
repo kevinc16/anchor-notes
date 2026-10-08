@@ -57,10 +57,7 @@ describe('API-key storage policy', () => {
   });
 
   it('removes encrypted metadata when returning to plaintext storage', () => {
-    const result = withPlaintextCredential(
-      { ...settings, aiApiKeyEncrypted: encrypted },
-      'sk-restored',
-    );
+    const result = withPlaintextCredential({ ...settings, aiApiKeyEncrypted: encrypted }, 'sk-restored');
 
     expect(result.aiApiKey).toBe('sk-restored');
     expect(result.aiApiKeyEncrypted).toBeUndefined();

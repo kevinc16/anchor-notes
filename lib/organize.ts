@@ -51,10 +51,12 @@ export async function organizeWithAI(
     headers: {
       'Content-Type': 'application/json',
       ...(settings.aiApiKey ? { Authorization: `Bearer ${settings.aiApiKey}` } : {}),
-      ...(isOpenRouter ? {
-        'HTTP-Referer': 'https://github.com/kevinc16/anchor-notes',
-        'X-OpenRouter-Title': 'Anchor Notes',
-      } : {}),
+      ...(isOpenRouter
+        ? {
+            'HTTP-Referer': 'https://github.com/kevinc16/anchor-notes',
+            'X-OpenRouter-Title': 'Anchor Notes',
+          }
+        : {}),
     },
     body: JSON.stringify({
       model: settings.aiModel,
@@ -62,7 +64,8 @@ export async function organizeWithAI(
       messages: [
         {
           role: 'system',
-          content: 'Return only JSON with a tags array containing 2-5 short lowercase topic tags and a summary string under 140 characters.',
+          content:
+            'Return only JSON with a tags array containing 2-5 short lowercase topic tags and a summary string under 140 characters.',
         },
         {
           role: 'user',
@@ -77,15 +80,15 @@ export async function organizeWithAI(
   const withoutFence = content.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
   const firstBrace = withoutFence.indexOf('{');
   const lastBrace = withoutFence.lastIndexOf('}');
-  const json = firstBrace >= 0 && lastBrace > firstBrace
-    ? withoutFence.slice(firstBrace, lastBrace + 1)
-    : withoutFence;
+  const json = firstBrace >= 0 && lastBrace > firstBrace ? withoutFence.slice(firstBrace, lastBrace + 1) : withoutFence;
   const parsed = JSON.parse(json) as {
     tags?: unknown;
     summary?: unknown;
   };
   return {
-    tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 5) : [],
+    tags: Array.isArray(parsed.tags)
+      ? parsed.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 5)
+      : [],
     summary: typeof parsed.summary === 'string' ? parsed.summary : '',
   };
 }

@@ -11,18 +11,17 @@ export const DEFAULT_SETTINGS: AnchorSettings = {
 };
 
 export function normalizeSettings(value: unknown): AnchorSettings {
-  const legacySettings = value && typeof value === 'object'
-    ? value as Partial<AnchorSettings> & { aiMode?: 'local' | 'remote' }
-    : {};
+  const legacySettings =
+    value && typeof value === 'object' ? (value as Partial<AnchorSettings> & { aiMode?: 'local' | 'remote' }) : {};
   const { aiMode, ...currentSettings } = legacySettings;
-  const aiProvider: AiProvider = currentSettings.aiProvider
-    ?? (aiMode === 'remote' ? 'custom' : 'local');
+  const aiProvider: AiProvider = currentSettings.aiProvider ?? (aiMode === 'remote' ? 'custom' : 'local');
   const aiEnabled = currentSettings.aiEnabled ?? aiProvider !== 'local';
-  const highlightCoverage: HighlightCoverage = currentSettings.highlightCoverage === 'small'
-    || currentSettings.highlightCoverage === 'full'
-    || currentSettings.highlightCoverage === 'medium'
-    ? currentSettings.highlightCoverage
-    : DEFAULT_SETTINGS.highlightCoverage;
+  const highlightCoverage: HighlightCoverage =
+    currentSettings.highlightCoverage === 'small' ||
+    currentSettings.highlightCoverage === 'full' ||
+    currentSettings.highlightCoverage === 'medium'
+      ? currentSettings.highlightCoverage
+      : DEFAULT_SETTINGS.highlightCoverage;
 
   return {
     ...DEFAULT_SETTINGS,

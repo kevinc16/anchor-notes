@@ -38,16 +38,30 @@ Chrome does not inject extensions into already-open tabs after installation. Ref
 - **React** powers the toolbar popup and full-page notes library.
 - **TypeScript** provides strict types for notes, storage, messages, and browser APIs.
 - **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
+- **ESLint** checks TypeScript and TSX with the recommended `typescript-eslint` rules.
+- **Stylelint** checks project CSS while recognizing Tailwind CSS v4 directives.
+- **Prettier** formats TypeScript, TSX, and CSS consistently.
 
 Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run format    # format TypeScript, TSX, and CSS
+npm run format:check # check formatting without changing files
+npm run lint      # lint TypeScript, TSX, and CSS
+npm run lint:fix  # format and automatically fix lint violations where supported
 npm test          # run highlight and LLM integration regression tests
+npm run test:coverage # run unit tests and write the coverage reports
 npm run compile   # run strict TypeScript checks
 npm run build     # create .output/chrome-mv3
 npm run zip       # create a store-ready extension archive
 ```
+
+### Unit test coverage
+
+`npm run test:coverage` runs the Vitest suite with the V8 coverage provider. It measures the browser-independent code in `lib/**/*.ts`, excluding the type-only `lib/types.ts` contract, and writes reports to the ignored `coverage/` directory. The text summary is saved as `coverage/coverage-summary.txt`, the detailed HTML report is available at `coverage/index.html`, and `coverage/lcov.info` is available for coverage tooling.
+
+CI runs this command for pull requests and pushes to `main`, adds the concise summary to the workflow summary, and uploads the full `coverage/` directory as a build artifact. Coverage is advisory for now: CI fails when tests or report generation fail, but no percentage threshold fails the job. The initial baseline on `main` (2026-09-01) is 71.34% statements, 70.32% branches, 69.04% functions, and 74.50% lines (122/171 statements, 64/91 branches, 29/42 functions, and 114/153 lines). Revisit the baseline before introducing enforced thresholds.
 
 ## Features
 
