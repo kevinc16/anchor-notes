@@ -1,6 +1,7 @@
 import { Window } from 'happy-dom';
 import { describe, expect, it } from 'vitest';
 import { HIGHLIGHT_CLASS, wrapHighlightRange } from '../lib/highlight-dom';
+import { findTextRange } from '../lib/text-range';
 
 describe('wrapHighlightRange', () => {
   it('immediately wraps a selection spanning inline elements', () => {
@@ -48,5 +49,25 @@ describe('wrapHighlightRange', () => {
     );
 
     expect(document.querySelector('mark')?.getAttribute('data-anchor-coverage')).toBe(highlightCoverage);
+  });
+
+  it('finds and wraps a quote spanning an empty block line', () => {
+    const window = new Window();
+    const { document } = window;
+    document.body.innerHTML = '<p>Before the blank line.</p><p></p><p>After the blank line.</p>';
+
+    const range = findTextRange(document.body as unknown as Node, 'Before the blank line.\n\nAfter the blank line.');
+    expect(range).not.toBeNull();
+
+    const didWrap = wrapHighlightRange(range!, {
+      id: 'empty-line-note',
+      color: 'yellow',
+      body: '',
+    });
+
+    expect(didWrap).toBe(true);
+    expect([...document.querySelectorAll(`.${HIGHLIGHT_CLASS}`)].map((mark) => mark.textContent).join('')).toBe(
+      'Before the blank line.After the blank line.',
+    );
   });
 });

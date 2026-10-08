@@ -10,6 +10,8 @@ import {
 } from './fixtures';
 
 const PASSAGE = 'Anchor Notes keeps important ideas attached to the page, even when its markup changes.';
+const BLANK_LINE_PASSAGE =
+  'Highlights can cross an empty line without losing their anchor.\n\nThe restored quote should still cover both visible text blocks.';
 
 test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
@@ -93,4 +95,50 @@ test('restores a highlight after a same-url markup change', async ({ page, servi
   await expect
     .poll(async () => marks.evaluateAll((items) => items.map((item) => item.textContent ?? '').join('')))
     .toBe(PASSAGE);
+});
+
+test('restores a highlight spanning an empty line on the original source page', async ({
+  page,
+  serviceWorker,
+  articleUrl,
+}) => {
+  const now = new Date().toISOString();
+  const note: AnchorNote = {
+    id: 'empty-line-note',
+    url: articleUrl,
+    canonicalUrl: articleUrl,
+    title: 'Anchor Notes E2E fixture',
+    quote: BLANK_LINE_PASSAGE,
+    body: 'Restore a quote across a blank line.',
+    anchor: {
+      quote: { exact: BLANK_LINE_PASSAGE, prefix: '', suffix: '' },
+      startPath: 'body',
+      startOffset: 0,
+      endPath: 'body',
+      endOffset: BLANK_LINE_PASSAGE.length,
+    },
+    pageSnapshot: {
+      description: 'A deterministic article used by Anchor Notes browser tests.',
+      capturedAt: now,
+    },
+    color: 'yellow',
+    tags: ['testing'],
+    createdAt: now,
+    updatedAt: now,
+  };
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    notes: [note],
+    settings: { ...DEFAULT_SETTINGS, highlightCoverage: 'full' },
+  });
+
+  await page.goto(`${articleUrl}#empty-line`, { waitUntil: 'networkidle' });
+
+  const marks = page.locator('mark.anchor-note-highlight[data-anchor-id="empty-line-note"]');
+  await expect.poll(() => marks.count()).toBe(2);
+  await expect
+    .poll(async () => marks.evaluateAll((items) => items.map((item) => item.textContent ?? '').join('')))
+    .toBe(
+      'Highlights can cross an empty line without losing their anchor.The restored quote should still cover both visible text blocks.',
+    );
 });
