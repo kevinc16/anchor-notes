@@ -25,12 +25,13 @@ type View = 'library' | 'settings';
 type SortMode = 'newest' | 'oldest' | 'source';
 type GroupMode = 'website' | 'none';
 
-const buttonClass =
-  'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
+const buttonBaseClass =
+  'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
+const buttonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink hover:border-stone-400 hover:bg-stone-50`;
+const primaryButtonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-ink bg-ink px-4 text-xs font-bold text-white hover:border-stone-700 hover:bg-stone-700`;
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
-const quoteToggleClass =
-  'font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 transition hover:text-ink';
+const quoteToggleClass = `${buttonBaseClass} rounded-full px-2 py-1 font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 hover:bg-stone-50 hover:text-ink`;
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -81,7 +82,7 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
       {highlightColors.map((color) => (
         <button
           key={color.id}
-          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-meta font-bold transition ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-meta font-bold transition hover:border-stone-400 hover:bg-stone-50 hover:text-ink active:scale-[0.98] ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === color.id}
           onClick={() => onChange(color.id)}
@@ -106,7 +107,7 @@ function CoveragePicker({
       {highlightCoverages.map((coverage) => (
         <button
           key={coverage.id}
-          className={`rounded-lg border px-3 py-2 text-left transition ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`rounded-lg border px-3 py-2 text-left transition hover:border-stone-400 hover:bg-stone-50 hover:text-ink active:scale-[0.98] ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === coverage.id}
           onClick={() => onChange(coverage.id)}
@@ -172,14 +173,27 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
         ))}
       </div>
       <footer className="mt-4xl flex items-center justify-between border-t border-subtle-border pt-3">
-        <a className="text-meta font-extrabold text-ink no-underline" href={note.url} target="_blank" rel="noreferrer">
+        <a
+          className="rounded px-1 py-0.5 text-meta font-extrabold text-ink no-underline transition hover:bg-stone-50 hover:text-quote-accent"
+          href={note.url}
+          target="_blank"
+          rel="noreferrer"
+        >
           Return to source ↗
         </a>
         <div className="flex gap-2">
-          <button className="text-meta font-bold text-muted" type="button" onClick={onEdit}>
+          <button
+            className="rounded-full px-2 py-1 text-meta font-bold text-muted transition hover:bg-stone-50 hover:text-ink"
+            type="button"
+            onClick={onEdit}
+          >
             Edit
           </button>
-          <button className="text-meta font-bold text-danger" type="button" onClick={onDelete}>
+          <button
+            className="rounded-full px-2 py-1 text-meta font-bold text-danger transition hover:bg-red-50 hover:text-danger"
+            type="button"
+            onClick={onDelete}
+          >
             Delete
           </button>
         </div>
@@ -445,7 +459,7 @@ export default function App() {
           ).map(([id, icon, label]) => (
             <button
               key={id}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body font-bold ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body font-bold transition hover:bg-active hover:text-ink ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
               type="button"
               onClick={() => setView(id)}
             >
@@ -494,7 +508,7 @@ export default function App() {
                 {['all', ...topics].map((topic) => (
                   <button
                     key={topic}
-                    className={`whitespace-nowrap rounded-full px-3 py-2 text-meta font-bold ${filter === topic ? 'bg-ink text-white' : 'text-muted'}`}
+                    className={`whitespace-nowrap rounded-full px-3 py-2 text-meta font-bold transition ${filter === topic ? 'bg-ink text-white hover:bg-stone-700' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
                     type="button"
                     onClick={() => setFilter(topic)}
                   >
@@ -504,7 +518,7 @@ export default function App() {
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <button
-                  className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink' : 'text-muted'}`}
+                  className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink hover:bg-stone-200' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
                   type="button"
                   aria-pressed={groupMode === 'website'}
                   onClick={() => setGroupMode(groupMode === 'website' ? 'none' : 'website')}
@@ -534,7 +548,7 @@ export default function App() {
                         <header className="mb-4 border-b border-line pb-2.5">
                           <h2>
                             <button
-                              className="flex w-full items-center gap-2 text-left"
+                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-stone-50 hover:text-ink"
                               type="button"
                               aria-expanded={isExpanded}
                               aria-controls={panelId}
@@ -607,7 +621,11 @@ export default function App() {
                   </p>
                 </div>
                 <button
-                  className={`${buttonClass} ${settings.aiEnabled ? 'border-provider-danger text-provider-danger' : 'border-ink bg-ink text-white'}`}
+                  className={
+                    settings.aiEnabled
+                      ? `${buttonClass} border-provider-danger text-provider-danger hover:bg-red-50`
+                      : primaryButtonClass
+                  }
                   type="button"
                   aria-pressed={settings.aiEnabled}
                   onClick={() => void toggleAi()}
@@ -747,7 +765,7 @@ export default function App() {
                             </button>
                           )}
                           <button
-                            className={`${buttonClass} text-danger`}
+                            className={`${buttonClass} text-danger hover:border-danger hover:bg-red-50`}
                             type="button"
                             onClick={() => void forgetApiKey()}
                           >
@@ -759,11 +777,7 @@ export default function App() {
                   )}
                 </>
               )}
-              <button
-                className={`${buttonClass} border-ink bg-ink text-white`}
-                type="button"
-                onClick={() => void saveSettings()}
-              >
+              <button className={primaryButtonClass} type="button" onClick={() => void saveSettings()}>
                 Save settings
               </button>
             </div>
@@ -845,11 +859,7 @@ export default function App() {
               <button className={buttonClass} type="button" onClick={() => setEditing(null)}>
                 Cancel
               </button>
-              <button
-                className={`${buttonClass} border-ink bg-ink text-white`}
-                type="button"
-                onClick={() => void persistEdit()}
-              >
+              <button className={primaryButtonClass} type="button" onClick={() => void persistEdit()}>
                 Save changes
               </button>
             </footer>

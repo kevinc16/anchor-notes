@@ -209,6 +209,20 @@
   border-radius: var(--anchor-radius-full) !important;
   box-shadow: 0 0 0 1px var(--anchor-color-swatch-shadow);
   cursor: pointer;
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.anchor-color-swatch:hover {
+  box-shadow: 0 0 0 2px var(--anchor-color-swatch-shadow);
+  transform: scale(1.08);
+}
+.anchor-color-swatch:focus-visible {
+  outline: 2px solid var(--anchor-color-dark);
+  outline-offset: 2px;
+}
+.anchor-color-swatch:active {
+  transform: scale(0.96);
 }
 .anchor-color-swatch[data-color='yellow'] {
   background: var(--anchor-swatch-yellow) !important;
@@ -240,23 +254,51 @@
   font-size: var(--anchor-font-size-button);
   font-weight: var(--anchor-font-weight-bold);
   line-height: 1;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.anchor-composer-actions button:focus-visible,
+.anchor-popover-close:focus-visible {
+  outline: 2px solid var(--anchor-color-dark);
+  outline-offset: 2px;
+}
+.anchor-composer-actions button:active,
+.anchor-popover-close:active {
+  transform: translateY(1px);
 }
 .anchor-cancel {
   color: var(--anchor-color-cancel);
   background: transparent;
 }
+.anchor-cancel:hover {
+  color: var(--anchor-color-dark);
+  background: #f5f1e8;
+}
 .anchor-save {
   color: var(--anchor-color-white);
   background: var(--anchor-color-dark);
+}
+.anchor-save:hover {
+  background: #3b3731;
+  transform: translateY(-1px);
 }
 .anchor-remove {
   color: var(--anchor-color-remove);
   background: transparent;
 }
+.anchor-remove:hover {
+  background: rgba(156, 56, 47, 0.08);
+}
 .anchor-open-library {
   margin-right: auto;
   color: var(--anchor-color-open-library);
   background: var(--anchor-color-open-library-surface);
+}
+.anchor-open-library:hover {
+  background: #e4ded2;
 }
 .anchor-popover-header {
   display: flex;
@@ -276,6 +318,14 @@
   font-size: var(--anchor-font-size-close);
   font-weight: var(--anchor-font-weight-regular);
   line-height: 1;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+.anchor-popover-close:hover {
+  background: var(--anchor-color-open-library-surface);
+  color: var(--anchor-color-dark);
 }
 #anchor-notes-toast {
   left: 50%;
