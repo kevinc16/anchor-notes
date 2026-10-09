@@ -26,12 +26,26 @@ Then:
 1. Open `chrome://extensions` in Chrome.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select `.output/chrome-mv3`.
+4. Select `.output/chrome-mv3-dev`.
 5. Select text on a normal webpage and press **Option/Alt + Shift + H**, or use the right-click menu.
 
 Chrome does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight.
 
-To load the Firefox build:
+For live development in Firefox, keep WXT running with:
+
+```sh
+npm run dev:firefox
+```
+
+Then:
+
+1. Open `about:debugging#/runtime/this-firefox` in Firefox.
+2. Click **This Firefox**, then **Load Temporary Add-on…**.
+3. Select `.output/firefox-mv2-dev/manifest.json`.
+
+Keep the development command running while you work. WXT watches the source files and rebuilds the Firefox development bundle, and reloads the temporary extension when Firefox is available to its development runner. If Firefox does not open automatically, load the generated manifest manually as described above.
+
+For a one-time Firefox build without watch mode:
 
 ```sh
 npm run build:firefox
@@ -58,6 +72,7 @@ Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run dev:firefox # watch and rebuild the Firefox development extension
 npm run format    # format TypeScript, TSX, and CSS
 npm run format:check # check formatting without changing files
 npm run lint      # lint TypeScript, TSX, and CSS

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
+    "dev:firefox": "wxt --browser firefox",
     "build": "wxt build",
     "compile": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,css}\"",
