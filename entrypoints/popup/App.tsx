@@ -50,7 +50,7 @@ export default function App() {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-4xl py-3xl backdrop-blur-xl">
         <Brand />
         <button
-          className="grid size-[34px] place-items-center rounded-full border border-line text-muted transition hover:border-stone-400 hover:text-ink"
+          className="grid size-[34px] place-items-center rounded-full border border-line text-muted transition hover:border-stone-400 hover:bg-stone-50 hover:text-ink active:scale-95"
           type="button"
           title="Open library"
           aria-label="Open library"
@@ -82,7 +82,7 @@ export default function App() {
               {notes.length} highlight{notes.length === 1 ? '' : 's'}
             </span>
             <button
-              className="font-extrabold text-ink"
+              className="rounded-full px-2 py-1 font-extrabold text-ink transition hover:bg-stone-100 hover:text-ink"
               type="button"
               onClick={() => void browser.runtime.openOptionsPage()}
             >
@@ -110,7 +110,7 @@ export default function App() {
                       {new Date(note.createdAt).toLocaleDateString()}
                     </span>
                     <button
-                      className="text-meta font-bold text-ink"
+                      className="rounded-full px-2 py-1 text-meta font-bold text-ink transition hover:bg-stone-100 hover:text-ink"
                       type="button"
                       onClick={() => void showOnPage(note)}
                     >
