@@ -1,6 +1,6 @@
 import { Window } from 'happy-dom';
 import { describe, expect, it } from 'vitest';
-import { HIGHLIGHT_CLASS, wrapHighlightRange } from '../lib/highlight-dom';
+import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '../lib/highlight-dom';
 import { findTextRange } from '../lib/text-range';
 
 describe('wrapHighlightRange', () => {
@@ -89,5 +89,16 @@ describe('wrapHighlightRange', () => {
     const marks = [...document.querySelectorAll(`.${HIGHLIGHT_CLASS}`)];
     expect(marks).toHaveLength(2);
     expect(marks.every((mark) => Boolean(mark.textContent?.trim()))).toBe(true);
+  });
+
+  it('removes stale whitespace-only highlight marks', () => {
+    const window = new Window();
+    const { document } = window;
+    document.body.innerHTML =
+      '<blockquote><mark class="anchor-note-highlight">\n  </mark><p>Read: <strong>How to Install a Japanese Keyboard</strong></p><mark class="anchor-note-highlight">\n</mark></blockquote>';
+
+    expect(removeEmptyHighlightMarks(document.body as unknown as ParentNode)).toBe(2);
+    expect(document.querySelectorAll(`.${HIGHLIGHT_CLASS}`)).toHaveLength(0);
+    expect(document.querySelector('blockquote')?.textContent).toContain('Read: How to Install a Japanese Keyboard');
   });
 });

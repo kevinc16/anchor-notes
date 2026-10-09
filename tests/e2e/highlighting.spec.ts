@@ -142,3 +142,47 @@ test('restores a highlight spanning an empty line on the original source page', 
       'Highlights can cross an empty line without losing their anchor.The restored quote should still cover both visible text blocks.',
     );
 });
+
+test('cleans stale whitespace-only marks around a blockquote quote', async ({ page, serviceWorker, articleUrl }) => {
+  const now = new Date().toISOString();
+  const quote = 'Read: How to Install a Japanese Keyboard';
+  const note: AnchorNote = {
+    id: 'blockquote-note',
+    url: articleUrl,
+    canonicalUrl: articleUrl,
+    title: 'Anchor Notes E2E fixture',
+    quote,
+    body: 'Restore a blockquote note.',
+    anchor: {
+      quote: { exact: quote, prefix: '', suffix: '' },
+      startPath: 'body',
+      startOffset: 0,
+      endPath: 'body',
+      endOffset: quote.length,
+    },
+    pageSnapshot: {
+      description: 'A deterministic article used by Anchor Notes browser tests.',
+      capturedAt: now,
+    },
+    color: 'lilac',
+    tags: ['testing'],
+    createdAt: now,
+    updatedAt: now,
+  };
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    notes: [note],
+    settings: { ...DEFAULT_SETTINGS, highlightCoverage: 'full' },
+  });
+
+  await page.goto(`${articleUrl}#blockquote-stale`, { waitUntil: 'networkidle' });
+
+  const marks = page.locator('mark.anchor-note-highlight[data-anchor-id="blockquote-note"]');
+  await expect.poll(() => marks.count()).toBe(2);
+  await expect
+    .poll(async () => marks.evaluateAll((items) => items.map((item) => item.textContent ?? '')))
+    .toEqual(['Read: ', 'How to Install a Japanese Keyboard']);
+  await expect
+    .poll(async () => marks.evaluateAll((items) => items.every((item) => Boolean(item.textContent?.trim()))))
+    .toBe(true);
+});

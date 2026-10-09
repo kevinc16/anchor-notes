@@ -1,5 +1,5 @@
 import { browser, defineContentScript } from '#imports';
-import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
+import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '@/lib/highlight-dom';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
@@ -158,6 +158,7 @@ export default defineContentScript({
 
       composer.remove();
       const selector = note.anchor.quote;
+      removeEmptyHighlightMarks(document.body);
       const liveRange = findTextRange(document.body, selector.exact, selector.prefix, selector.suffix);
       const { settings } = await readData();
       let highlighted = liveRange ? wrapHighlightRange(liveRange, note, settings.highlightCoverage) : false;
@@ -203,6 +204,7 @@ export default defineContentScript({
     }
 
     async function restoreHighlights() {
+      removeEmptyHighlightMarks(document.body);
       const current = normalizeUrl(location.href);
       const data = await readData();
       const notes = data.notes.filter(
