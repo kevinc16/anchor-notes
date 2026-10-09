@@ -8,6 +8,7 @@ import {
 } from '@/lib/credential-settings';
 import { requestFirefoxDataCollectionPermission, type FirefoxDataCollectionApi } from '@/lib/firefox-permissions';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
+import { getLibraryCardPreview, isLibraryCardPreviewTruncated } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
 import type {
@@ -28,6 +29,8 @@ const buttonClass =
   'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+const quoteToggleClass =
+  'font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 transition hover:text-ink';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -128,6 +131,10 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 }
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
+  const quotePreview = getLibraryCardPreview(note.quote);
+  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
+  const [quoteExpanded, setQuoteExpanded] = useState(false);
+
   return (
     <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
@@ -136,11 +143,23 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
           {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </time>
       </header>
-      <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-library-quote">
+      <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
-        {note.quote}
+        {quoteExpanded ? note.quote : quotePreview}
         <span className="text-library-quote-accent">”</span>
       </blockquote>
+      {quoteTruncated && (
+        <div className="mb-4">
+          <button
+            className={quoteToggleClass}
+            type="button"
+            aria-expanded={quoteExpanded}
+            onClick={() => setQuoteExpanded((expanded) => !expanded)}
+          >
+            {quoteExpanded ? 'Show less' : 'Show more'}
+          </button>
+        </div>
+      )}
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
         <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">

@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS } from '../../lib/settings';
+import { getLibraryCardPreview } from '../../lib/note-preview';
 import type { AnchorData, AnchorNote } from '../../lib/types';
 import {
   expect,
@@ -184,6 +185,53 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     library.once('dialog', (browserDialog) => browserDialog.accept());
     await newerCard.getByRole('button', { name: 'Delete' }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
+  } finally {
+    await library.close();
+  }
+});
+
+test('cleans and bounds library card previews without changing the editable note', async ({
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const quote = `<p>First line <strong>with markup</strong></p>\n\nSecond line\n\n\n${'A long trailing quote. '.repeat(20)}`;
+  const body = `The full note body remains available. ${'Keep this content. '.repeat(20)}`;
+  const note = makeNote('preview-note', articleUrl, { quote, body });
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    notes: [note],
+    settings: DEFAULT_SETTINGS,
+  });
+
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  try {
+    const card = library.locator('article').first();
+    const quotePreview = card.locator('blockquote');
+    await expect(quotePreview).toBeVisible();
+    expect(await quotePreview.textContent()).toContain(getLibraryCardPreview(quote));
+    expect(await quotePreview.textContent()).toContain('...');
+    expect(await quotePreview.textContent()).not.toContain('…');
+    await expect(quotePreview.getByRole('button')).toHaveCount(0);
+    const quoteToggle = card.getByRole('button', { name: 'Show more' });
+    await expect(quoteToggle).toBeVisible();
+    await expect(quoteToggle).toHaveClass(/font-sans/);
+    await expect(quoteToggle).toHaveClass(/text-meta/);
+    const quoteToggleClass = await quoteToggle.getAttribute('class');
+    await quoteToggle.click();
+    expect(await quotePreview.textContent()).toContain(quote);
+    const collapseQuoteToggle = card.getByRole('button', { name: 'Show less' });
+    await expect(collapseQuoteToggle).toBeVisible();
+    await expect(collapseQuoteToggle).toHaveClass(/font-sans/);
+    await expect(collapseQuoteToggle).toHaveClass(/text-meta/);
+    expect(await collapseQuoteToggle.getAttribute('class')).toBe(quoteToggleClass);
+    await expect(card.locator('p').first()).toHaveText(body);
+
+    await card.getByRole('button', { name: 'Edit' }).click();
+    const dialog = library.getByRole('dialog');
+    await expect(dialog.getByLabel('Your note')).toHaveValue(body);
+    expect(await dialog.locator('blockquote').textContent()).toBe(`“${quote}”`);
   } finally {
     await library.close();
   }
