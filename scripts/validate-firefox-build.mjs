@@ -10,7 +10,7 @@ const failures = [];
 
 if (manifest.manifest_version !== 2) failures.push('manifest_version must be 2');
 if (!gecko?.id) failures.push('browser_specific_settings.gecko.id is missing');
-if (gecko?.strict_min_version !== '115.0') failures.push('Firefox minimum version must be 115.0');
+if (gecko?.strict_min_version !== '140.0') failures.push('Firefox minimum version must be 140.0');
 if (!dataCollection?.required?.includes('none')) failures.push('Firefox required data permission must include none');
 if (!dataCollection?.optional?.includes('browsingActivity')) {
   failures.push('Firefox optional data permissions must include browsingActivity');

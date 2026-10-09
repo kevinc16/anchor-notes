@@ -59,6 +59,8 @@ npm run build:firefox
 
 Firefox does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight. Temporary add-ons are removed when Firefox restarts, so rebuild and load the manifest again during local development.
 
+The store build targets Firefox 140 or newer because it uses Firefox's built-in data-collection consent experience for optional remote organization.
+
 ## Tooling
 
 - **WXT** owns extension entrypoints, manifest generation, development mode, and packaging.
@@ -154,6 +156,8 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 ```
 
 ## Privacy and limitations
+
+See the [Anchor Notes Privacy Policy](https://github.com/kevinc16/anchor-notes/blob/main/PRIVACY.md) for the information Anchor Notes stores locally and sends to optional remote organizers.
 
 - Browser sync is deliberately not used; large note collections can exceed sync quotas.
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.

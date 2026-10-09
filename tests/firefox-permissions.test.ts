@@ -33,9 +33,9 @@ describe('requestFirefoxDataCollectionPermission', () => {
     await expect(requestFirefoxDataCollectionPermission(deniedApi, true)).resolves.toBe(false);
   });
 
-  it('falls back to the explicit organizer opt-in on older Firefox versions', async () => {
+  it('blocks remote organization when built-in consent is unavailable', async () => {
     const failingApi = createApi();
     vi.mocked(failingApi.request).mockRejectedValue(new Error('permission API unavailable'));
-    await expect(requestFirefoxDataCollectionPermission(failingApi, true)).resolves.toBe(true);
+    await expect(requestFirefoxDataCollectionPermission(failingApi, true)).resolves.toBe(false);
   });
 });
