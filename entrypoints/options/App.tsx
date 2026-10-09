@@ -1,3 +1,4 @@
+import { browser } from '#imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
 import {
@@ -5,7 +6,9 @@ import {
   withEncryptedCredential,
   withPlaintextCredential,
 } from '@/lib/credential-settings';
+import { requestFirefoxDataCollectionPermission, type FirefoxDataCollectionApi } from '@/lib/firefox-permissions';
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
+import { getLibraryCardPreview, isLibraryCardPreviewTruncated } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
 import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
 import type {
@@ -26,6 +29,8 @@ const buttonClass =
   'inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:-translate-y-px hover:border-stone-400';
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+const quoteToggleClass =
+  'font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 transition hover:text-ink';
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -126,6 +131,10 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 }
 
 function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
+  const quotePreview = getLibraryCardPreview(note.quote);
+  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
+  const [quoteExpanded, setQuoteExpanded] = useState(false);
+
   return (
     <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
@@ -134,11 +143,23 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
           {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </time>
       </header>
-      <blockquote className="my-5 font-serif text-lg font-medium leading-[1.42] text-library-quote">
+      <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
-        {note.quote}
+        {quoteExpanded ? note.quote : quotePreview}
         <span className="text-library-quote-accent">”</span>
       </blockquote>
+      {quoteTruncated && (
+        <div className="mb-4">
+          <button
+            className={quoteToggleClass}
+            type="button"
+            aria-expanded={quoteExpanded}
+            onClick={() => setQuoteExpanded((expanded) => !expanded)}
+          >
+            {quoteExpanded ? 'Show less' : 'Show more'}
+          </button>
+        </div>
+      )}
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
       {note.summary && (
         <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
@@ -361,6 +382,17 @@ export default function App() {
     } else {
       nextSettings = { ...settings, aiEnabled: true };
     }
+
+    if (!settings.aiEnabled && nextSettings.aiProvider !== 'local') {
+      const permissionGranted = await requestFirefoxDataCollectionPermission(
+        browser.permissions as unknown as FirefoxDataCollectionApi,
+      );
+      if (!permissionGranted) {
+        setToast('Firefox data permission is required for remote organization');
+        return;
+      }
+    }
+
     await updateSettings(nextSettings);
     setSettings(nextSettings);
     setData(await readData());
@@ -562,14 +594,17 @@ export default function App() {
               <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">Preferences</p>
               <h1 className="mt-2 font-serif text-5xl font-semibold tracking-[-0.035em]">Settings</h1>
               <p className="mt-3 text-body leading-relaxed text-muted">
-                Your highlights stay in Chrome's local storage unless you export them or enable an LLM provider.
+                Your highlights stay in browser local storage unless you export them or enable an LLM provider.
               </p>
             </header>
             <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-xl font-semibold">Organization</h2>
-                  <p className="mt-1 text-xs leading-relaxed text-muted">Local topic tags always remain enabled.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    Local topic tags always remain enabled. Remote providers receive the selected quote, note, title,
+                    and URL.
+                  </p>
                 </div>
                 <button
                   className={`${buttonClass} ${settings.aiEnabled ? 'border-provider-danger text-provider-danger' : 'border-ink bg-ink text-white'}`}
@@ -646,7 +681,7 @@ export default function App() {
                             ? settings.aiApiKeyEncrypted
                               ? `An encrypted key is saved and ${credentialUnlocked ? 'unlocked for this browser session' : 'locked'}. Enter a value only to replace it.`
                               : 'The key will be encrypted when you save.'
-                            : 'Stored unencrypted in Chrome extension local storage. Enable encryption below if you prefer passphrase protection.'
+                            : 'Stored unencrypted in browser extension local storage. Enable encryption below if you prefer passphrase protection.'
                         }
                       >
                         <input
@@ -672,7 +707,8 @@ export default function App() {
                         <span>
                           <strong className="block text-xs text-ink">Encrypt this API key with a passphrase</strong>
                           <span className="mt-1 block text-xs leading-relaxed text-muted">
-                            Optional and off by default. You will need to unlock the key again after Chrome restarts.
+                            Optional and off by default. You will need to unlock the key again after the browser
+                            restarts.
                           </span>
                         </span>
                       </label>

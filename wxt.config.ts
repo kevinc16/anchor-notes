@@ -6,7 +6,7 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
   }),
-  manifest: {
+  manifest: (env) => ({
     name: 'Anchor Notes',
     version: '0.3.0',
     description: 'Highlight the web, keep durable notes, and remember the important things.',
@@ -41,5 +41,19 @@ export default defineConfig({
         description: 'Open the notes library',
       },
     },
-  },
+    ...(env.browser === 'firefox'
+      ? {
+          browser_specific_settings: {
+            gecko: {
+              id: '@anchor-notes.kevinc16',
+              strict_min_version: '115.0',
+              data_collection_permissions: {
+                required: ['none'],
+                optional: ['browsingActivity', 'websiteContent'],
+              },
+            },
+          },
+        }
+      : {}),
+  }),
 });
