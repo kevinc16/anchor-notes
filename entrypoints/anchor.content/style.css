@@ -260,13 +260,11 @@
     box-shadow 150ms ease,
     transform 150ms ease;
 }
-.anchor-composer-actions button:focus-visible,
-.anchor-popover-close:focus-visible {
+.anchor-composer-actions button:focus-visible {
   outline: 2px solid var(--anchor-color-dark);
   outline-offset: 2px;
 }
-.anchor-composer-actions button:active,
-.anchor-popover-close:active {
+.anchor-composer-actions button:active {
   transform: translateY(1px);
 }
 .anchor-cancel {
@@ -322,6 +320,13 @@
     background-color 150ms ease,
     color 150ms ease,
     transform 150ms ease;
+}
+.anchor-popover-close:focus-visible {
+  outline: 2px solid var(--anchor-color-dark);
+  outline-offset: 2px;
+}
+.anchor-popover-close:active {
+  transform: translateY(1px);
 }
 .anchor-popover-close:hover {
   background: var(--anchor-color-open-library-surface);
