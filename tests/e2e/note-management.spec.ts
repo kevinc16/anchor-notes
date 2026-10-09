@@ -113,6 +113,11 @@ test('removes a saved highlight from the page editor', async ({
 
   const popover = page.locator('#anchor-notes-popover');
   await expect(popover).toBeVisible();
+  await expect(popover.locator('.anchor-composer-actions > button')).toHaveText([
+    'Open library',
+    'Remove highlight',
+    'Save changes',
+  ]);
   const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await expect(removeButton).toBeVisible();
 

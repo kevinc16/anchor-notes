@@ -331,8 +331,8 @@ export default defineContentScript({
           <div class="anchor-color-picker" role="group" aria-label="Highlight color"></div>
         </div>
         <div class="anchor-composer-actions">
-          <button class="anchor-remove" type="button">Remove highlight</button>
           <button class="anchor-open-library" type="button">Open library</button>
+          <button class="anchor-remove" type="button">Remove highlight</button>
           <button class="anchor-save" type="button">Save changes</button>
         </div>`;
       document.body.appendChild(popover);
