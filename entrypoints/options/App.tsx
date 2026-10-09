@@ -526,7 +526,8 @@ export default function App() {
                   Group by website
                 </button>
                 <select
-                  className="border-0 bg-transparent text-meta font-bold text-muted outline-none"
+                  className="cursor-pointer rounded-full border border-transparent bg-transparent px-3 py-2 text-meta font-bold text-muted outline-none transition hover:border-line hover:bg-stone-50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  aria-label="Sort notes"
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
                 >

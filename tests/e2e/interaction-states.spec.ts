@@ -37,6 +37,14 @@ test('shows hover and keyboard focus feedback in the library', async ({ context,
     await settingsButton.focus();
     await expect.poll(() => isFocusVisible(settingsButton)).toBe(true);
     expect(await computedStyle(settingsButton, 'outline-width')).toBe('2px');
+
+    const sortSelect = library.getByRole('combobox', { name: 'Sort notes' });
+    const initialSortBackground = await computedStyle(sortSelect, 'background-color');
+    await sortSelect.hover();
+    await expect.poll(() => computedStyle(sortSelect, 'background-color')).not.toBe(initialSortBackground);
+    await sortSelect.focus();
+    await expect.poll(() => isFocusVisible(sortSelect)).toBe(true);
+    expect(await computedStyle(sortSelect, 'outline-width')).toBe('2px');
   } finally {
     await library.close();
   }
