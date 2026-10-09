@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wxt",
+    "dev": "node scripts/dev-all.mjs",
+    "dev:chrome": "wxt",
+    "dev:firefox": "wxt --browser firefox",
     "build": "wxt build",
     "compile": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,css}\"",
@@ -17,6 +19,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:headed": "npm run build && playwright test --headed",
+    "build:firefox": "wxt build --browser firefox",
+    "validate:firefox": "node scripts/validate-firefox-build.mjs",
+    "zip:firefox": "wxt zip --browser firefox",
     "zip": "wxt zip",
     "postinstall": "wxt prepare"
   },

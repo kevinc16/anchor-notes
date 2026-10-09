@@ -1,6 +1,6 @@
 # Anchor Notes
 
-A local-first Chrome extension for highlighting the web, attaching notes, and finding those ideas again—even when a page's markup changes.
+A local-first browser extension for highlighting the web, attaching notes, and finding those ideas again—even when a page's markup changes.
 
 ## Why this exists
 
@@ -10,7 +10,7 @@ Normal browser highlights are fragile and easy to forget. Anchor Notes addresses
 - **Saved pages disappear into bookmarks:** a searchable library groups notes by inferred topic and source, with a direct link back to the page.
 - **Notes need structure:** private on-device rules add useful topic tags automatically. An optional OpenAI-compatible provider can generate richer tags and summaries for new notes.
 
-All data is stored in `chrome.storage.local`. There is no Anchor Notes server.
+All data is stored in the browser's local extension storage. There is no Anchor Notes server.
 
 ## Install for development
 
@@ -21,15 +21,43 @@ npm install
 npm run dev
 ```
 
+The default development command starts both Chrome and Firefox watch processes. It writes the unpacked builds to `.output/chrome-mv3-dev` and `.output/firefox-mv2-dev`. Use `npm run dev:chrome` or `npm run dev:firefox` when you only need one browser target.
+
 Then:
 
 1. Open `chrome://extensions` in Chrome.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select `.output/chrome-mv3`.
+4. Select `.output/chrome-mv3-dev`.
 5. Select text on a normal webpage and press **Option/Alt + Shift + H**, or use the right-click menu.
 
 Chrome does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight.
+
+For live development in Firefox only, keep WXT running with:
+
+```sh
+npm run dev:firefox
+```
+
+Then:
+
+1. Open `about:debugging#/runtime/this-firefox` in Firefox.
+2. Click **This Firefox**, then **Load Temporary Add-on…**.
+3. Select `.output/firefox-mv2-dev/manifest.json`.
+
+Keep the development command running while you work. WXT watches the source files and rebuilds the Firefox development bundle, and reloads the temporary extension when Firefox is available to its development runner. If Firefox does not open automatically, load the generated manifest manually as described above.
+
+For a one-time Firefox build without watch mode:
+
+```sh
+npm run build:firefox
+```
+
+1. Open `about:debugging#/runtime/this-firefox` in Firefox.
+2. Click **This Firefox**, then **Load Temporary Add-on…**.
+3. Select `.output/firefox-mv2/manifest.json`.
+
+Firefox does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight. Temporary add-ons are removed when Firefox restarts, so rebuild and load the manifest again during local development.
 
 ## Tooling
 
@@ -46,6 +74,8 @@ Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run dev:chrome # watch and rebuild the Chrome development extension
+npm run dev:firefox # watch and rebuild the Firefox development extension
 npm run format    # format TypeScript, TSX, and CSS
 npm run format:check # check formatting without changing files
 npm run lint      # lint TypeScript, TSX, and CSS
@@ -54,7 +84,10 @@ npm test          # run highlight and LLM integration regression tests
 npm run test:coverage # run unit tests and write the coverage reports
 npm run compile   # run strict TypeScript checks
 npm run build     # create .output/chrome-mv3
+npm run build:firefox # create .output/firefox-mv2
+npm run validate:firefox # validate the generated Firefox manifest
 npm run zip       # create a store-ready extension archive
+npm run zip:firefox # create a Firefox extension archive
 ```
 
 ### Unit test coverage
@@ -98,9 +131,9 @@ Open **Anchor Notes → Settings** and choose an organizer:
 
 Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
 
-Remote-provider API keys use Chrome extension local storage by default. That storage is local to the browser profile, but Chrome does not encrypt it for the extension. The Settings page labels this clearly and offers optional passphrase encryption; encryption is never enabled or applied automatically.
+Remote-provider API keys use browser extension local storage by default. That storage is local to the browser profile, but browsers do not encrypt it for the extension. The Settings page labels this clearly and offers optional passphrase encryption; encryption is never enabled or applied automatically.
 
-When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after Chrome restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
+When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after the browser restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
 
 If a new highlight is saved while an encrypted API key is locked, Anchor Notes saves the highlight and local tags but tells you that the key was not used. Unlock the key with its passphrase in Settings before relying on AI organization.
 
@@ -122,11 +155,12 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 
 ## Privacy and limitations
 
-- Chrome sync is deliberately not used; large note collections can exceed its quota.
+- Browser sync is deliberately not used; large note collections can exceed sync quotas.
 - If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
-- Some browser-internal pages and the Chrome Web Store do not permit content scripts.
+- Some browser-internal pages and extension gallery pages do not permit content scripts.
 - Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
 - Remote LLM API keys are plaintext in local extension storage by default. Passphrase encryption is available as an explicit opt-in in Settings.
+- Firefox keeps the core local-only workflow available without data transmission. Enabling a remote organizer asks Firefox for permission before selected page content and browsing context can be sent to that provider.
 
 ## Roadmap
 
@@ -134,7 +168,7 @@ wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 - Archived page snapshots or Internet Archive links.
 - Fuzzy anchoring for lightly edited quote text.
 - Collections, backlinks, and related-note suggestions.
-- Automated browser tests and Chrome Web Store packaging.
+- Automated browser tests and store packaging.
 
 ## License
 

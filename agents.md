@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Anchor Notes is a local-first Chrome extension built with WXT, React, TypeScript, Vite, and Tailwind CSS. It saves selected webpage text with surrounding quote context, restores highlights after page markup changes, and provides a popup plus a full-page notes library. Data is stored in `chrome.storage.local`; there is no Anchor Notes backend.
+Anchor Notes is a local-first browser extension built with WXT, React, TypeScript, Vite, and Tailwind CSS. It saves selected webpage text with surrounding quote context, restores highlights after page markup changes, and provides a popup plus a full-page notes library. Data is stored in browser-local extension storage; there is no Anchor Notes backend.
 
 The extension has three main runtime surfaces:
 
@@ -20,7 +20,7 @@ entrypoints/
   options/                  # notes library, editing, settings, import/export
 lib/
   types.ts                  # shared note, settings, and message types
-  storage.ts                # chrome.storage.local access and normalization
+  storage.ts                # browser-local storage access and normalization
   organize.ts               # local tags and optional OpenAI-compatible organizer
   highlight-dom.ts          # DOM range-to-mark rendering
   note-editor.ts            # small editor helpers
@@ -39,13 +39,18 @@ Use Node.js 22 or newer and npm.
 
 ```sh
 npm install                 # install dependencies and prepare WXT types
-npm run dev                 # watch and rebuild the unpacked extension
+npm run dev                 # watch and rebuild Chrome and Firefox extensions
+npm run dev:chrome          # watch and rebuild the Chrome extension
+npm run dev:firefox         # watch and rebuild the Firefox extension
 npm test                    # run the Vitest suite once
 npm run compile             # strict TypeScript check; emits no files
 npm run build               # build .output/chrome-mv3
+npm run build:firefox       # build .output/firefox-mv2
+npm run validate:firefox    # validate the generated Firefox manifest
 npm run test:e2e            # build the extension and run Playwright Chromium tests
 npm run test:e2e:headed     # build the extension and run Playwright with a visible browser
 npm run zip                 # create a store-ready extension archive
+npm run zip:firefox         # create a Firefox extension archive
 ```
 
 There is currently no lint or formatting script. Keep changes consistent with the surrounding code and use the existing TypeScript/Vitest checks as the minimum validation.
@@ -53,7 +58,7 @@ There is currently no lint or formatting script. Keep changes consistent with th
 ## Implementation conventions
 
 - Keep shared data contracts in `lib/types.ts`; use the `ExtensionMessage` union and `satisfies` when sending runtime messages.
-- Put browser-independent, deterministic logic in `lib/` so it can be unit tested without a Chrome runtime.
+- Put browser-independent, deterministic logic in `lib/` so it can be unit tested without a browser runtime.
 - Keep browser APIs and DOM lifecycle work in the relevant entrypoint. Content scripts must tolerate pages where messaging or DOM operations fail.
 - Preserve strict TypeScript settings, including `noUncheckedIndexedAccess`; do not weaken compiler options to make a change compile.
 - Normalize persisted/imported data through the helpers in `lib/storage.ts` and `lib/settings.ts` rather than assuming old data is complete.
@@ -91,7 +96,7 @@ npm test
 npm run compile
 ```
 
-Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness. The GitHub Actions workflow in `.github/workflows/ci.yml` runs the unit suite, strict compile, production build, and Playwright Chromium tests on pushes and pull requests targeting `main`; it uses `npm ci` and does not require repository secrets. Run `npm run build` separately when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load `.output/chrome-mv3` in Chrome and verify the affected flow on a normal webpage.
+Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness. The GitHub Actions workflow in `.github/workflows/ci.yml` runs the unit suite, strict compile, production build, Firefox packaging validation, and Playwright Chromium tests on pushes and pull requests targeting `main`; it uses `npm ci` and does not require repository secrets. Run `npm run build` and `npm run build:firefox` separately when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load the affected output in Chrome and Firefox and verify the flow on a normal webpage.
 
 ## GitHub workflow
 
@@ -110,7 +115,7 @@ Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness.
 - Are shared types, storage normalization, and runtime messages still compatible?
 - Are sensitive note/provider values protected from logs and accidental network calls?
 - Do `npm test` and `npm run compile` pass?
-- If applicable, was the built extension manually checked in Chrome?
+- If applicable, was the built extension manually checked in Chrome and Firefox?
 
 ## For Windows Codex
 
