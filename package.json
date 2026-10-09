@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wxt",
+    "dev": "node scripts/dev-all.mjs",
+    "dev:chrome": "wxt",
     "dev:firefox": "wxt --browser firefox",
     "build": "wxt build",
     "compile": "tsc --noEmit",

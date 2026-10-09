@@ -21,6 +21,8 @@ npm install
 npm run dev
 ```
 
+The default development command starts both Chrome and Firefox watch processes. It writes the unpacked builds to `.output/chrome-mv3-dev` and `.output/firefox-mv2-dev`. Use `npm run dev:chrome` or `npm run dev:firefox` when you only need one browser target.
+
 Then:
 
 1. Open `chrome://extensions` in Chrome.
@@ -31,7 +33,7 @@ Then:
 
 Chrome does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight.
 
-For live development in Firefox, keep WXT running with:
+For live development in Firefox only, keep WXT running with:
 
 ```sh
 npm run dev:firefox
@@ -72,6 +74,7 @@ Useful commands:
 
 ```sh
 npm run dev       # watch and rebuild the development extension
+npm run dev:chrome # watch and rebuild the Chrome development extension
 npm run dev:firefox # watch and rebuild the Firefox development extension
 npm run format    # format TypeScript, TSX, and CSS
 npm run format:check # check formatting without changing files

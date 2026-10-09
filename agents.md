@@ -39,7 +39,8 @@ Use Node.js 22 or newer and npm.
 
 ```sh
 npm install                 # install dependencies and prepare WXT types
-npm run dev                 # watch and rebuild the unpacked extension
+npm run dev                 # watch and rebuild Chrome and Firefox extensions
+npm run dev:chrome          # watch and rebuild the Chrome extension
 npm run dev:firefox         # watch and rebuild the Firefox extension
 npm test                    # run the Vitest suite once
 npm run compile             # strict TypeScript check; emits no files
