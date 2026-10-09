@@ -92,6 +92,7 @@
   --anchor-color-dark: #24211d;
   --anchor-color-white: #fff;
   --anchor-color-cancel: #6c665d;
+  --anchor-color-remove: #9c382f;
   --anchor-color-open-library: #4f4941;
   --anchor-color-open-library-surface: #eee9df;
   --anchor-swatch-yellow: #ffd74a;
@@ -247,6 +248,10 @@
 .anchor-save {
   color: var(--anchor-color-white);
   background: var(--anchor-color-dark);
+}
+.anchor-remove {
+  color: var(--anchor-color-remove);
+  background: transparent;
 }
 .anchor-open-library {
   margin-right: auto;

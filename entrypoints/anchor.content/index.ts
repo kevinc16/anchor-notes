@@ -332,6 +332,7 @@ export default defineContentScript({
         </div>
         <div class="anchor-composer-actions">
           <button class="anchor-open-library" type="button">Open library</button>
+          <button class="anchor-remove" type="button">Remove highlight</button>
           <button class="anchor-save" type="button">Save changes</button>
         </div>`;
       document.body.appendChild(popover);
@@ -358,6 +359,24 @@ export default defineContentScript({
       popover
         .querySelector<HTMLButtonElement>('.anchor-open-library')
         ?.addEventListener('click', () => void openLibrary());
+      popover.querySelector<HTMLButtonElement>('.anchor-remove')?.addEventListener('click', () => {
+        if (!window.confirm('Remove this saved highlight?')) return;
+        void browser.runtime
+          .sendMessage({ type: 'DELETE_NOTE', id: note.id } satisfies ExtensionMessage)
+          .then((response) => {
+            const result = response as MessageResponse;
+            if (!result?.ok) {
+              showToast(result?.error || 'Could not delete note');
+              return;
+            }
+            removeHighlightMarks(note.id);
+            popover.remove();
+            showToast('Highlight removed');
+          })
+          .catch((error: unknown) => {
+            showToast(error instanceof Error ? error.message : 'Could not delete note');
+          });
+      });
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
         note.tags = parseTags(tagsInput?.value ?? '');
