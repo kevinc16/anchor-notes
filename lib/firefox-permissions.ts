@@ -14,8 +14,8 @@ export async function requestFirefoxDataCollectionPermission(
     // Request directly from the settings button so Firefox receives the user gesture.
     return await api.request({ data_collection: FIREFOX_REMOTE_DATA_COLLECTION });
   } catch {
-    // Firefox versions before the built-in data-consent API reject this field. The
-    // explicit remote-organizer toggle remains the consent fallback there.
-    return true;
+    // The release manifest requires Firefox 140+, where this API is available. If
+    // consent cannot be requested, fail closed so remote data is never sent without it.
+    return false;
   }
 }
