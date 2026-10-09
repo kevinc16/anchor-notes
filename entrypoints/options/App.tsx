@@ -249,9 +249,16 @@ export default function App() {
       (note) => (filter === 'all' || note.tags.includes(filter)) && noteMatches(note, query),
     );
     return [...notes].sort((a, b) => {
-      if (sortMode === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      if (sortMode === 'source') return hostFromUrl(a.url).localeCompare(hostFromUrl(b.url));
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      switch (sortMode) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'source':
+          return hostFromUrl(a.url).localeCompare(hostFromUrl(b.url));
+        default:
+          return 0;
+      }
     });
   }, [data.notes, filter, query, sortMode]);
 
