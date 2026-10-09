@@ -220,6 +220,8 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     quote: 'A note from another source.',
     body: 'Other source note',
     tags: ['learning'],
+    createdAt: '2025-06-01T00:00:00.000Z',
+    updatedAt: '2025-06-01T00:00:00.000Z',
   });
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
@@ -250,6 +252,8 @@ test('searches, groups, edits, and deletes notes in the library', async ({
 
     await library.getByRole('combobox').selectOption('oldest');
     await expect(library.locator('blockquote').first()).toContainText('An older idea worth returning to.');
+    await library.getByRole('combobox').selectOption('newest');
+    await expect(library.locator('blockquote').first()).toContainText('A newer idea for the product roadmap.');
 
     const newerCard = library.locator('article').filter({ hasText: 'A newer idea for the product roadmap.' });
     await newerCard.getByRole('button', { name: 'Edit' }).click();
