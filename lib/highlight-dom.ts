@@ -2,6 +2,22 @@ import type { AnchorNote, HighlightCoverage } from './types';
 
 export const HIGHLIGHT_CLASS = 'anchor-note-highlight';
 
+function unwrapMark(mark: HTMLElement): void {
+  const parent = mark.parentNode;
+  mark.replaceWith(...mark.childNodes);
+  parent?.normalize();
+}
+
+export function removeEmptyHighlightMarks(root: ParentNode): number {
+  let removed = 0;
+  root.querySelectorAll<HTMLElement>(`mark.${HIGHLIGHT_CLASS}`).forEach((mark) => {
+    if (mark.textContent?.trim()) return;
+    unwrapMark(mark);
+    removed += 1;
+  });
+  return removed;
+}
+
 export function wrapHighlightRange(
   range: Range,
   note: Pick<AnchorNote, 'id' | 'color' | 'body'>,
@@ -11,7 +27,7 @@ export function wrapHighlightRange(
   if (!document?.body) return false;
   const walker = document.createTreeWalker(document.body, 4, {
     acceptNode(node) {
-      if (!node.nodeValue?.length) return 2;
+      if (!node.nodeValue?.trim()) return 2;
       if (
         node.parentElement?.closest(
           `script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`,
@@ -46,6 +62,10 @@ export function wrapHighlightRange(
       mark.dataset.anchorCoverage = highlightCoverage;
       mark.title = note.body || 'Saved in Anchor Notes';
       fragmentRange.surroundContents(mark);
+      if (!mark.textContent?.trim()) {
+        unwrapMark(mark);
+        continue;
+      }
       wrapped += 1;
     } catch {
       // A single fragment should not prevent the rest of the quote from rendering.

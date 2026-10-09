@@ -1,8 +1,9 @@
 import { browser, defineContentScript } from '#imports';
-import { HIGHLIGHT_CLASS, wrapHighlightRange } from '@/lib/highlight-dom';
+import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '@/lib/highlight-dom';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { normalizeUrl, readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
+import { findTextRange, normalizeQuoteWhitespace } from '@/lib/text-range';
 import type { AnchorNote, ExtensionMessage, HighlightAnchor, HighlightColor, MessageResponse } from '@/lib/types';
 import './style.css';
 
@@ -18,11 +19,16 @@ export default defineContentScript({
     function textContext(range: Range) {
       const rootText = document.body.innerText || '';
       const quote = range.toString().trim();
-      const index = rootText.indexOf(quote);
+      const normalizedRootText = normalizeQuoteWhitespace(rootText);
+      const normalizedQuote = normalizeQuoteWhitespace(quote);
+      const index = normalizedRootText.indexOf(normalizedQuote);
       return {
         exact: quote,
-        prefix: index >= 0 ? rootText.slice(Math.max(0, index - 48), index) : '',
-        suffix: index >= 0 ? rootText.slice(index + quote.length, index + quote.length + 48) : '',
+        prefix: index >= 0 ? normalizedRootText.slice(Math.max(0, index - 48), index) : '',
+        suffix:
+          index >= 0
+            ? normalizedRootText.slice(index + normalizedQuote.length, index + normalizedQuote.length + 48)
+            : '',
       };
     }
 
@@ -152,7 +158,8 @@ export default defineContentScript({
 
       composer.remove();
       const selector = note.anchor.quote;
-      const liveRange = findTextRange(selector.exact, selector.prefix, selector.suffix);
+      removeEmptyHighlightMarks(document.body);
+      const liveRange = findTextRange(document.body, selector.exact, selector.prefix, selector.suffix);
       const { settings } = await readData();
       let highlighted = liveRange ? wrapHighlightRange(liveRange, note, settings.highlightCoverage) : false;
       pendingRange = null;
@@ -170,7 +177,12 @@ export default defineContentScript({
 
       if (!highlighted) {
         const savedSelector = response.note.anchor.quote;
-        const savedRange = findTextRange(savedSelector.exact, savedSelector.prefix, savedSelector.suffix);
+        const savedRange = findTextRange(
+          document.body,
+          savedSelector.exact,
+          savedSelector.prefix,
+          savedSelector.suffix,
+        );
         highlighted = savedRange ? wrapHighlightRange(savedRange, response.note, settings.highlightCoverage) : false;
       }
       if (response.warning) {
@@ -191,50 +203,8 @@ export default defineContentScript({
       parents.forEach((parent) => parent.normalize());
     }
 
-    function findTextRange(exact: string, prefix = '', suffix = ''): Range | null {
-      if (!exact) return null;
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-          return node.parentElement?.closest(
-            `script, style, textarea, #anchor-notes-composer, #anchor-notes-popover, .${HIGHLIGHT_CLASS}`,
-          )
-            ? NodeFilter.FILTER_REJECT
-            : NodeFilter.FILTER_ACCEPT;
-        },
-      });
-      const nodes: Array<{ node: Text; start: number }> = [];
-      let text = '';
-      let current: Node | null;
-      while ((current = walker.nextNode())) {
-        const textNode = current as Text;
-        nodes.push({ node: textNode, start: text.length });
-        text += textNode.nodeValue ?? '';
-      }
-      const matches: number[] = [];
-      let from = 0;
-      while ((from = text.indexOf(exact, from)) >= 0) {
-        matches.push(from);
-        from += exact.length;
-      }
-      if (!matches.length) return null;
-      const start = matches.sort((a, b) => {
-        const score = (index: number) =>
-          (prefix && text.slice(Math.max(0, index - prefix.length), index).endsWith(prefix) ? 2 : 0) +
-          (suffix && text.slice(index + exact.length, index + exact.length + suffix.length).startsWith(suffix) ? 2 : 0);
-        return score(b) - score(a);
-      })[0];
-      if (start === undefined) return null;
-      const startEntry = [...nodes].reverse().find((entry) => entry.start <= start);
-      const endPosition = start + exact.length;
-      const endEntry = [...nodes].reverse().find((entry) => entry.start < endPosition);
-      if (!startEntry || !endEntry) return null;
-      const range = document.createRange();
-      range.setStart(startEntry.node, start - startEntry.start);
-      range.setEnd(endEntry.node, endPosition - endEntry.start);
-      return range;
-    }
-
     async function restoreHighlights() {
+      removeEmptyHighlightMarks(document.body);
       const current = normalizeUrl(location.href);
       const data = await readData();
       const notes = data.notes.filter(
@@ -242,7 +212,7 @@ export default defineContentScript({
       );
       for (const note of notes) {
         const selector = note.anchor?.quote;
-        const range = findTextRange(selector?.exact || note.quote, selector?.prefix, selector?.suffix);
+        const range = findTextRange(document.body, selector?.exact || note.quote, selector?.prefix, selector?.suffix);
         if (range) wrapHighlightRange(range, note, data.settings.highlightCoverage);
       }
     }
