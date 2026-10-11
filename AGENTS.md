@@ -21,12 +21,19 @@ entrypoints/
 lib/
   types.ts                  # shared note, settings, and message types
   storage.ts                # browser-local storage access and normalization
+  settings.ts               # settings defaults and legacy normalization
   organize.ts               # local tags and optional OpenAI-compatible organizer
   highlight-dom.ts          # DOM range-to-mark rendering
+  text-range.ts             # DOM text traversal and quote matching
   note-editor.ts            # small editor helpers
   note-edits.ts             # library edit normalization
+  note-preview.ts           # note-card preview truncation
   tags.ts                   # comma-separated tag parsing
   websites.ts               # hostname grouping and collapsed-state helpers
+  credentials.ts            # runtime provider credential resolution
+  credential-settings.ts    # encrypted/plaintext credential transitions
+  secrets.ts                # Web Crypto passphrase encryption helpers
+  firefox-permissions.ts    # Firefox remote-organizer consent helpers
 tests/                      # Vitest unit/regression tests
 styles/                     # shared Tailwind theme and base styles
 public/                     # extension icons
@@ -42,7 +49,12 @@ npm install                 # install dependencies and prepare WXT types
 npm run dev                 # watch and rebuild Chrome and Firefox extensions
 npm run dev:chrome          # watch and rebuild the Chrome extension
 npm run dev:firefox         # watch and rebuild the Firefox extension
+npm run format              # format TypeScript, TSX, and CSS with Prettier
+npm run format:check        # check formatting without changing files
+npm run lint                # run ESLint and Stylelint
+npm run lint:fix            # format and apply supported lint fixes
 npm test                    # run the Vitest suite once
+npm run test:coverage       # run Vitest and write coverage reports
 npm run compile             # strict TypeScript check; emits no files
 npm run build               # build .output/chrome-mv3
 npm run build:firefox       # build .output/firefox-mv2
@@ -53,7 +65,7 @@ npm run zip                 # create a store-ready extension archive
 npm run zip:firefox         # create a Firefox extension archive
 ```
 
-There is currently no lint or formatting script. Keep changes consistent with the surrounding code and use the existing TypeScript/Vitest checks as the minimum validation.
+Prettier covers TypeScript, TSX, and CSS. ESLint covers TypeScript/TSX, and Stylelint covers project CSS. Generated WXT output, coverage, Playwright reports, and ZIP archives are ignored and must not be committed.
 
 ## Implementation conventions
 
@@ -66,7 +78,8 @@ There is currently no lint or formatting script. Keep changes consistent with th
 - Preserve note identity and timestamps when editing. `saveNote` merges updates by note ID and refreshes `updatedAt`.
 - Keep local organization deterministic and network-free. Optional AI organization is only for newly saved notes when the independent AI toggle and a remote provider are enabled.
 - Never add a remote request for core highlighting, saving, searching, or restoring behavior.
-- Treat API keys and note contents as sensitive. Do not log them, commit them, or add them to test fixtures unnecessarily.
+- Treat API keys, passphrases, decrypted credentials, note contents, and URLs as sensitive. Do not log them, commit them, or add them to test fixtures unnecessarily.
+- Keep credential migrations backward compatible: plaintext remains the default, encrypted secrets use the existing versioned PBKDF2/AES-GCM format, and decrypted keys live only in extension session storage.
 - Use the existing Tailwind theme tokens and content-script CSS conventions instead of introducing a second styling system.
 
 ## Extension-specific behavior to preserve
@@ -78,6 +91,7 @@ There is currently no lint or formatting script. Keep changes consistent with th
 - Background message handlers should return `{ ok: true, ... }` or `{ ok: false, error }` consistently and catch expected browser/storage/provider failures.
 - Keep `schemaVersion` and normalization compatible with existing local data and JSON backups; changing the data shape requires migration thinking and regression tests.
 - OpenRouter requests include the existing attribution headers. Ollama may be unauthenticated; custom providers use the configured OpenAI-compatible endpoint and optional bearer token.
+- Firefox remote organizers require the existing optional `browsingActivity` and `websiteContent` consent flow. Do not request those permissions for the local-only workflow.
 
 ## Testing expectations
 
@@ -92,11 +106,15 @@ Add or update focused Vitest coverage for behavior changes, especially:
 Before handing off a change, run:
 
 ```sh
+npm run format:check
+npm run lint
 npm test
 npm run compile
 ```
 
-Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness. The GitHub Actions workflow in `.github/workflows/ci.yml` runs the unit suite, strict compile, production build, Firefox packaging validation, and Playwright Chromium tests on pushes and pull requests targeting `main`; it uses `npm ci` and does not require repository secrets. Run `npm run build` and `npm run build:firefox` separately when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load the affected output in Chrome and Firefox and verify the flow on a normal webpage.
+Run `npm run test:coverage` when changing browser-independent library behavior. Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness. Run `npm run build`, `npm run build:firefox`, and `npm run validate:firefox` when changing WXT configuration, manifest permissions, entrypoints, imports, or packaging behavior. For UI or content-script changes, manually load the affected output in Chrome and Firefox and verify the flow on a normal webpage.
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` installs with `npm ci` and checks formatting, lint, a clean lint autofix, unit coverage, strict compilation, the Chrome build and Chromium E2E suite, plus the Firefox build and manifest validation. Coverage and Playwright artifacts are uploaded, and same-repository pull requests receive summary comments.
 
 ## GitHub workflow
 
@@ -114,9 +132,9 @@ Run `npm run test:e2e` when changing browser-facing behavior or the E2E harness.
 - Is there a linked GitHub issue?
 - Are shared types, storage normalization, and runtime messages still compatible?
 - Are sensitive note/provider values protected from logs and accidental network calls?
-- Do `npm test` and `npm run compile` pass?
+- Do formatting, lint, unit tests, and strict compilation pass?
 - If applicable, was the built extension manually checked in Chrome and Firefox?
 
 ## For Windows Codex
 
-- if there is a local .gh-token file, use it to authenticate to GitHub
+- If there is a local `.gh-token` file, use it to authenticate to GitHub.
