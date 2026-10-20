@@ -81,6 +81,11 @@ test.each([
 
 test.each([
   {
+    log: '[🦝 Checkly] 🔗 Test Session: \u001b[4mhttps://chkly.link/l/example123\u001b[0m\n',
+    enabled: true,
+    url: 'https://chkly.link/l/example123',
+  },
+  {
     log: '\u001b[32mView test results: https://app.checklyhq.com/test-sessions/session_123\u001b[0m\n',
     enabled: true,
     url: 'https://app.checklyhq.com/test-sessions/session_123',

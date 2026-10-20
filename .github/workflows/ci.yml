@@ -291,7 +291,7 @@ jobs:
             const artifactUrl = process.env.ARTIFACT_URL || runUrl;
             const status = process.env.JOB_STATUS === 'success' ? 'passed' : 'did not pass';
             const checklyUrl = process.env.CHECKLY_SESSION_URL;
-            const checklyLink = /^https:\/\/app\.checklyhq\.com\/test-sessions\/[\w-]+$/.test(checklyUrl || '')
+            const checklyLink = /^https:\/\/(?:app\.checklyhq\.com\/test-sessions|chkly\.link\/l)\/[\w-]+$/.test(checklyUrl || '')
               ? [`[View Checkly test session](${checklyUrl})`, '']
               : [];
             const body = [

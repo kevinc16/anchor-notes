@@ -9,7 +9,9 @@ if (enabled) {
   try {
     const log = stripVTControlCharacters(readFileSync(process.argv[2], 'utf8'));
     sessionUrl =
-      log.match(/View test results:\s+(https:\/\/app\.checklyhq\.com\/test-sessions\/[\w-]+)(?=\s|$)/)?.[1] || '';
+      log.match(
+        /(?:View test results|Test Session):\s+(https:\/\/(?:app\.checklyhq\.com\/test-sessions|chkly\.link\/l)\/[\w-]+)(?=\s|$)/,
+      )?.[1] || '';
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
