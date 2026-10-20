@@ -2,6 +2,7 @@ import { DEFAULT_SETTINGS } from '../../lib/settings';
 import type { AnchorData, AnchorNote } from '../../lib/types';
 import {
   expect,
+  openExtensionPage,
   readExtensionData,
   resetExtensionStorage,
   seedExtensionData,
@@ -19,6 +20,8 @@ test.beforeEach(async ({ serviceWorker }) => {
 
 test('saves a selected passage with a note and renders the configured highlight', async ({
   page,
+  context,
+  extensionId,
   serviceWorker,
   articleUrl,
 }) => {
@@ -48,6 +51,11 @@ test('saves a selected passage with a note and renders the configured highlight'
     color: 'mint',
   });
   expect(savedData.notes[0]?.tags).toEqual(expect.arrayContaining(['research', 'engineering']));
+
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  await expect(library.locator('article')).toHaveCount(1);
+  await expect(library.getByText('Generating summary…')).toHaveCount(0);
+  await expect(library.getByText('Summary unavailable. Your note is saved.')).toHaveCount(0);
 });
 
 test('restores a highlight after a same-url markup change', async ({ page, serviceWorker, articleUrl }) => {

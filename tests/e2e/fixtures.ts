@@ -1,6 +1,6 @@
 import { chromium, test as base, type BrowserContext, type Page, type Worker } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, type ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { AnchorData } from '../../lib/types';
 
@@ -43,8 +43,41 @@ type WorkerFixtures = {
 export const test = base.extend<Fixtures, WorkerFixtures>({
   fixtureServer: [
     async ({}, use) => {
+      const pendingCompletions = new Map<string, ServerResponse[]>();
       const server = createServer((request, response) => {
-        const pathname = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`).pathname;
+        const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`);
+        const pathname = url.pathname;
+
+        if (pathname === '/release-completion') {
+          const key = url.searchParams.get('hold') ?? '';
+          const queue = pendingCompletions.get(key);
+          const pending = queue?.shift();
+          if (!queue?.length) pendingCompletions.delete(key);
+          if (pending) {
+            const result = url.searchParams.get('result');
+            pending.writeHead(result === 'error' ? 503 : 200, {
+              'access-control-allow-origin': '*',
+              'content-type': 'application/json',
+            });
+            pending.end(
+              JSON.stringify({
+                choices: [
+                  {
+                    message: {
+                      content: JSON.stringify({
+                        tags: ['e2e', 'ai'],
+                        summary: 'Organized by the local E2E provider.',
+                      }),
+                    },
+                  },
+                ],
+              }),
+            );
+          }
+          response.writeHead(pending ? 200 : 404);
+          response.end();
+          return;
+        }
 
         if (pathname === '/v1/chat/completions') {
           const corsHeaders = {
@@ -58,6 +91,16 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
             return;
           }
           if (request.method === 'POST') {
+            const hold = url.searchParams.get('hold');
+            if (hold) {
+              pendingCompletions.set(hold, [...(pendingCompletions.get(hold) ?? []), response]);
+              response.once('close', () => {
+                const remaining = pendingCompletions.get(hold)?.filter((item) => item !== response);
+                if (remaining?.length) pendingCompletions.set(hold, remaining);
+                else pendingCompletions.delete(hold);
+              });
+              return;
+            }
             response.writeHead(200, { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' });
             response.end(
               JSON.stringify({
