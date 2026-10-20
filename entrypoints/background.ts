@@ -2,11 +2,15 @@ import { browser, defineBackground } from '#imports';
 import { isEncryptedCredentialLocked, LOCKED_API_KEY_WARNING } from '@/lib/credential-settings';
 import { readSessionApiKey } from '@/lib/credentials';
 import { organizeLocally, organizeWithAI } from '@/lib/organize';
+import { noteReturnKey, openNoteSource, takeNoteReturn } from '@/lib/note-return';
 import { shouldUseAiOrganizer } from '@/lib/settings';
 import { deleteNote, readData, saveNote } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
 
 export default defineBackground(() => {
+  browser.tabs.onRemoved.addListener((tabId) => {
+    void browser.storage.session.remove(noteReturnKey(tabId)).catch(() => undefined);
+  });
   browser.runtime.onInstalled.addListener(() => {
     void browser.contextMenus.removeAll().then(() =>
       browser.contextMenus.create({
@@ -42,7 +46,27 @@ export default defineBackground(() => {
     }
   });
 
-  browser.runtime.onMessage.addListener((message: ExtensionMessage): Promise<MessageResponse> | undefined => {
+  browser.runtime.onMessage.addListener((message: ExtensionMessage, sender): Promise<MessageResponse> | undefined => {
+    if (message.type === 'RETURN_TO_SOURCE') {
+      return (async () => {
+        try {
+          const data = await readData();
+          const note = data.notes.find((item) => item.id === message.id);
+          if (!note) return { ok: false, error: 'This saved note could not be found.' };
+          await openNoteSource({ tabs: browser.tabs, session: browser.storage.session }, note, message.active);
+          return { ok: true };
+        } catch {
+          return { ok: false, error: 'Could not open the source page.' };
+        }
+      })();
+    }
+
+    if (message.type === 'TAKE_NOTE_RETURN') {
+      if (sender.tab?.id === undefined || sender.frameId !== 0) return Promise.resolve({ ok: true });
+      return takeNoteReturn(browser.storage.session, sender.tab.id)
+        .then((returnIntent) => ({ ok: true, returnIntent }))
+        .catch(() => ({ ok: false, error: 'Could not read the return request.' }));
+    }
     if (message.type === 'SAVE_NOTE') {
       return (async () => {
         try {

@@ -223,3 +223,89 @@ describe('dynamic highlight restoration', () => {
     expect(marks()).toHaveLength(0);
   });
 });
+
+describe('return-to-source scrolling', () => {
+  let window: Window;
+  let document: Document;
+  let coordinator: ReturnType<typeof observeHighlightRestoration>;
+  let scroll: ReturnType<typeof vi.fn<HTMLElement['scrollIntoView']>>;
+  const data: AnchorData = { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes: [note()] };
+  const settle = () => vi.advanceTimersByTimeAsync(500);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    window = new Window({ url: URL_A });
+    vi.spyOn(window, 'setTimeout').mockImplementation((callback, delay) => setTimeout(() => callback(), delay));
+    vi.spyOn(window, 'clearTimeout').mockImplementation((timer) => clearTimeout(timer));
+    document = window.document as unknown as Document;
+    scroll = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scroll;
+    coordinator = observeHighlightRestoration(document, async () => data);
+  });
+
+  afterEach(async () => {
+    coordinator.stop();
+    await window.happyDOM.close();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('scrolls the requested first fragment once after late insertion, even across rerenders', async () => {
+    coordinator.requestScroll({ id: 'a', expiresAt: Date.now() + 60_000 });
+    await settle();
+    expect(scroll).not.toHaveBeenCalled();
+    document.body.innerHTML = '<p>Alpha <b>beta</b> gamma.</p>';
+    await settle();
+    expect(scroll).toHaveBeenCalledExactlyOnceWith({ behavior: 'smooth', block: 'center' });
+    expect(scroll.mock.instances[0]).toBe(document.querySelector('mark.anchor-note-highlight'));
+    document.body.innerHTML = '<p>Alpha <b>beta</b> gamma.</p>';
+    await settle();
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not scroll on ordinary restoration or for an unrelated note', async () => {
+    document.body.innerHTML = '<p>Alpha beta gamma.</p>';
+    await settle();
+    expect(scroll).not.toHaveBeenCalled();
+    coordinator.requestScroll({ id: 'missing', expiresAt: Date.now() + 60_000 });
+    await settle();
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('expires an unmatched request before its text appears', async () => {
+    coordinator.requestScroll({ id: 'a', expiresAt: Date.now() + 1_000 });
+    await vi.advanceTimersByTimeAsync(1_001);
+    document.body.innerHTML = '<p>Alpha beta gamma.</p>';
+    await settle();
+    expect(document.querySelector('mark')).not.toBeNull();
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('discards a pending request on SPA navigation even if the destination matches the same canonical URL', async () => {
+    document.head.innerHTML = `<link rel="canonical" href="${URL_A}">`;
+    coordinator.requestScroll({ id: 'a', expiresAt: Date.now() + 60_000 });
+    await settle();
+    window.history.pushState({}, '', URL_B);
+    document.head.querySelector('link')!.remove();
+    coordinator.refresh();
+    await settle();
+    document.head.innerHTML = `<link rel="canonical" href="${URL_A}">`;
+    document.body.innerHTML = '<p>Alpha beta gamma.</p>';
+    await settle();
+    expect(document.querySelector('mark')).not.toBeNull();
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('retains a request across hash changes and delayed canonical metadata', async () => {
+    window.history.replaceState({}, '', 'https://example.com/variant/');
+    coordinator.requestScroll({ id: 'a', expiresAt: Date.now() + 60_000 });
+    document.body.innerHTML = '<p>Alpha beta gamma.</p>';
+    await settle();
+    expect(scroll).not.toHaveBeenCalled();
+    window.history.replaceState({}, '', 'https://example.com/variant/#section');
+    document.head.innerHTML = `<link rel="canonical" href="${URL_A}/#fragment">`;
+    coordinator.refresh();
+    await settle();
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+});

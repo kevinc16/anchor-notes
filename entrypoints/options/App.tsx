@@ -1,5 +1,5 @@
 import { browser } from '#imports';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
 import {
   needsPassphraseToDisableEncryption,
@@ -18,6 +18,8 @@ import type {
   AnchorSettings,
   HighlightColor,
   HighlightCoverage,
+  ExtensionMessage,
+  MessageResponse,
 } from '@/lib/types';
 import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
 
@@ -136,6 +138,23 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
   const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
+  async function returnToSource(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.button !== 0 && event.button !== 1) return;
+    event.preventDefault();
+    const active = event.shiftKey || (event.button === 0 && !event.metaKey && !event.ctrlKey);
+    try {
+      const response = (await browser.runtime.sendMessage({
+        type: 'RETURN_TO_SOURCE',
+        id: note.id,
+        active,
+      } satisfies ExtensionMessage)) as MessageResponse;
+      if (response?.ok) return;
+    } catch {
+      // Keep the source link usable if the background or temporary storage is unavailable.
+    }
+    await browser.tabs.create({ url: note.url, active }).catch(() => undefined);
+  }
+
   return (
     <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
       <header className="flex items-center justify-between text-overline font-bold text-muted">
@@ -178,6 +197,10 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
           href={note.url}
           target="_blank"
           rel="noreferrer"
+          onClick={(event) => void returnToSource(event)}
+          onAuxClick={(event) => {
+            if (event.button === 1) void returnToSource(event);
+          }}
         >
           Return to source ↗
         </a>

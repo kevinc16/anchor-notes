@@ -388,6 +388,12 @@ export default defineContentScript({
       }
     });
     const restoration = observeHighlightRestoration(document, readData);
+    void browser.runtime
+      .sendMessage({ type: 'TAKE_NOTE_RETURN' } satisfies ExtensionMessage)
+      .then((response: MessageResponse) => {
+        if (response?.ok && response.returnIntent) restoration.requestScroll(response.returnIntent);
+      })
+      .catch(() => undefined);
     ctx.addEventListener(window, 'wxt:locationchange', () => restoration.refresh());
     const onStorageChanged = (changes: Record<string, unknown>, area: string) => {
       if (area === 'local' && 'anchorNotesData' in changes) restoration.refresh();

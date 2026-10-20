@@ -63,17 +63,25 @@ export interface AnchorData {
   settings: AnchorSettings;
 }
 
+export interface NoteReturnIntent {
+  id: string;
+  expiresAt: number;
+}
+
 export type ExtensionMessage =
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
   | { type: 'GET_NOTE'; id: string }
   | { type: 'DELETE_NOTE'; id: string }
   | { type: 'OPEN_LIBRARY' }
+  | { type: 'RETURN_TO_SOURCE'; id: string; active: boolean }
+  | { type: 'TAKE_NOTE_RETURN' }
   | { type: 'CAPTURE_SELECTION' }
   | { type: 'SCROLL_TO_NOTE'; id: string };
 
 export interface MessageResponse {
   ok: boolean;
+  returnIntent?: NoteReturnIntent;
   note?: AnchorNote;
   warning?: string;
   error?: string;
