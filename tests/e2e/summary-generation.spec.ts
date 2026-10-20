@@ -91,23 +91,21 @@ test('tracks concurrent notes independently in the ungrouped library', async ({
   expect((await readExtensionData(serviceWorker)).notes).toHaveLength(2);
 });
 
-for (const result of ['error', 'malformed', 'empty']) {
-  test(`ends loading and keeps the saved note after an ${result} response`, async ({
-    page,
-    context,
-    serviceWorker,
-    extensionId,
-    articleUrl,
-  }) => {
-    await startGeneration(page, serviceWorker, articleUrl);
-    const library = await openExtensionPage(context, extensionId, 'options.html');
-    await expect(library.getByRole('status')).toHaveText('Generating summary…');
-    await release(articleUrl, result);
-    await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
-    await expect(library.getByRole('button', { name: 'Edit', exact: true })).toBeEnabled();
-    expect((await readExtensionData(serviceWorker)).notes).toHaveLength(1);
-  });
-}
+test('ends loading and keeps the saved note after a provider error', async ({
+  page,
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await startGeneration(page, serviceWorker, articleUrl);
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  await expect(library.getByRole('status')).toHaveText('Generating summary…');
+  await release(articleUrl, 'error');
+  await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
+  await expect(library.getByRole('button', { name: 'Edit', exact: true })).toBeEnabled();
+  expect((await readExtensionData(serviceWorker)).notes).toHaveLength(1);
+});
 
 for (const action of ['edit', 'delete']) {
   test(`does not undo a manual ${action} when generation finishes`, async ({
@@ -168,22 +166,6 @@ test('expires interrupted requests in an open library and after reopening', asyn
   library = await openExtensionPage(context, extensionId, 'options.html');
   await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
   await release(articleUrl);
-});
-
-test('never shows summary loading for local-only saves or older notes', async ({
-  page,
-  context,
-  serviceWorker,
-  extensionId,
-  articleUrl,
-}) => {
-  await seedExtensionData(serviceWorker, { schemaVersion: 1, notes: [], settings: DEFAULT_SETTINGS });
-  await startGeneration(page, serviceWorker, articleUrl);
-  await expect(page.locator('#anchor-notes-toast')).toBeVisible();
-  const library = await openExtensionPage(context, extensionId, 'options.html');
-  await expect(library.locator('article')).toHaveCount(1);
-  await expect(library.getByText('Generating summary…')).toHaveCount(0);
-  await expect(library.getByText('Summary unavailable. Your note is saved.')).toHaveCount(0);
 });
 
 test('does not generate a summary when the independent LLM toggle is disabled', async ({

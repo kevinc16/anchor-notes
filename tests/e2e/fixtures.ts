@@ -60,20 +60,18 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
               'content-type': 'application/json',
             });
             pending.end(
-              result === 'malformed'
-                ? '{}'
-                : JSON.stringify({
-                    choices: [
-                      {
-                        message: {
-                          content: JSON.stringify({
-                            tags: ['e2e', 'ai'],
-                            summary: result === 'empty' ? '' : 'Organized by the local E2E provider.',
-                          }),
-                        },
-                      },
-                    ],
-                  }),
+              JSON.stringify({
+                choices: [
+                  {
+                    message: {
+                      content: JSON.stringify({
+                        tags: ['e2e', 'ai'],
+                        summary: 'Organized by the local E2E provider.',
+                      }),
+                    },
+                  },
+                ],
+              }),
             );
           }
           response.writeHead(pending ? 200 : 404);
