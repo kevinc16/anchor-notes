@@ -180,14 +180,12 @@ jobs:
 
   e2e:
     name: E2E tests
-    environment: prod
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     outputs:
       playwright-artifact-url: ${{ steps.upload-playwright-artifacts.outputs.artifact-url }}
-      checkly-session-url: ${{ steps.checkly-summary.outputs.session-url }}
 
     steps:
       - name: Check out repository
@@ -209,23 +207,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser tests
-        id: browser-tests
-        env:
-          CHECKLY_UPLOAD: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.CHECKLY_UPLOAD == 'true' && secrets.CHECKLY_API_KEY != '' && vars.CHECKLY_ACCOUNT_ID != '' }}
-          CHECKLY_API_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY || '' }}
-          CHECKLY_ACCOUNT_ID: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.CHECKLY_ACCOUNT_ID || '' }}
-        shell: bash
-        run: |
-          echo "checkly-upload=$CHECKLY_UPLOAD" >> "$GITHUB_OUTPUT"
-          set -o pipefail
-          npx playwright test 2>&1 | tee "$RUNNER_TEMP/playwright-checkly.log"
-
-      - name: Publish Checkly session link
-        id: checkly-summary
-        if: ${{ always() }}
-        env:
-          CHECKLY_UPLOAD: ${{ steps.browser-tests.outputs.checkly-upload }}
-        run: node scripts/summarize-checkly.mjs "$RUNNER_TEMP/playwright-checkly.log"
+        run: npx playwright test
 
       - name: Upload Playwright report and screenshots
         id: upload-playwright-artifacts
@@ -236,6 +218,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            blob-report/
           if-no-files-found: warn
           retention-days: 14
 
@@ -267,20 +250,64 @@ jobs:
 
   publish-playwright-report:
     name: Publish Playwright report
-    if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    environment: prod
     needs: e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
+      contents: read
+      actions: read
       pull-requests: write
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Playwright reports
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload Playwright report to Checkly
+        id: checkly-upload
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          CHECKLY_UPLOAD: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.CHECKLY_UPLOAD == 'true' && secrets.CHECKLY_API_KEY != '' && vars.CHECKLY_ACCOUNT_ID != '' }}
+          CHECKLY_API_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY || '' }}
+          CHECKLY_ACCOUNT_ID: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.CHECKLY_ACCOUNT_ID || '' }}
+        shell: bash
+        run: |
+          echo "checkly-upload=$CHECKLY_UPLOAD" >> "$GITHUB_OUTPUT"
+          if [ "$CHECKLY_UPLOAD" = "true" ] && compgen -G "blob-report/*.zip" > /dev/null; then
+            set -o pipefail
+            npx playwright merge-reports --config playwright.checkly.config.ts blob-report 2>&1 | tee "$RUNNER_TEMP/playwright-checkly.log"
+          fi
+
+      - name: Publish Checkly session link
+        id: checkly-summary
+        if: ${{ always() }}
+        env:
+          CHECKLY_UPLOAD: ${{ steps.checkly-upload.outputs.checkly-upload }}
+        run: node scripts/summarize-checkly.mjs "$RUNNER_TEMP/playwright-checkly.log"
+
       - name: Update Playwright PR comment
+        if: ${{ always() && github.event_name == 'pull_request' }}
         continue-on-error: true
         uses: actions/github-script@v7
         env:
           ARTIFACT_URL: ${{ needs.e2e.outputs.playwright-artifact-url }}
-          CHECKLY_SESSION_URL: ${{ needs.e2e.outputs.checkly-session-url }}
+          CHECKLY_SESSION_URL: ${{ steps.checkly-summary.outputs.session-url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_STATUS: ${{ needs.e2e.result }}
         with:

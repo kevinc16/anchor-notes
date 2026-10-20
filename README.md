@@ -100,7 +100,7 @@ CI runs this command for pull requests and pushes to `main`, adds the concise su
 
 ### Playwright monitoring with Checkly
 
-The Chromium E2E job can upload results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these values in the **prod** environment under **Settings → Environments → prod**:
+The report publishing job can upload Chromium E2E results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these values in the **prod** environment under **Settings → Environments → prod**:
 
 - **Secret** `CHECKLY_API_KEY`: a Checkly API key with access to the intended account.
 - **Variable** `CHECKLY_ACCOUNT_ID`: the account ID from Checkly's account settings, added under **Environment variables**.
@@ -108,9 +108,9 @@ The Chromium E2E job can upload results to [Checkly Test Sessions](https://www.c
 
 Uploads run on pushes to `main` and same-repository pull requests targeting `main`, when the `prod` environment has both credentials configured and `CHECKLY_UPLOAD=true`. Fork PRs and runs without credentials skip uploads. Local runs do not upload by default, even if Checkly credentials are present: the reporter requires `CI=true`, `CHECKLY_UPLOAD=true`, and both credentials. Keep credentials out of local configuration files and source control.
 
-Checkly records the available test results, screenshots, traces, and videos. Git metadata is detected by the reporter; the session name includes the branch and GitHub run ID/attempt. Open the session through the **Checkly** section in the workflow summary or the existing Playwright PR comment. CI continues to generate the HTML report and retain GitHub artifacts for 14 days.
+The test job only generates local HTML and blob reports, then saves them as GitHub artifacts. The separate **Publish Playwright report** job downloads those artifacts and uploads them to Checkly using `playwright merge-reports`; it runs after successful or failed tests without rerunning them. Only this publishing job selects the `prod` environment and passes Checkly credentials to the upload step. Checkly records the available test results, screenshots, traces, and videos. Git metadata is detected by the reporter; the session name includes the branch and GitHub run ID/attempt. Open the session through the **Checkly** section in the workflow summary or the existing Playwright PR comment. CI continues to generate the HTML report and retain GitHub artifacts for 14 days.
 
-The browser test step preserves Playwright's exit status. Reporter errors remain visible in its logs; when an enabled upload produces no session link, the summary reports it as unavailable and emits a warning. Missing credentials skip reporting without failing tests. A terminated job may not finish uploading. This integration monitors CI runs; it does not schedule extension tests in Checkly's hosted browsers or configure alerts.
+The browser test step preserves Playwright's exit status. Upload errors remain visible in the separate publishing job; when an enabled upload produces no session link, the summary reports it as unavailable and emits a warning. Missing credentials skip reporting without failing tests. A terminated job may not finish uploading. This integration monitors CI runs; it does not schedule extension tests in Checkly's hosted browsers or configure alerts.
 
 Only run this suite against its synthetic fixtures and temporary browser profiles. The reporter scrubs recognized secret environment values and sensitive HTTP headers from reports and traces. Screenshots and videos can still show everything rendered on screen, so never use real notes, private webpages, or live provider credentials in these tests. Inspect artifacts before enabling uploads or adding new fixtures.
 

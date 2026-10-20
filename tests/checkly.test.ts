@@ -11,31 +11,58 @@ afterEach(() => {
 });
 
 test.each([false, true])(
-  'Checkly dry run generates diagnostics and preserves failure=%s',
+  'uploads a saved blob report without rerunning a test with failure=%s',
   (fail) => {
     const dir = mkdtempSync(path.join(tmpdir(), 'anchor-checkly-reporter-'));
     const require = createRequire(import.meta.url);
+    const cli = require.resolve('@playwright/test/cli');
     try {
+      const marker = path.join(dir, 'executions');
       writeFileSync(
         path.join(dir, 'smoke.spec.ts'),
-        `import { test, expect } from ${JSON.stringify(require.resolve('@playwright/test'))};
-       test('synthetic reporter smoke', () => { expect(${fail}).toBe(false); });`,
+        `
+        import { test, expect } from ${JSON.stringify(require.resolve('@playwright/test'))};
+        import { appendFileSync } from 'node:fs';
+        test('synthetic reporter smoke', () => {
+          appendFileSync(${JSON.stringify(marker)}, 'ran\\n');
+          expect(${fail}).toBe(false);
+        });
+      `,
       );
       writeFileSync(
         path.join(dir, 'playwright.config.ts'),
-        `import base from ${JSON.stringify(path.resolve('playwright.config.ts'))};
-       export default {
-         ...base, testDir: ${JSON.stringify(dir)}, retries: 0,
-         outputDir: ${JSON.stringify(path.join(dir, 'results'))},
-         reporter: base.reporter.map(([name, options]) => [
-           name === '@checkly/playwright-reporter' ? ${JSON.stringify(require.resolve('@checkly/playwright-reporter'))} : name,
-           { ...options, outputDir: ${JSON.stringify(path.join(dir, 'report'))}, outputFolder: ${JSON.stringify(path.join(dir, 'html'))} }
-         ]),
-       };`,
+        `
+        import base from ${JSON.stringify(path.resolve('playwright.config.ts'))};
+        export default {
+          ...base, testDir: ${JSON.stringify(dir)}, retries: 0,
+          outputDir: ${JSON.stringify(path.join(dir, 'results'))},
+          reporter: base.reporter.map(([name, options]) => [name, {
+            ...options, outputDir: ${JSON.stringify(path.join(dir, 'blob'))},
+            outputFolder: ${JSON.stringify(path.join(dir, 'html'))}
+          }]),
+        };
+      `,
       );
-      const result = spawnSync(
+      const result = spawnSync(process.execPath, [cli, 'test', '-c', path.join(dir, 'playwright.config.ts')], {
+        encoding: 'utf8',
+        timeout: 20_000,
+        env: { ...process.env, CI: 'true', CHECKLY_UPLOAD: '', CHECKLY_API_KEY: '', CHECKLY_ACCOUNT_ID: '' },
+      });
+      expect(result.status, result.stdout + result.stderr).toBe(fail ? 1 : 0);
+      expect(readFileSync(path.join(dir, 'html/index.html'), 'utf8')).toContain('<html');
+      writeFileSync(
+        path.join(dir, 'upload.config.ts'),
+        `
+        import base from ${JSON.stringify(path.resolve('playwright.checkly.config.ts'))};
+        export default { ...base, reporter: base.reporter.map(([name, options]) => [
+          ${JSON.stringify(require.resolve('@checkly/playwright-reporter'))},
+          { ...options, outputDir: ${JSON.stringify(path.join(dir, 'report'))} }
+        ]) };
+      `,
+      );
+      const upload = spawnSync(
         process.execPath,
-        [require.resolve('@playwright/test/cli'), 'test', '-c', path.join(dir, 'playwright.config.ts')],
+        [cli, 'merge-reports', '-c', path.join(dir, 'upload.config.ts'), path.join(dir, 'blob')],
         {
           encoding: 'utf8',
           timeout: 20_000,
@@ -49,9 +76,11 @@ test.each([false, true])(
           },
         },
       );
-      expect(result.status, result.stdout + result.stderr).toBe(fail ? 1 : 0);
+      expect(upload.status, upload.stdout + upload.stderr).toBe(0);
       expect(readFileSync(path.join(dir, 'report/checkly-report.zip')).length).toBeGreaterThan(0);
-      expect(readFileSync(path.join(dir, 'html/index.html'), 'utf8')).toContain('<html');
+      const report = JSON.parse(readFileSync(path.join(dir, 'report/checkly-report.json'), 'utf8'));
+      expect(report.stats.unexpected).toBe(fail ? 1 : 0);
+      expect(readFileSync(marker, 'utf8')).toBe('ran\n');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -72,11 +101,13 @@ test.each([
   vi.stubEnv('CHECKLY_API_KEY', key);
   vi.stubEnv('CHECKLY_ACCOUNT_ID', account);
   vi.resetModules();
-  const { default: config } = await import('../playwright.config');
+  const { default: config } = await import('../playwright.checkly.config');
   const reporters = config.reporter;
   if (!Array.isArray(reporters)) throw new Error('Expected configured reporters');
   expect(reporters.some(([name]) => name === '@checkly/playwright-reporter')).toBe(upload);
-  expect(reporters.some(([name]) => name === 'html')).toBe(true);
+  const { default: testConfig } = await import('../playwright.config');
+  if (!Array.isArray(testConfig.reporter)) throw new Error('Expected configured reporters');
+  expect(testConfig.reporter.some(([name]) => name === '@checkly/playwright-reporter')).toBe(false);
 });
 
 test.each([

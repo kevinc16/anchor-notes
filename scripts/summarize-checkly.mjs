@@ -20,7 +20,7 @@ if (enabled) {
 const message = sessionUrl
   ? `[View Checkly test session](${sessionUrl})`
   : enabled
-    ? 'Checkly session unavailable. Check the browser test logs for upload errors.'
+    ? 'Checkly session unavailable. Check the Checkly upload step logs for upload errors.'
     : 'Checkly upload skipped: credentials are missing or this run is not enabled for uploads.';
 
 if (enabled && !sessionUrl) console.log(`::warning::${message}`);

@@ -10,6 +10,7 @@ export default tseslint.config(
       '.wxt/**',
       'coverage/**',
       'playwright-report/**',
+      'blob-report/**',
       'test-results/**',
     ],
   },
