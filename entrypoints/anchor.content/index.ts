@@ -1,7 +1,8 @@
 import { browser, defineContentScript } from '#imports';
 import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '@/lib/highlight-dom';
+import { observeHighlightRestoration } from '@/lib/highlight-restoration';
 import { populateCurrentNote } from '@/lib/note-editor';
-import { normalizeUrl, readData } from '@/lib/storage';
+import { readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
 import { findTextRange, normalizeQuoteWhitespace } from '@/lib/text-range';
 import type { AnchorNote, ExtensionMessage, HighlightAnchor, HighlightColor, MessageResponse } from '@/lib/types';
@@ -13,7 +14,7 @@ export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
   cssInjectionMode: 'manifest',
-  main() {
+  main(ctx) {
     let pendingRange: Range | null = null;
 
     function textContext(range: Range) {
@@ -203,20 +204,6 @@ export default defineContentScript({
       parents.forEach((parent) => parent.normalize());
     }
 
-    async function restoreHighlights() {
-      removeEmptyHighlightMarks(document.body);
-      const current = normalizeUrl(location.href);
-      const data = await readData();
-      const notes = data.notes.filter(
-        (note) => normalizeUrl(note.url) === current || normalizeUrl(note.canonicalUrl ?? '') === current,
-      );
-      for (const note of notes) {
-        const selector = note.anchor?.quote;
-        const range = findTextRange(document.body, selector?.exact || note.quote, selector?.prefix, selector?.suffix);
-        if (range) wrapHighlightRange(range, note, data.settings.highlightCoverage);
-      }
-    }
-
     function positionFloatingElement(element: HTMLElement, rect: DOMRect) {
       const left = Math.max(12, Math.min(window.innerWidth - element.offsetWidth - 12, rect.left));
       const below = rect.bottom + 12;
@@ -400,6 +387,15 @@ export default defineContentScript({
         document.getElementById('anchor-notes-popover')?.remove();
       }
     });
-    void restoreHighlights();
+    const restoration = observeHighlightRestoration(document, readData);
+    ctx.addEventListener(window, 'wxt:locationchange', () => restoration.refresh());
+    const onStorageChanged = (changes: Record<string, unknown>, area: string) => {
+      if (area === 'local' && 'anchorNotesData' in changes) restoration.refresh();
+    };
+    browser.storage.onChanged.addListener(onStorageChanged);
+    ctx.onInvalidated(() => {
+      restoration.stop();
+      browser.storage.onChanged.removeListener(onStorageChanged);
+    });
   },
 });

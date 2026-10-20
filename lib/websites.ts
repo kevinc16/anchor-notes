@@ -1,5 +1,15 @@
 import type { AnchorNote } from './types';
 
+export function normalizeUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    url.hash = '';
+    return url.href.replace(/\/$/, '');
+  } catch {
+    return value;
+  }
+}
+
 export interface WebsiteNoteGroup {
   website: string;
   notes: AnchorNote[];
