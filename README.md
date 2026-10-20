@@ -100,12 +100,13 @@ CI runs this command for pull requests and pushes to `main`, adds the concise su
 
 ### Playwright monitoring with Checkly
 
-The Chromium E2E job can upload results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these repository values under **Settings → Secrets and variables → Actions**:
+The Chromium E2E job can upload results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these values in the **prod** environment under **Settings → Environments → prod**:
 
 - **Secret** `CHECKLY_API_KEY`: a Checkly API key with access to the intended account.
-- **Variable** `CHECKLY_ACCOUNT_ID`: the account ID from Checkly's account settings, added on the **Variables** tab.
+- **Variable** `CHECKLY_ACCOUNT_ID`: the account ID from Checkly's account settings, added under **Environment variables**.
+- **Variable** `CHECKLY_UPLOAD`: set to `true` to enable uploads; set to `false` to disable them.
 
-Uploads run on pushes to `main` and same-repository pull requests targeting `main`, when both values are configured. Fork PRs and runs without credentials skip uploads. Local runs do not upload by default, even if Checkly credentials are present: the reporter requires `CI=true`, `CHECKLY_UPLOAD=true`, and both credentials. Keep credentials out of local configuration files and source control.
+Uploads run on pushes to `main` and same-repository pull requests targeting `main`, when the `prod` environment has both credentials configured and `CHECKLY_UPLOAD=true`. Fork PRs and runs without credentials skip uploads. Local runs do not upload by default, even if Checkly credentials are present: the reporter requires `CI=true`, `CHECKLY_UPLOAD=true`, and both credentials. Keep credentials out of local configuration files and source control.
 
 Checkly records the available test results, screenshots, traces, and videos. Git metadata is detected by the reporter; the session name includes the branch and GitHub run ID/attempt. Open the session through the **Checkly** section in the workflow summary or the existing Playwright PR comment. CI continues to generate the HTML report and retain GitHub artifacts for 14 days.
 
