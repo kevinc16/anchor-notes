@@ -98,6 +98,23 @@ npm run zip:firefox # create a Firefox extension archive
 
 CI runs this command for pull requests and pushes to `main`, adds the concise summary to the workflow summary, and uploads the full `coverage/` directory as a build artifact. Coverage is advisory for now: CI fails when tests or report generation fail, but no percentage threshold fails the job. The initial baseline on `main` (2026-09-01) is 71.34% statements, 70.32% branches, 69.04% functions, and 74.50% lines (122/171 statements, 64/91 branches, 29/42 functions, and 114/153 lines). Revisit the baseline before introducing enforced thresholds.
 
+### Playwright monitoring with Checkly
+
+The Chromium E2E job can upload results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, add these repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `CHECKLY_API_KEY`: a Checkly API key with access to the intended account.
+- `CHECKLY_ACCOUNT_ID`: the account ID from Checkly's account settings.
+
+Uploads run on pushes to `main` and same-repository pull requests targeting `main`, when both secrets are configured. Fork PRs and runs without credentials skip uploads. Local runs do not upload by default, even if Checkly credentials are present: the reporter requires `CI=true`, `CHECKLY_UPLOAD=true`, and both credentials. Keep credentials out of local configuration files and source control.
+
+Checkly records the available test results, screenshots, traces, and videos. Git metadata is detected by the reporter; the session name includes the branch and GitHub run ID/attempt. Open the session through the **Checkly** section in the workflow summary or the existing Playwright PR comment. CI continues to generate the HTML report and retain GitHub artifacts for 14 days.
+
+The browser test step preserves Playwright's exit status. Reporter errors remain visible in its logs; when an enabled upload produces no session link, the summary reports it as unavailable and emits a warning. Missing credentials skip reporting without failing tests. A terminated job may not finish uploading. This integration monitors CI runs; it does not schedule extension tests in Checkly's hosted browsers or configure alerts.
+
+Only run this suite against its synthetic fixtures and temporary browser profiles. The reporter scrubs recognized secret environment values and sensitive HTTP headers from reports and traces. Screenshots and videos can still show everything rendered on screen, so never use real notes, private webpages, or live provider credentials in these tests. Inspect artifacts before enabling uploads or adding new fixtures.
+
+To verify setup, run a trusted CI build and confirm its session and artifacts are accessible. Also verify a deliberately failing test uploads its diagnostics while CI remains failed, and confirm a run without Checkly secrets still produces GitHub artifacts. The local unit suite covers upload gating and session-link reporting without contacting Checkly.
+
 ## Features
 
 - Highlight selected webpage text and attach a note.

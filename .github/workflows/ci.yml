@@ -186,6 +186,7 @@ jobs:
       contents: read
     outputs:
       playwright-artifact-url: ${{ steps.upload-playwright-artifacts.outputs.artifact-url }}
+      checkly-session-url: ${{ steps.checkly-summary.outputs.session-url }}
 
     steps:
       - name: Check out repository
@@ -207,7 +208,23 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser tests
-        run: npx playwright test
+        id: browser-tests
+        env:
+          CHECKLY_UPLOAD: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY != '' && secrets.CHECKLY_ACCOUNT_ID != '' }}
+          CHECKLY_API_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY || '' }}
+          CHECKLY_ACCOUNT_ID: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_ACCOUNT_ID || '' }}
+        shell: bash
+        run: |
+          echo "checkly-upload=$CHECKLY_UPLOAD" >> "$GITHUB_OUTPUT"
+          set -o pipefail
+          npx playwright test 2>&1 | tee "$RUNNER_TEMP/playwright-checkly.log"
+
+      - name: Publish Checkly session link
+        id: checkly-summary
+        if: ${{ always() }}
+        env:
+          CHECKLY_UPLOAD: ${{ steps.browser-tests.outputs.checkly-upload }}
+        run: node scripts/summarize-checkly.mjs "$RUNNER_TEMP/playwright-checkly.log"
 
       - name: Upload Playwright report and screenshots
         id: upload-playwright-artifacts
@@ -262,6 +279,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           ARTIFACT_URL: ${{ needs.e2e.outputs.playwright-artifact-url }}
+          CHECKLY_SESSION_URL: ${{ needs.e2e.outputs.checkly-session-url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_STATUS: ${{ needs.e2e.result }}
         with:
@@ -271,6 +289,10 @@ jobs:
             const runUrl = process.env.RUN_URL;
             const artifactUrl = process.env.ARTIFACT_URL || runUrl;
             const status = process.env.JOB_STATUS === 'success' ? 'passed' : 'did not pass';
+            const checklyUrl = process.env.CHECKLY_SESSION_URL;
+            const checklyLink = /^https:\/\/app\.checklyhq\.com\/test-sessions\/[\w-]+$/.test(checklyUrl || '')
+              ? [`[View Checkly test session](${checklyUrl})`, '']
+              : [];
             const body = [
               marker,
               '## Playwright screenshots',
@@ -279,6 +301,7 @@ jobs:
               '',
               `[Download the Playwright report, screenshots, and diagnostics](${artifactUrl})`,
               '',
+              ...checklyLink,
               `[View the CI run](${runUrl})`,
             ].join('\n');
 

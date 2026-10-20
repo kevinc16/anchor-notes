@@ -30,6 +30,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@checkly/playwright-reporter": "^1.14.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",
