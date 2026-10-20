@@ -252,6 +252,29 @@ test('searches, groups, edits, and deletes notes in the library', async ({
 
     await library.getByRole('combobox').selectOption('oldest');
     await expect(library.locator('blockquote').first()).toContainText('An older idea worth returning to.');
+
+    // A settings write refreshes the shared snapshot without resetting library controls.
+    await library.getByPlaceholder('Search notes, tags, or sources…').fill('research');
+    await library.getByRole('button', { name: 'research', exact: true }).click();
+    await library.getByRole('button', { name: 'Group by website', exact: true }).click();
+    await library.getByRole('button', { name: /Settings/ }).click();
+    await library.getByRole('button', { name: 'Coral', exact: true }).click();
+    await library.getByRole('button', { name: 'Save settings', exact: true }).click();
+    await expect(library.getByText('Settings saved', { exact: true })).toBeVisible();
+    expect((await readExtensionData(serviceWorker)).settings.highlightColor).toBe('coral');
+    await library.getByRole('button', { name: /Library/ }).click();
+    await expect(library.getByPlaceholder('Search notes, tags, or sources…')).toHaveValue('research');
+    await expect(library.getByRole('combobox')).toHaveValue('oldest');
+    await expect(library.getByRole('button', { name: 'Group by website', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    await expect(library.locator('article:visible')).toHaveCount(1);
+    await expect(library.locator('article:visible')).toContainText('Older research note');
+    await library.getByPlaceholder('Search notes, tags, or sources…').fill('');
+    await library.getByRole('button', { name: 'All notes', exact: true }).click();
+    await library.getByRole('button', { name: 'Group by website', exact: true }).click();
+
     await library.getByRole('combobox').selectOption('newest');
     await expect(library.locator('blockquote').first()).toContainText('A newer idea for the product roadmap.');
 
@@ -264,7 +287,8 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await dialog.getByLabel('Tags (comma separated)').fill('product, edited');
     await dialog.getByRole('button', { name: 'Lilac', exact: true }).click();
     await dialog.getByRole('button', { name: 'Save changes' }).click();
-    await expect(library.getByText('Edited product note', { exact: true })).toBeVisible();
+    await expect(dialog).toBeHidden();
+    await expect(newerCard.getByText('Edited product note', { exact: true })).toBeVisible();
     await expect(library.getByText('A manually edited summary.', { exact: true })).toBeVisible();
 
     library.once('dialog', (browserDialog) => browserDialog.accept());
