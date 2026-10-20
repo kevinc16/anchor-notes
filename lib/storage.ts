@@ -2,7 +2,7 @@ import { storage } from '#imports';
 import { DEFAULT_SETTINGS, normalizeSettings } from './settings';
 import type { AnchorData, AnchorNote, AnchorSettings } from './types';
 
-export { hostFromUrl } from './websites';
+export { hostFromUrl, normalizeUrl } from './websites';
 
 export const EMPTY_DATA: AnchorData = {
   schemaVersion: 1,
@@ -58,16 +58,6 @@ export function normalizeData(value: unknown): AnchorData {
     notes: Array.isArray(candidate.notes) ? candidate.notes : [],
     settings: normalizeSettings(candidate.settings),
   };
-}
-
-export function normalizeUrl(value: string): string {
-  try {
-    const url = new URL(value);
-    url.hash = '';
-    return url.href.replace(/\/$/, '');
-  } catch {
-    return value;
-  }
 }
 
 export function noteMatches(note: AnchorNote, query: string): boolean {
