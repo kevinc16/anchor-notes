@@ -173,6 +173,17 @@ public/                 # extension icons copied into the build
 wxt.config.ts           # manifest, React module, and Tailwind/Vite config
 ```
 
+## UI state management
+
+The popup and library use the typed Zustand stores in `lib/ui-stores.ts`:
+
+- `useDataStore` caches the latest normalized `AnchorData` snapshot and tracks read status. Entrypoints call `loadData(readData)` on mount and after successful writes. A failed read keeps the previous snapshot and exposes a generic error without provider details.
+- `useLibraryStore` owns library navigation, search, topic filtering, sorting, grouping, and collapsed websites. Derived note lists remain computed from the snapshot and these controls.
+
+Stores are in-memory and scoped to each extension page. Popup and options pages have separate JavaScript contexts; they share the store definition, not a live instance. There is no Zustand persistence middleware, browser localStorage mirror, or automatic cross-page synchronization. Browser extension local storage remains the source of truth through `lib/storage.ts`, which still normalizes reads and writes. Existing runtime messages continue to handle content-script/background operations; stores do not call browser APIs or send messages.
+
+Settings and note edit drafts remain component-local. API key drafts, passphrases, and decrypted credentials never enter Zustand. The snapshot contains only the already-persisted settings; encrypted keys remain ciphertext, and unlocked keys stay in extension session storage through the existing credential helpers. Changing a UI control does not write data; save, delete, and import handlers persist through the existing helpers and then refresh the snapshot.
+
 ## Privacy and limitations
 
 See the [Anchor Notes Privacy Policy](https://github.com/kevinc16/anchor-notes/blob/main/PRIVACY.md) for the information Anchor Notes stores locally and sends to optional remote organizers.

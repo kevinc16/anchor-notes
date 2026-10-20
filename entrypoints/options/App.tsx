@@ -21,11 +21,8 @@ import type {
   ExtensionMessage,
   MessageResponse,
 } from '@/lib/types';
-import { groupNotesByWebsite, hostFromUrl, toggleCollapsedWebsite } from '@/lib/websites';
-
-type View = 'library' | 'settings';
-type SortMode = 'newest' | 'oldest' | 'source';
-type GroupMode = 'website' | 'none';
+import { useDataStore, useLibraryStore, type SortMode } from '@/lib/ui-stores';
+import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
@@ -236,13 +233,22 @@ function Field({ label, children, help }: { label: string; children: React.React
 }
 
 export default function App() {
-  const [data, setData] = useState<AnchorData>(EMPTY_DATA);
-  const [view, setView] = useState<View>('library');
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [groupMode, setGroupMode] = useState<GroupMode>('website');
-  const [collapsedWebsites, setCollapsedWebsites] = useState<Set<string>>(() => new Set());
+  const { data: snapshot, loadData, loading, error } = useDataStore();
+  const data = snapshot ?? EMPTY_DATA;
+  const {
+    view,
+    setView,
+    query,
+    setQuery,
+    filter,
+    setFilter,
+    sortMode,
+    setSortMode,
+    groupMode,
+    setGroupMode,
+    collapsedWebsites,
+    toggleWebsite,
+  } = useLibraryStore();
   const [editing, setEditing] = useState<AnchorNote | null>(null);
   const [editBody, setEditBody] = useState('');
   const [editSummary, setEditSummary] = useState('');
@@ -257,14 +263,15 @@ export default function App() {
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void Promise.all([readData(), readSessionApiKey()]).then(([next, sessionApiKey]) => {
-      setData(next);
-      setSettings(next.settings);
-      setApiKeyDraft(next.settings.aiApiKey);
-      setCredentialUnlocked(Boolean(sessionApiKey));
-      setEncryptCredential(Boolean(next.settings.aiApiKeyEncrypted));
-    });
-  }, []);
+    void Promise.all([loadData(readData), readSessionApiKey()])
+      .then(([next, sessionApiKey]) => {
+        setSettings(next.settings);
+        setApiKeyDraft(next.settings.aiApiKey);
+        setCredentialUnlocked(Boolean(sessionApiKey));
+        setEncryptCredential(Boolean(next.settings.aiApiKeyEncrypted));
+      })
+      .catch(() => setToast('Could not load settings.'));
+  }, [loadData]);
 
   useEffect(() => {
     if (!toast) return;
@@ -301,10 +308,6 @@ export default function App() {
 
   const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
 
-  function toggleWebsite(website: string) {
-    setCollapsedWebsites((current) => toggleCollapsedWebsite(current, website));
-  }
-
   function startEdit(note: AnchorNote) {
     setEditing(note);
     setEditBody(note.body);
@@ -323,7 +326,7 @@ export default function App() {
         tags: editTags,
       }),
     );
-    setData(await readData());
+    await loadData(readData);
     setEditing(null);
     setToast('Changes saved');
   }
@@ -331,7 +334,7 @@ export default function App() {
   async function removeNote(note: AnchorNote) {
     if (!window.confirm('Delete this saved highlight?')) return;
     await deleteNote(note.id);
-    setData(await readData());
+    await loadData(readData);
     setToast('Note deleted');
   }
 
@@ -382,7 +385,7 @@ export default function App() {
     await updateSettings(nextSettings);
     setSettings(nextSettings);
     setEncryptCredential(Boolean(nextSettings.aiApiKeyEncrypted));
-    setData(await readData());
+    await loadData(readData);
     setToast(encryptCredential ? 'Encrypted settings saved' : 'Settings saved');
   }
 
@@ -408,7 +411,7 @@ export default function App() {
     setVaultPassphrase('');
     setCredentialUnlocked(false);
     setEncryptCredential(false);
-    setData(await readData());
+    await loadData(readData);
     setToast('API key forgotten');
   }
 
@@ -439,7 +442,7 @@ export default function App() {
 
     await updateSettings(nextSettings);
     setSettings(nextSettings);
-    setData(await readData());
+    await loadData(readData);
     setToast(nextSettings.aiEnabled ? 'LLM organizer enabled' : 'LLM organizer disabled');
   }
 
@@ -468,7 +471,7 @@ export default function App() {
       if (!Array.isArray(incoming.notes)) throw new Error('This backup does not contain a notes array.');
       const byId = new Map([...data.notes, ...incoming.notes].map((note) => [note.id, note]));
       await writeData({ ...data, notes: [...byId.values()] });
-      setData(await readData());
+      await loadData(readData);
       setToast('Backup imported');
     } catch (error) {
       window.alert(`Could not import backup: ${error instanceof Error ? error.message : 'Invalid file.'}`);
@@ -509,7 +512,15 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="ml-[var(--layout-sidebar-width)] px-[var(--layout-content-gutter)] pb-[var(--layout-content-bottom)] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8">
+      <main
+        className="ml-[var(--layout-sidebar-width)] px-[var(--layout-content-gutter)] pb-[var(--layout-content-bottom)] pt-12 max-[760px]:ml-0 max-[760px]:px-5 max-[760px]:py-8"
+        aria-busy={loading}
+      >
+        {error && (
+          <p role="alert" className="mb-4 text-xs text-danger">
+            {error}
+          </p>
+        )}
         {view === 'library' ? (
           <section>
             <header className="flex items-end justify-between gap-8 max-[760px]:flex-col max-[760px]:items-stretch">

@@ -1,7 +1,8 @@
 import { browser } from '#imports';
 import { useEffect, useMemo, useState } from 'react';
-import { hostFromUrl, normalizeUrl, readData } from '@/lib/storage';
+import { EMPTY_DATA, hostFromUrl, normalizeUrl, readData } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage } from '@/lib/types';
+import { useDataStore } from '@/lib/ui-stores';
 
 interface PageState {
   tabId?: number;
@@ -22,15 +23,17 @@ function Brand() {
 
 export default function App() {
   const [page, setPage] = useState<PageState>({ title: 'Loading…', url: '' });
-  const [allNotes, setAllNotes] = useState<AnchorNote[]>([]);
+  const { data, loadData, loading, error } = useDataStore();
+  const allNotes = data?.notes ?? EMPTY_DATA.notes;
 
   useEffect(() => {
-    void Promise.all([browser.tabs.query({ active: true, currentWindow: true }), readData()]).then(([tabs, data]) => {
-      const tab = tabs[0];
-      setPage({ tabId: tab?.id, title: tab?.title || 'Current page', url: tab?.url || '' });
-      setAllNotes(data.notes);
-    });
-  }, []);
+    void Promise.all([browser.tabs.query({ active: true, currentWindow: true }), loadData(readData)])
+      .then(([tabs]) => {
+        const tab = tabs[0];
+        setPage({ tabId: tab?.id, title: tab?.title || 'Current page', url: tab?.url || '' });
+      })
+      .catch(() => setPage({ title: 'Current page', url: '' }));
+  }, [loadData]);
 
   const notes = useMemo(() => {
     const pageUrl = normalizeUrl(page.url);
@@ -60,7 +63,12 @@ export default function App() {
         </button>
       </header>
 
-      <main className="px-4xl py-5">
+      <main className="px-4xl py-5" aria-busy={loading}>
+        {error && (
+          <p role="alert" className="mb-4 text-xs text-danger">
+            {error}
+          </p>
+        )}
         <section>
           <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">On this page</p>
           <h1 className="mt-2 truncate font-serif text-popup-title font-semibold leading-[1.14] tracking-[-0.02em]">
