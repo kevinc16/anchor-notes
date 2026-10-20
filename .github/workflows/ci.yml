@@ -210,9 +210,9 @@ jobs:
       - name: Run browser tests
         id: browser-tests
         env:
-          CHECKLY_UPLOAD: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY != '' && secrets.CHECKLY_ACCOUNT_ID != '' }}
+          CHECKLY_UPLOAD: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY != '' && vars.CHECKLY_ACCOUNT_ID != '' }}
           CHECKLY_API_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_API_KEY || '' }}
-          CHECKLY_ACCOUNT_ID: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.CHECKLY_ACCOUNT_ID || '' }}
+          CHECKLY_ACCOUNT_ID: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.CHECKLY_ACCOUNT_ID || '' }}
         shell: bash
         run: |
           echo "checkly-upload=$CHECKLY_UPLOAD" >> "$GITHUB_OUTPUT"
