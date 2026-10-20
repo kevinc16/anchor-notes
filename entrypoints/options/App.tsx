@@ -10,7 +10,7 @@ import { requestFirefoxDataCollectionPermission, type FirefoxDataCollectionApi }
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
 import { getLibraryCardPreview, isLibraryCardPreviewTruncated } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
-import { deleteNote, EMPTY_DATA, noteMatches, readData, saveNote, updateSettings, writeData } from '@/lib/storage';
+import { EMPTY_DATA, normalizeData, noteMatches, readData, updateSettings, writeData } from '@/lib/storage';
 import type {
   AiProvider,
   AnchorData,
@@ -20,9 +20,11 @@ import type {
   HighlightCoverage,
   ExtensionMessage,
   MessageResponse,
+  SummaryGenerationStatus,
 } from '@/lib/types';
 import { useDataStore, useLibraryStore, type SortMode } from '@/lib/ui-stores';
 import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
+import { useSummaryGeneration } from './use-summary-generation';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
@@ -130,7 +132,17 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
   );
 }
 
-function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => void; onDelete: () => void }) {
+function NoteCard({
+  note,
+  generationState,
+  onEdit,
+  onDelete,
+}: {
+  note: AnchorNote;
+  generationState?: SummaryGenerationStatus['state'];
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const quotePreview = getLibraryCardPreview(note.quote);
   const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
   const [quoteExpanded, setQuoteExpanded] = useState(false);
@@ -178,11 +190,23 @@ function NoteCard({ note, onEdit, onDelete }: { note: AnchorNote; onEdit: () => 
         </div>
       )}
       {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
-      {note.summary && (
-        <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
-          {note.summary}
-        </p>
-      )}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {(generationState || note.summary) && (
+          <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
+            {generationState === 'pending' ? (
+              <span className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="size-3 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
+                />
+                Generating summary…
+              </span>
+            ) : (
+              note.summary || 'Summary unavailable. Your note is saved.'
+            )}
+          </p>
+        )}
+      </div>
       <div className="mt-auto flex flex-wrap gap-1.5">
         {note.tags.map((tag) => (
           <Tag key={tag}>{tag}</Tag>
@@ -233,6 +257,7 @@ function Field({ label, children, help }: { label: string; children: React.React
 }
 
 export default function App() {
+  const generationStates = useSummaryGeneration();
   const { data: snapshot, loadData, loading, error } = useDataStore();
   const data = snapshot ?? EMPTY_DATA;
   const {
@@ -261,6 +286,16 @@ export default function App() {
   const [encryptCredential, setEncryptCredential] = useState(false);
   const [toast, setToast] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function onChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
+      if (area === 'local' && changes.anchorNotesData) {
+        useDataStore.setState({ data: normalizeData(changes.anchorNotesData.newValue) });
+      }
+    }
+    browser.storage.onChanged.addListener(onChanged);
+    return () => browser.storage.onChanged.removeListener(onChanged);
+  }, []);
 
   useEffect(() => {
     void Promise.all([loadData(readData), readSessionApiKey()])
@@ -318,24 +353,38 @@ export default function App() {
 
   async function persistEdit() {
     if (!editing) return;
-    await saveNote(
-      applyLibraryNoteEdits(editing, {
-        body: editBody,
-        summary: editSummary,
-        color: editColor,
-        tags: editTags,
-      }),
-    );
-    await loadData(readData);
-    setEditing(null);
-    setToast('Changes saved');
+    try {
+      const response = (await browser.runtime.sendMessage({
+        type: 'UPDATE_NOTE',
+        note: applyLibraryNoteEdits(editing, {
+          body: editBody,
+          summary: editSummary,
+          color: editColor,
+          tags: editTags,
+        }),
+      } satisfies ExtensionMessage)) as MessageResponse;
+      if (!response?.ok) throw new Error();
+      await loadData(readData);
+      setEditing(null);
+      setToast('Changes saved');
+    } catch {
+      setToast('Could not save changes.');
+    }
   }
 
   async function removeNote(note: AnchorNote) {
     if (!window.confirm('Delete this saved highlight?')) return;
-    await deleteNote(note.id);
-    await loadData(readData);
-    setToast('Note deleted');
+    try {
+      const response = (await browser.runtime.sendMessage({
+        type: 'DELETE_NOTE',
+        id: note.id,
+      } satisfies ExtensionMessage)) as MessageResponse;
+      if (!response?.ok) throw new Error();
+      await loadData(readData);
+      setToast('Note deleted');
+    } catch {
+      setToast('Could not delete note.');
+    }
   }
 
   async function saveSettings() {
@@ -617,6 +666,7 @@ export default function App() {
                             <NoteCard
                               key={note.id}
                               note={note}
+                              generationState={generationStates[note.id]}
                               onEdit={() => startEdit(note)}
                               onDelete={() => void removeNote(note)}
                             />
@@ -632,6 +682,7 @@ export default function App() {
                     <NoteCard
                       key={note.id}
                       note={note}
+                      generationState={generationStates[note.id]}
                       onEdit={() => startEdit(note)}
                       onDelete={() => void removeNote(note)}
                     />

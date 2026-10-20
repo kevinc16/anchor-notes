@@ -43,10 +43,12 @@ export function organizeLocally(note: Pick<AnchorNote, 'title' | 'quote' | 'body
 export async function organizeWithAI(
   note: Pick<AnchorNote, 'title' | 'url' | 'quote' | 'body'>,
   settings: AnchorSettings,
+  signal?: AbortSignal,
 ): Promise<{ tags: string[]; summary: string }> {
   const isOpenRouter = settings.aiProvider === 'openrouter';
   if (isOpenRouter && !settings.aiApiKey) throw new Error('Add an OpenRouter API key in Settings first.');
   const response = await fetch(settings.aiEndpoint, {
+    signal,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

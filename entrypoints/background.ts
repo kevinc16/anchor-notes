@@ -1,7 +1,8 @@
 import { browser, defineBackground } from '#imports';
 import { isEncryptedCredentialLocked, LOCKED_API_KEY_WARNING } from '@/lib/credential-settings';
 import { readSessionApiKey } from '@/lib/credentials';
-import { organizeLocally, organizeWithAI } from '@/lib/organize';
+import { organizeLocally } from '@/lib/organize';
+import { generateSummary } from '@/lib/summary-generation';
 import { noteReturnKey, openNoteSource, takeNoteReturn } from '@/lib/note-return';
 import { shouldUseAiOrganizer } from '@/lib/settings';
 import { deleteNote, readData, saveNote } from '@/lib/storage';
@@ -82,15 +83,10 @@ export default defineBackground(() => {
             if (isEncryptedCredentialLocked(data.settings, sessionApiKey)) {
               return { ok: true, note, warning: LOCKED_API_KEY_WARNING };
             }
-            try {
-              const organized = await organizeWithAI(note, {
-                ...data.settings,
-                aiApiKey: sessionApiKey || data.settings.aiApiKey,
-              });
-              await saveNote({ ...note, ...organized });
-            } catch (error) {
-              console.warn('Anchor Notes AI organization failed:', error);
-            }
+            await generateSummary(note, {
+              ...data.settings,
+              aiApiKey: sessionApiKey || data.settings.aiApiKey,
+            });
           }
           return { ok: true, note };
         } catch (error) {

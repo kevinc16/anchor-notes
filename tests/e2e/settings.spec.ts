@@ -182,6 +182,8 @@ test('encrypts, unlocks, and disables encryption for an API key', async ({
 
 test('warns when a new highlight cannot use a locked encrypted API key', async ({
   page,
+  context,
+  extensionId,
   serviceWorker,
   articleUrl,
 }) => {
@@ -208,4 +210,8 @@ test('warns when a new highlight cannot use a locked encrypted API key', async (
   });
   expect(savedData.notes[0]?.summary).toBeUndefined();
   expect(await readSessionApiKey(serviceWorker)).toBe('');
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  await expect(library.locator('article')).toHaveCount(1);
+  await expect(library.getByText('Generating summary…')).toHaveCount(0);
+  await expect(library.getByText('Summary unavailable. Your note is saved.')).toHaveCount(0);
 });

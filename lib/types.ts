@@ -35,6 +35,9 @@ export interface AnchorNote {
   updatedAt: string;
 }
 
+// Session-only metadata; never included in note exports or user-editable summaries.
+export type SummaryGenerationStatus = { state: 'pending'; expiresAt: number } | { state: 'unavailable' };
+
 export interface EncryptedSecret {
   version: 1;
   algorithm: 'AES-GCM';

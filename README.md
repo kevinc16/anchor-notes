@@ -151,6 +151,8 @@ Open **Anchor Notes → Settings** and choose an organizer:
 
 Only notes created while an LLM provider is enabled are sent to that provider. Local topic rules remain the default.
 
+The library shows **Generating summary…** on each note while its LLM request is running and updates automatically when it finishes. Failed, empty, or interrupted requests show **Summary unavailable. Your note is saved.**; pending indicators expire after one minute. Notes and local tags remain saved, and late results cannot replace manual edits or restore deleted notes. Generation status lasts only for the browser session and is excluded from JSON backups.
+
 Remote-provider API keys use browser extension local storage by default. That storage is local to the browser profile, but browsers do not encrypt it for the extension. The Settings page labels this clearly and offers optional passphrase encryption; encryption is never enabled or applied automatically.
 
 When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after the browser restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
