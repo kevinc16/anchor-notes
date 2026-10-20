@@ -1,6 +1,6 @@
 import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from './highlight-dom';
 import { findTextRange } from './text-range';
-import type { AnchorData } from './types';
+import type { AnchorData, NoteReturnIntent } from './types';
 import { normalizeUrl } from './websites';
 
 const MARK_SELECTOR = `mark.${HIGHLIGHT_CLASS}`;
@@ -18,6 +18,7 @@ export function observeHighlightRestoration(document: Document, readData: () => 
   let currentUrl = normalizeUrl(document.location.href);
   let currentCanonical = canonicalUrl();
   let staleCanonical = '';
+  let pendingScroll: (NoteReturnIntent & { url: string }) | undefined;
   const rendered = new Map<string, RenderedHighlight>();
 
   function canonicalUrl() {
@@ -98,6 +99,9 @@ export function observeHighlightRestoration(document: Document, readData: () => 
         return;
       }
       if (!document.body) return;
+      if (pendingScroll && (pendingScroll.url !== url || pendingScroll.expiresAt <= Date.now())) {
+        pendingScroll = undefined;
+      }
 
       // The router can update history before updating its old canonical metadata.
       if (url !== currentUrl) staleCanonical = canonical === currentCanonical ? canonical : '';
@@ -159,6 +163,13 @@ export function observeHighlightRestoration(document: Document, readData: () => 
           });
         }
         for (const id of rendered.keys()) if (!noteIds.has(id)) rendered.delete(id);
+        if (pendingScroll) {
+          const target = rendered.get(pendingScroll.id)?.fragments[0]?.mark;
+          if (target?.isConnected) {
+            pendingScroll = undefined;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
       } finally {
         observe();
       }
@@ -172,12 +183,18 @@ export function observeHighlightRestoration(document: Document, readData: () => 
   void restore();
   return {
     refresh,
+    requestScroll(intent: NoteReturnIntent) {
+      if (stopped) return;
+      pendingScroll = { ...intent, url: normalizeUrl(document.location.href) };
+      refresh();
+    },
     stop() {
       stopped = true;
       revision += 1;
       if (timer !== undefined) window.clearTimeout(timer);
       observer.disconnect();
       rendered.clear();
+      pendingScroll = undefined;
     },
   };
 }
