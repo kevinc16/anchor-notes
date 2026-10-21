@@ -105,6 +105,7 @@ test('removes a saved highlight from the page editor', async ({
   });
 
   await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
+  await page.addStyleTag({ content: 'button { text-transform: uppercase; }' });
   const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
   const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
@@ -121,28 +122,40 @@ test('removes a saved highlight from the page editor', async ({
   const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await expect(removeButton).toBeVisible();
 
-  const cancelDialog = page.waitForEvent('dialog');
-  const cancelHandled = cancelDialog.then(async (dialog) => {
-    expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toBe('Remove this saved highlight?');
-    await dialog.dismiss();
-  });
+  const confirmation = page.getByRole('dialog', { name: 'Delete note?' });
   await removeButton.click();
-  await cancelHandled;
+  await expect(confirmation).toBeVisible();
+  const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
+  await expect(cancel).toHaveCSS('text-transform', 'none');
+  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toHaveCSS(
+    'text-transform',
+    'none',
+  );
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(cancel).toBeFocused();
+  await page.screenshot({ path: test.info().outputPath('page-delete-confirmation.png') });
+  await cancel.click();
+  await expect(confirmation).toBeHidden();
+  await expect(removeButton).toBeFocused();
   await expect(popover).toBeVisible();
   await expect(targetMarks).toHaveCount(3);
   expect((await readExtensionData(serviceWorker)).notes.map((note) => note.id)).toEqual(
     expect.arrayContaining([target.id, other.id]),
   );
 
-  const confirmDialog = page.waitForEvent('dialog');
-  const confirmHandled = confirmDialog.then(async (dialog) => {
-    expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toBe('Remove this saved highlight?');
-    await dialog.accept();
-  });
   await removeButton.click();
-  await confirmHandled;
+  await expect(confirmation).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(confirmation).toBeHidden();
+  await expect(popover).toBeVisible();
+  await expect(removeButton).toBeFocused();
+  await expect(targetMarks).toHaveCount(3);
+
+  await removeButton.click();
+  await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
   await expect(popover).toBeHidden();
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight removed');
   await expect(targetMarks).toHaveCount(0);
@@ -291,8 +304,21 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(newerCard.getByText('Edited product note', { exact: true })).toBeVisible();
     await expect(library.getByText('A manually edited summary.', { exact: true })).toBeVisible();
 
-    library.once('dialog', (browserDialog) => browserDialog.accept());
-    await newerCard.getByRole('button', { name: 'Delete' }).click();
+    const deleteButton = newerCard.getByRole('button', { name: 'Delete', exact: true });
+    await deleteButton.click();
+    const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+    await library.screenshot({ path: test.info().outputPath('library-delete-confirmation.png') });
+    await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(newerCard).toBeVisible();
+    await expect(deleteButton).toBeFocused();
+    await deleteButton.click();
+    await library.keyboard.press('Escape');
+    await expect(confirmation).toBeHidden();
+    await expect(newerCard).toBeVisible();
+    await deleteButton.click();
+    await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
   } finally {
     await library.close();

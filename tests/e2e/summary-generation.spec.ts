@@ -123,8 +123,9 @@ for (const action of ['edit', 'delete']) {
       await library.getByRole('dialog').getByLabel('Summary').fill('My manual summary');
       await library.getByRole('dialog').getByRole('button', { name: 'Save changes', exact: true }).click();
     } else {
-      library.once('dialog', (dialog) => dialog.accept());
       await library.getByRole('button', { name: 'Delete', exact: true }).click();
+      await library.getByRole('dialog').getByRole('button', { name: 'Delete note', exact: true }).click();
+      await expect(library.locator('article')).toHaveCount(0);
     }
     await release(articleUrl);
     await expect(page.locator('#anchor-notes-toast')).toBeVisible();

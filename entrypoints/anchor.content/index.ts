@@ -1,4 +1,5 @@
 import { browser, defineContentScript } from '#imports';
+import { confirmNoteDeletion } from '@/lib/delete-confirmation';
 import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '@/lib/highlight-dom';
 import { observeHighlightRestoration } from '@/lib/highlight-restoration';
 import { populateCurrentNote } from '@/lib/note-editor';
@@ -316,23 +317,23 @@ export default defineContentScript({
       popover
         .querySelector<HTMLButtonElement>('.anchor-open-library')
         ?.addEventListener('click', () => void openLibrary());
-      popover.querySelector<HTMLButtonElement>('.anchor-remove')?.addEventListener('click', () => {
-        if (!window.confirm('Remove this saved highlight?')) return;
-        void browser.runtime
-          .sendMessage({ type: 'DELETE_NOTE', id: note.id } satisfies ExtensionMessage)
-          .then((response) => {
-            const result = response as MessageResponse;
-            if (!result?.ok) {
-              showToast(result?.error || 'Could not delete note');
-              return;
-            }
-            removeHighlightMarks(note.id);
-            popover.remove();
-            showToast('Highlight removed');
-          })
-          .catch((error: unknown) => {
-            showToast(error instanceof Error ? error.message : 'Could not delete note');
-          });
+      popover.querySelector<HTMLButtonElement>('.anchor-remove')?.addEventListener('click', async () => {
+        try {
+          if (!(await confirmNoteDeletion(popover))) return;
+          const result = (await browser.runtime.sendMessage({
+            type: 'DELETE_NOTE',
+            id: note.id,
+          } satisfies ExtensionMessage)) as MessageResponse;
+          if (!result?.ok) {
+            showToast(result?.error || 'Could not delete note');
+            return;
+          }
+          removeHighlightMarks(note.id);
+          popover.remove();
+          showToast('Highlight removed');
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Could not delete note');
+        }
       });
       popover.querySelector<HTMLButtonElement>('.anchor-save')?.addEventListener('click', () => {
         note.body = textarea?.value.trim() ?? '';
@@ -383,6 +384,7 @@ export default defineContentScript({
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        if (document.getElementById('anchor-notes-delete-confirmation')) return;
         document.getElementById('anchor-notes-composer')?.remove();
         document.getElementById('anchor-notes-popover')?.remove();
       }
