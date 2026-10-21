@@ -38,6 +38,14 @@ export interface AnchorNote {
 // Session-only metadata; never included in note exports or user-editable summaries.
 export type SummaryGenerationStatus = { state: 'pending'; expiresAt: number } | { state: 'unavailable' };
 
+export type TagOperation = 'add' | 'remove' | 'replace';
+export type GenerationOutcome = 'completed' | 'failed' | 'skipped';
+export interface BulkGeneration {
+  id: string;
+  expiresAt: number;
+  items: Array<{ id: string; state: 'queued' | 'pending' | GenerationOutcome }>;
+}
+
 export interface EncryptedSecret {
   version: 1;
   algorithm: 'AES-GCM';
@@ -74,6 +82,9 @@ export interface NoteReturnIntent {
 export type ExtensionMessage =
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
+  | { type: 'BULK_EDIT_TAGS'; ids: string[]; operation: TagOperation; tags: string }
+  | { type: 'START_BULK_GENERATION'; ids: string[] }
+  | { type: 'GET_BULK_GENERATION' }
   | { type: 'GET_NOTE'; id: string }
   | { type: 'DELETE_NOTE'; id: string }
   | { type: 'OPEN_LIBRARY' }
@@ -88,4 +99,6 @@ export interface MessageResponse {
   note?: AnchorNote;
   warning?: string;
   error?: string;
+  tagResult?: { changed: number; skipped: number };
+  batch?: BulkGeneration;
 }

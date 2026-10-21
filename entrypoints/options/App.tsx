@@ -22,10 +22,13 @@ import type {
   ExtensionMessage,
   MessageResponse,
   SummaryGenerationStatus,
+  BulkGeneration,
 } from '@/lib/types';
 import { useDataStore, useLibraryStore, type SortMode } from '@/lib/ui-stores';
 import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
 import { useSummaryGeneration } from './use-summary-generation';
+import { useBulkGeneration } from './use-bulk-generation';
+import { BulkActions } from './BulkActions';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
@@ -136,11 +139,17 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 function NoteCard({
   note,
   generationState,
+  batchState,
+  selected,
+  onSelect,
   onEdit,
   onDelete,
 }: {
   note: AnchorNote;
   generationState?: SummaryGenerationStatus['state'];
+  batchState?: BulkGeneration['items'][number]['state'];
+  selected?: boolean;
+  onSelect?: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -166,7 +175,21 @@ function NoteCard({
   }
 
   return (
-    <article className="flex min-h-60 flex-col overflow-hidden rounded-2xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note">
+    <article
+      className={`flex min-h-60 flex-col overflow-hidden rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note ${selected ? 'border-ink ring-2 ring-ink/15' : 'border-line'}`}
+    >
+      {onSelect && (
+        <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-bold text-muted">
+          <input
+            type="checkbox"
+            className="size-4 accent-ink"
+            aria-label={`Select note: ${note.quote}`}
+            checked={selected ?? false}
+            onChange={onSelect}
+          />
+          Select note
+        </label>
+      )}
       <header className="flex items-center justify-between text-overline font-bold text-muted">
         <span>{hostFromUrl(note.url)}</span>
         <time>
@@ -208,6 +231,17 @@ function NoteCard({
           </p>
         )}
       </div>
+      {batchState && batchState !== 'pending' && (
+        <p className="mb-3 text-xs text-muted">
+          {batchState === 'queued'
+            ? 'Waiting for regeneration…'
+            : batchState === 'failed'
+              ? 'Regeneration failed. Existing tags and summary kept.'
+              : batchState === 'skipped'
+                ? 'Regeneration skipped: note changed, removed, or already generating.'
+                : 'Regeneration complete.'}
+        </p>
+      )}
       <div className="mt-auto flex flex-wrap gap-1.5">
         {note.tags.map((tag) => (
           <Tag key={tag}>{tag}</Tag>
@@ -259,6 +293,7 @@ function Field({ label, children, help }: { label: string; children: React.React
 
 export default function App() {
   const generationStates = useSummaryGeneration();
+  const batch = useBulkGeneration();
   const { data: snapshot, loadData, loading, error } = useDataStore();
   const data = snapshot ?? EMPTY_DATA;
   const {
@@ -274,6 +309,12 @@ export default function App() {
     setGroupMode,
     collapsedWebsites,
     toggleWebsite,
+    selecting,
+    selectedIds,
+    setSelecting,
+    toggleSelected,
+    selectNotes,
+    retainSelected,
   } = useLibraryStore();
   const [editing, setEditing] = useState<AnchorNote | null>(null);
   const [editBody, setEditBody] = useState('');
@@ -343,6 +384,11 @@ export default function App() {
   }, [data.notes, filter, query, sortMode]);
 
   const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
+  const batchStates = useMemo(() => new Map(batch?.items.map((item) => [item.id, item.state])), [batch]);
+
+  useEffect(() => {
+    retainSelected(visibleNotes.map((note) => note.id));
+  }, [visibleNotes, retainSelected]);
 
   function startEdit(note: AnchorNote) {
     setEditing(note);
@@ -594,7 +640,7 @@ export default function App() {
               </label>
             </header>
 
-            <div className="my-8 flex items-center justify-between gap-5 border-b border-line pb-3.5">
+            <div className="my-8 flex flex-wrap items-center justify-between gap-5 border-b border-line pb-3.5">
               <div className="flex gap-2 overflow-x-auto">
                 {['all', ...topics].map((topic) => (
                   <button
@@ -607,7 +653,17 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <div className="flex shrink-0 items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {!selecting && (
+                  <button
+                    className={buttonClass}
+                    type="button"
+                    onClick={() => setSelecting(true)}
+                    disabled={!data.notes.length}
+                  >
+                    Select notes
+                  </button>
+                )}
                 <button
                   className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink hover:bg-stone-200' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
                   type="button"
@@ -628,6 +684,17 @@ export default function App() {
                 </select>
               </div>
             </div>
+
+            {(selecting || batch) && (
+              <BulkActions
+                selecting={selecting}
+                ids={[...selectedIds]}
+                matchingIds={visibleNotes.map((note) => note.id)}
+                batch={batch}
+                onSelect={selectNotes}
+                onExit={() => setSelecting(false)}
+              />
+            )}
 
             {visibleNotes.length ? (
               groupMode === 'website' ? (
@@ -668,6 +735,9 @@ export default function App() {
                               key={note.id}
                               note={note}
                               generationState={generationStates[note.id]}
+                              batchState={batchStates.get(note.id)}
+                              selected={selectedIds.has(note.id)}
+                              onSelect={selecting ? () => toggleSelected(note.id) : undefined}
                               onEdit={() => startEdit(note)}
                               onDelete={() => void removeNote(note)}
                             />
@@ -684,6 +754,9 @@ export default function App() {
                       key={note.id}
                       note={note}
                       generationState={generationStates[note.id]}
+                      batchState={batchStates.get(note.id)}
+                      selected={selectedIds.has(note.id)}
+                      onSelect={selecting ? () => toggleSelected(note.id) : undefined}
                       onEdit={() => startEdit(note)}
                       onDelete={() => void removeNote(note)}
                     />

@@ -1,11 +1,12 @@
 import { browser, defineBackground } from '#imports';
+import { getBulkGeneration, startBulkGeneration } from '@/lib/bulk-generation';
 import { isEncryptedCredentialLocked, LOCKED_API_KEY_WARNING } from '@/lib/credential-settings';
 import { readSessionApiKey } from '@/lib/credentials';
 import { organizeLocally } from '@/lib/organize';
 import { generateSummary } from '@/lib/summary-generation';
 import { noteReturnKey, openNoteSource, takeNoteReturn } from '@/lib/note-return';
 import { shouldUseAiOrganizer } from '@/lib/settings';
-import { deleteNote, readData, saveNote } from '@/lib/storage';
+import { bulkEditTags, deleteNote, readData, saveNote } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
 
 export default defineBackground(() => {
@@ -48,6 +49,42 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onMessage.addListener((message: ExtensionMessage, sender): Promise<MessageResponse> | undefined => {
+    if (
+      message.type === 'BULK_EDIT_TAGS' ||
+      message.type === 'START_BULK_GENERATION' ||
+      message.type === 'GET_BULK_GENERATION'
+    ) {
+      // Bulk mutations are library actions, never webpage/content-script commands.
+      if (sender.url?.split(/[?#]/)[0] !== browser.runtime.getURL('/options.html')) {
+        return Promise.resolve({ ok: false, error: 'Open the library to use bulk actions.' });
+      }
+      if (message.type === 'GET_BULK_GENERATION') {
+        return getBulkGeneration()
+          .then((batch) => ({ ok: true, batch }))
+          .catch(() => ({ ok: false, error: 'Could not load regeneration progress.' }));
+      }
+      if (
+        !Array.isArray(message.ids) ||
+        !message.ids.length ||
+        message.ids.some((id) => typeof id !== 'string' || !id)
+      ) {
+        return Promise.resolve({ ok: false, error: 'Select at least one note.' });
+      }
+      if (message.type === 'BULK_EDIT_TAGS') {
+        if (!['add', 'remove', 'replace'].includes(message.operation) || typeof message.tags !== 'string') {
+          return Promise.resolve({ ok: false, error: 'Choose a valid tag operation.' });
+        }
+        return bulkEditTags(message.ids, message.operation, message.tags)
+          .then((tagResult) => ({ ok: true, tagResult }))
+          .catch(() => ({ ok: false, error: 'Could not update tags.' }));
+      }
+      return startBulkGeneration(message.ids)
+        .then((batch) => ({ ok: true, batch }))
+        .catch((error: unknown) => ({
+          ok: false,
+          error: error instanceof Error ? error.message : 'Could not start regeneration.',
+        }));
+    }
     if (message.type === 'RETURN_TO_SOURCE') {
       return (async () => {
         try {

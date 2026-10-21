@@ -199,3 +199,64 @@ describe('generation status', () => {
     expect(getSummaryGenerationState({ state: 'pending', expiresAt: Infinity }, 100)).toBeUndefined();
   });
 });
+
+describe('explicit regeneration', () => {
+  it.each(['empty-summary', 'empty-tags', 'malformed'])('preserves existing metadata on %s', async (kind) => {
+    const original = { ...note(), summary: 'Keep this summary' };
+    await saveNote(original);
+    vi.stubGlobal('fetch', async () =>
+      kind === 'malformed'
+        ? new Response('{}')
+        : new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      tags: kind === 'empty-tags' ? [] : ['ai'],
+                      summary: kind === 'empty-summary' ? '' : 'New summary',
+                    }),
+                  },
+                },
+              ],
+            }),
+          ),
+    );
+    expect(await generateSummary(original, settings, true)).toBe('failed');
+    expect((await readData()).notes[0]).toEqual(original);
+  });
+
+  it('does not start a duplicate provider request for an already running note', async () => {
+    const original = note();
+    await saveNote(original);
+    let requests = 0;
+    let finish!: (response: Response) => void;
+    vi.stubGlobal('fetch', () => {
+      requests++;
+      return new Promise<Response>((resolve) => {
+        finish = resolve;
+      });
+    });
+    const first = generateSummary(original, settings, true);
+    await vi.waitFor(() => expect(requests).toBe(1));
+    expect(await generateSummary(original, settings, true)).toBe('skipped');
+    expect(requests).toBe(1);
+    finish(completion());
+    expect(await first).toBe('completed');
+  });
+});
+
+it('reports a committed result as completed even when session cleanup fails', async () => {
+  const original = { ...note(), summary: 'Old summary' };
+  await saveNote(original);
+  vi.stubGlobal('fetch', async () => completion());
+  const { browser } = await import('#imports');
+  const cleanup = vi.spyOn(browser.storage.session, 'remove').mockRejectedValueOnce(new Error('storage unavailable'));
+  try {
+    expect(await generateSummary(original, settings, true)).toBe('completed');
+    expect((await readData()).notes[0]?.summary).toBe('Generated summary');
+    expect(getSummaryGenerationState(status())).not.toBe('pending');
+  } finally {
+    cleanup.mockRestore();
+  }
+});

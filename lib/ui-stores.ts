@@ -36,6 +36,12 @@ interface LibraryStore {
   sortMode: SortMode;
   groupMode: 'website' | 'none';
   collapsedWebsites: Set<string>;
+  selecting: boolean;
+  selectedIds: Set<string>;
+  setSelecting: (selecting: boolean) => void;
+  toggleSelected: (id: string) => void;
+  selectNotes: (ids: string[]) => void;
+  retainSelected: (ids: string[]) => void;
   setView: (view: LibraryStore['view']) => void;
   setQuery: (query: string) => void;
   setFilter: (filter: string) => void;
@@ -51,9 +57,26 @@ export const useLibraryStore = create<LibraryStore>()((set) => ({
   sortMode: 'newest',
   groupMode: 'website',
   collapsedWebsites: new Set(),
+  selecting: false,
+  selectedIds: new Set(),
+  setSelecting: (selecting) => set({ selecting, selectedIds: new Set() }),
+  toggleSelected: (id) =>
+    set((state) => {
+      const selectedIds = new Set(state.selectedIds);
+      if (selectedIds.has(id)) selectedIds.delete(id);
+      else selectedIds.add(id);
+      return { selectedIds };
+    }),
+  selectNotes: (ids) => set({ selectedIds: new Set(ids) }),
+  retainSelected: (ids) =>
+    set((state) => {
+      const existing = new Set(ids);
+      const selectedIds = new Set([...state.selectedIds].filter((id) => existing.has(id)));
+      return selectedIds.size === state.selectedIds.size ? state : { selectedIds };
+    }),
   setView: (view) => set({ view }),
-  setQuery: (query) => set({ query }),
-  setFilter: (filter) => set({ filter }),
+  setQuery: (query) => set({ query, selectedIds: new Set() }),
+  setFilter: (filter) => set({ filter, selectedIds: new Set() }),
   setSortMode: (sortMode) => set({ sortMode }),
   setGroupMode: (groupMode) => set({ groupMode }),
   toggleWebsite: (website) =>

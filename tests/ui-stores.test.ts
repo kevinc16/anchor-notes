@@ -67,3 +67,26 @@ describe('library store', () => {
     expect(useLibraryStore.getState().collapsedWebsites).toEqual(new Set(['docs.example.com']));
   });
 });
+
+describe('library selection', () => {
+  it('clears selection for search/topic changes but preserves it across sorting and grouping', () => {
+    const actions = useLibraryStore.getState();
+    actions.setSelecting(true);
+    actions.toggleSelected('one');
+    actions.toggleSelected('two');
+    actions.setSortMode('oldest');
+    actions.setGroupMode('none');
+    actions.toggleWebsite('example.com');
+    expect(useLibraryStore.getState().selectedIds).toEqual(new Set(['one', 'two']));
+    actions.setQuery('search');
+    expect(useLibraryStore.getState().selectedIds.size).toBe(0);
+    actions.toggleSelected('one');
+    actions.setFilter('research');
+    expect(useLibraryStore.getState().selectedIds.size).toBe(0);
+    actions.selectNotes(['one', 'two', 'one']);
+    actions.retainSelected(['two']);
+    expect(useLibraryStore.getState().selectedIds).toEqual(new Set(['two']));
+    actions.setSelecting(false);
+    expect(useLibraryStore.getState().selectedIds.size).toBe(0);
+  });
+});

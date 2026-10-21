@@ -76,7 +76,7 @@ Prettier covers TypeScript, TSX, and CSS. ESLint covers TypeScript/TSX, and Styl
 - Normalize persisted/imported data through the helpers in `lib/storage.ts` and `lib/settings.ts` rather than assuming old data is complete.
 - Use `parseTags` for user-entered comma-separated tags. Tags are lowercased, trimmed, de-duplicated, and allowed to be empty.
 - Preserve note identity and timestamps when editing. `saveNote` merges updates by note ID and refreshes `updatedAt`.
-- Keep local organization deterministic and network-free. Optional AI organization is only for newly saved notes when the independent AI toggle and a remote provider are enabled.
+- Keep local organization deterministic and network-free. Automatic AI organization is only for newly saved notes when the independent AI toggle and a remote provider are enabled. Existing notes may be sent only through the explicit library regeneration action, with the same toggle, credential, and Firefox consent checks.
 - Never add a remote request for core highlighting, saving, searching, or restoring behavior.
 - Treat API keys, passphrases, decrypted credentials, note contents, and URLs as sensitive. Do not log them, commit them, or add them to test fixtures unnecessarily.
 - Keep credential migrations backward compatible: plaintext remains the default, encrypted secrets use the existing versioned PBKDF2/AES-GCM format, and decrypted keys live only in extension session storage.
