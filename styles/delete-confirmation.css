@@ -1,0 +1,78 @@
+#anchor-notes-delete-confirmation {
+  all: initial;
+  box-sizing: border-box;
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: min(420px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--anchor-color-panel-border, var(--color-line, #e6dfd4));
+  border-radius: var(--anchor-radius-2xl, 18px);
+  background: var(--anchor-color-surface, var(--color-paper, #fbf8f1));
+  color: var(--anchor-color-ink, var(--color-ink, #24211d));
+  font-family: var(--anchor-font-family, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
+  box-shadow: 0 18px 60px rgb(33 31 27 / 22%);
+}
+
+#anchor-notes-delete-confirmation[open] {
+  display: block;
+}
+
+#anchor-notes-delete-confirmation::backdrop {
+  background: rgb(36 33 29 / 35%);
+  backdrop-filter: blur(4px);
+}
+
+#anchor-notes-delete-confirmation form {
+  margin: 0;
+}
+
+#anchor-notes-delete-confirmation h2 {
+  margin: 0 0 12px;
+  font-family: var(--anchor-font-serif, var(--font-serif, Georgia, serif));
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+#anchor-notes-delete-confirmation p {
+  margin: 0 0 24px;
+  color: var(--anchor-color-muted, var(--color-muted, #777066));
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+#anchor-notes-delete-confirmation footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#anchor-notes-delete-confirmation button {
+  padding: 10px 16px;
+  border: 1px solid var(--anchor-color-field-border, var(--color-line, #e6dfd4));
+  border-radius: 9999px;
+  background: var(--anchor-color-input-surface, var(--color-card, #fffefa));
+  color: inherit;
+  font: 700 12px/1.3 var(--anchor-font-family, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
+  cursor: pointer;
+}
+
+#anchor-notes-delete-confirmation button[value='delete'] {
+  border-color: transparent;
+  background: var(--anchor-color-remove, var(--color-danger, #9c382f));
+  color: #fff;
+}
+
+#anchor-notes-delete-confirmation button:hover {
+  filter: brightness(0.95);
+}
+
+#anchor-notes-delete-confirmation button:focus-visible {
+  outline: 2px solid var(--anchor-color-ink, var(--color-ink, #24211d));
+  outline-offset: 3px;
+}

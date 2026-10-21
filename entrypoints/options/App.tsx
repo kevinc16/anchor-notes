@@ -1,6 +1,7 @@
 import { browser } from '#imports';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
+import { confirmNoteDeletion } from '@/lib/delete-confirmation';
 import {
   needsPassphraseToDisableEncryption,
   withEncryptedCredential,
@@ -373,8 +374,8 @@ export default function App() {
   }
 
   async function removeNote(note: AnchorNote) {
-    if (!window.confirm('Delete this saved highlight?')) return;
     try {
+      if (!(await confirmNoteDeletion())) return;
       const response = (await browser.runtime.sendMessage({
         type: 'DELETE_NOTE',
         id: note.id,
