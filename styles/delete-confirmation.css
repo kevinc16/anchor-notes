@@ -59,6 +59,7 @@
   background: var(--anchor-color-input-surface, var(--color-card, #fffefa));
   color: inherit;
   font: 700 12px/1.3 var(--anchor-font-family, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
+  text-transform: none;
   cursor: pointer;
 }
 

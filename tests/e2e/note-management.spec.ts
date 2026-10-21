@@ -105,6 +105,7 @@ test('removes a saved highlight from the page editor', async ({
   });
 
   await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
+  await page.addStyleTag({ content: 'button { text-transform: uppercase; }' });
   const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
   const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
@@ -125,6 +126,11 @@ test('removes a saved highlight from the page editor', async ({
   await removeButton.click();
   await expect(confirmation).toBeVisible();
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
+  await expect(cancel).toHaveCSS('text-transform', 'none');
+  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toHaveCSS(
+    'text-transform',
+    'none',
+  );
   await expect(cancel).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toBeFocused();
