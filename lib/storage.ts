@@ -1,6 +1,7 @@
 import { storage } from '#imports';
 import { DEFAULT_SETTINGS, normalizeSettings } from './settings';
-import type { AnchorData, AnchorNote, AnchorSettings } from './types';
+import type { AnchorData, AnchorNote, AnchorSettings, TagOperation } from './types';
+import { parseTags } from './tags';
 
 export { hostFromUrl, normalizeUrl } from './websites';
 
@@ -78,6 +79,30 @@ export async function saveGeneratedSummary(
 
 export async function deleteNote(id: string): Promise<void> {
   await mutateNotes((notes) => notes.filter((note) => note.id !== id));
+}
+
+export async function bulkEditTags(ids: string[], operation: TagOperation, input: string) {
+  const selected = new Set(ids);
+  const tags = parseTags(input);
+  let changed = 0;
+  let found = 0;
+  await mutateNotes((notes) => {
+    const next = notes.map((note) => {
+      if (!selected.has(note.id)) return note;
+      found++;
+      const updated =
+        operation === 'replace'
+          ? tags
+          : operation === 'remove'
+            ? note.tags.filter((tag) => !tags.includes(tag))
+            : [...new Set([...note.tags, ...tags])];
+      if (JSON.stringify(updated) === JSON.stringify(note.tags)) return note;
+      changed++;
+      return { ...note, tags: updated, updatedAt: new Date().toISOString() };
+    });
+    return changed ? next : undefined;
+  });
+  return { changed, skipped: selected.size - found };
 }
 
 export async function updateSettings(patch: Partial<AnchorSettings>): Promise<AnchorSettings> {
