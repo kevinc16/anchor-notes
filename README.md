@@ -209,6 +209,15 @@ See the [Anchor Notes Privacy Policy](https://github.com/kevinc16/anchor-notes/b
 
 ## Roadmap
 
+The near-term priority is **capture and recover an idea with very little effort**. The [capture and recovery project plan](docs/superpowers/plans/2026-10-22-capture-and-recover.md) defines four task-based milestones, acceptance criteria, and a baseline measurement approach:
+
+1. Save a passage and add why it matters.
+2. Find a passage when you remember the idea but not the website.
+3. Return to the passage and understand its context.
+4. Export the notes needed for a piece of work.
+
+These are planned improvements and evaluation targets, not claims of completed work or measured performance. Broader roadmap candidates include:
+
 - Optional encrypted sync.
 - Archived page snapshots or Internet Archive links.
 - Fuzzy anchoring for lightly edited quote text.
