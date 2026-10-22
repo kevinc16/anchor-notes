@@ -36,7 +36,7 @@ const buttonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify
 const primaryButtonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-ink bg-ink px-4 text-xs font-bold text-white hover:border-stone-700 hover:bg-stone-700`;
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
-const quoteToggleClass = `${buttonBaseClass} rounded-full px-2 py-1 font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 hover:bg-stone-50 hover:text-ink`;
+const quoteToggleClass = `${buttonBaseClass} -ml-2 rounded-full px-2 py-1 font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 hover:bg-stone-50 hover:text-ink`;
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
