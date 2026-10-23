@@ -43,8 +43,10 @@ function stripMarkup(value: string): string {
     .replace(/<\/?[a-z][^>]*>/gi, '');
 }
 
-export function normalizePreviewText(value: string): string {
-  return stripMarkup(value)
+export function normalizePreviewText(value: string, preserveWhitespace = false): string {
+  const text = stripMarkup(value);
+  if (preserveWhitespace) return text;
+  return text
     .replace(/\r\n?/g, '\n')
     .split('\n')
     .map((line) => line.replace(/[^\S\n]+/g, ' ').trim())
@@ -53,8 +55,12 @@ export function normalizePreviewText(value: string): string {
     .trim();
 }
 
-export function getLibraryCardPreview(value: string, maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH): string {
-  const normalized = normalizePreviewText(value);
+export function getLibraryCardPreview(
+  value: string,
+  maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH,
+  preserveWhitespace = false,
+): string {
+  const normalized = normalizePreviewText(value, preserveWhitespace);
   const limit = Math.max(0, Math.floor(maxLength));
   if (limit === 0) return '';
 
@@ -69,12 +75,18 @@ export function getLibraryCardPreview(value: string, maxLength = LIBRARY_CARD_PR
   if (nextCharacter && !/\s/.test(nextCharacter)) {
     const lastWhitespaceIndex = candidate.search(/\s[^\s]*$/);
     const wholeWords = lastWhitespaceIndex >= 0 ? candidate.slice(0, lastWhitespaceIndex + 1) : '';
-    return `${wholeWords.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
+    return `${preserveWhitespace ? wholeWords : wholeWords.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
   }
 
-  return `${candidate.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
+  return `${preserveWhitespace ? candidate : candidate.replace(/[ \t]+$/, '')}${PREVIEW_SUFFIX}`;
 }
 
-export function isLibraryCardPreviewTruncated(value: string, maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH): boolean {
-  return getLibraryCardPreview(value, maxLength) !== normalizePreviewText(value);
+export function isLibraryCardPreviewTruncated(
+  value: string,
+  maxLength = LIBRARY_CARD_PREVIEW_MAX_LENGTH,
+  preserveWhitespace = false,
+): boolean {
+  return (
+    getLibraryCardPreview(value, maxLength, preserveWhitespace) !== normalizePreviewText(value, preserveWhitespace)
+  );
 }
