@@ -588,3 +588,31 @@ test('uses safe layout defaults and keeps long reading excerpts within narrow wi
     await page.screenshot({ path: test.info().outputPath(`list-${width}.png`), fullPage: true });
   }
 });
+
+test('preserves saved quote whitespace in List previews and expanded quotes', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const spacing = 'First  line\n\n  Indented paragraph\n\n\nLast line\n';
+  const quote = spacing + 'More reading words. '.repeat(80);
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('spacing-preview', articleUrl, { quote })],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const blockquote = page.locator('blockquote');
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  expect(await blockquote.textContent()).toContain(spacing);
+  await expect(blockquote).toHaveCSS('white-space', 'pre-wrap');
+  await page.getByRole('button', { name: 'Show more', exact: true }).click();
+  expect(await blockquote.textContent()).toBe(`“${quote}”`);
+  await page.getByRole('button', { name: 'Show less', exact: true }).click();
+  expect(await blockquote.textContent()).toContain(spacing);
+  await page.getByRole('button', { name: 'Cards', exact: true }).click();
+  expect(await blockquote.textContent()).toContain('First line\nIndented paragraph\nLast line\n');
+  expect(await blockquote.textContent()).not.toContain('\n\n');
+  expect((await readExtensionData(serviceWorker)).notes[0]?.quote).toBe(quote);
+});

@@ -50,3 +50,18 @@ describe('library card previews', () => {
     expect(source).toHaveLength(sourceLength);
   });
 });
+
+describe('library reading previews', () => {
+  it('preserves blank lines, indentation, and repeated spaces in List previews', () => {
+    const quote = '  First  line\n\n\tIndented second\n\n\nLast  ';
+    expect(getLibraryCardPreview(quote, 1200, true)).toBe(quote);
+    expect(isLibraryCardPreviewTruncated(quote, 1200, true)).toBe(false);
+    expect(getLibraryCardPreview(quote)).toBe('First line\nIndented second\nLast');
+  });
+
+  it('keeps original paragraph breaks when truncating and reports expansion correctly', () => {
+    const quote = 'First\n\nSecond paragraph more';
+    expect(getLibraryCardPreview(quote, 16, true)).toBe('First\n\nSecond...');
+    expect(isLibraryCardPreviewTruncated(quote, 16, true)).toBe(true);
+  });
+});

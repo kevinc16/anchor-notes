@@ -162,9 +162,9 @@ function NoteCard({
   onDelete: () => void;
 }) {
   const previewLength = layout === 'list' ? 1200 : 240;
-  const quotePreview = getLibraryCardPreview(note.quote, previewLength);
+  const quotePreview = getLibraryCardPreview(note.quote, previewLength, layout === 'list');
   const articleTitle = note.title.trim() || hostFromUrl(note.url);
-  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote, previewLength);
+  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote, previewLength, layout === 'list');
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
   async function returnToSource(event: MouseEvent<HTMLAnchorElement>) {
@@ -219,7 +219,7 @@ function NoteCard({
         </div>
       </header>
       <blockquote
-        className={`my-5 whitespace-pre-line font-serif text-lg font-medium text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] leading-relaxed' : 'leading-[1.42]'}`}
+        className={`my-5 font-serif text-lg font-medium text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] whitespace-pre-wrap leading-relaxed' : 'whitespace-pre-line leading-[1.42]'}`}
       >
         <span className="-ml-2 text-library-quote-accent">“</span>
         {quoteExpanded ? note.quote : quotePreview}
