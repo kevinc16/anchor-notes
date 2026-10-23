@@ -75,9 +75,12 @@ test('distinguishes articles by title and falls back to the hostname for blank t
       await expect(card.locator('time')).not.toBeEmpty();
       expect(
         await heading.evaluate((element) =>
-          element.compareDocumentPosition(element.parentElement!.querySelector('blockquote')!),
+          element.compareDocumentPosition(element.closest('article')!.querySelector('blockquote')!),
         ),
       ).toBe(4);
+      const headingBox = await heading.boundingBox();
+      const dateBox = await card.locator('time').boundingBox();
+      expect(headingBox!.y + headingBox!.height).toBeLessThanOrEqual(dateBox!.y);
       const dimensions = await heading.evaluate((element) => ({
         height: element.getBoundingClientRect().height,
         lineHeight: parseFloat(getComputedStyle(element).lineHeight),
