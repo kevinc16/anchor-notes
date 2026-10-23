@@ -154,6 +154,7 @@ function NoteCard({
   onDelete: () => void;
 }) {
   const quotePreview = getLibraryCardPreview(note.quote);
+  const articleTitle = note.title.trim() || hostFromUrl(note.url);
   const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
@@ -190,11 +191,23 @@ function NoteCard({
           Select note
         </label>
       )}
-      <header className="flex items-center justify-between text-overline font-bold text-muted">
-        <span>{hostFromUrl(note.url)}</span>
-        <time>
-          {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-        </time>
+      <header className="border-b border-subtle-border pb-4">
+        <h3
+          className="line-clamp-2 font-serif text-base leading-snug font-bold break-words text-ink"
+          title={articleTitle}
+        >
+          {articleTitle}
+        </h3>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-overline font-bold text-muted">
+          <span>{hostFromUrl(note.url)}</span>
+          <time>
+            {new Date(note.createdAt).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </time>
+        </div>
       </header>
       <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
