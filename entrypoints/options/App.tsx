@@ -24,7 +24,13 @@ import type {
   SummaryGenerationStatus,
   BulkGeneration,
 } from '@/lib/types';
-import { useDataStore, useLibraryStore, type SortMode } from '@/lib/ui-stores';
+import {
+  normalizeLibraryLayout,
+  useDataStore,
+  useLibraryStore,
+  type LibraryLayout,
+  type SortMode,
+} from '@/lib/ui-stores';
 import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
 import { useSummaryGeneration } from './use-summary-generation';
 import { useBulkGeneration } from './use-bulk-generation';
@@ -138,6 +144,7 @@ function EmptyState({ hasNotes }: { hasNotes: boolean }) {
 
 function NoteCard({
   note,
+  layout,
   generationState,
   batchState,
   selected,
@@ -146,6 +153,7 @@ function NoteCard({
   onDelete,
 }: {
   note: AnchorNote;
+  layout: LibraryLayout;
   generationState?: SummaryGenerationStatus['state'];
   batchState?: BulkGeneration['items'][number]['state'];
   selected?: boolean;
@@ -153,9 +161,10 @@ function NoteCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const quotePreview = getLibraryCardPreview(note.quote);
+  const previewLength = layout === 'list' ? 1200 : 240;
+  const quotePreview = getLibraryCardPreview(note.quote, previewLength);
   const articleTitle = note.title.trim() || hostFromUrl(note.url);
-  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
+  const quoteTruncated = isLibraryCardPreviewTruncated(note.quote, previewLength);
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
   async function returnToSource(event: MouseEvent<HTMLAnchorElement>) {
@@ -177,7 +186,7 @@ function NoteCard({
 
   return (
     <article
-      className={`flex min-h-60 flex-col overflow-hidden rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note ${selected ? 'border-ink ring-2 ring-ink/15' : 'border-line'}`}
+      className={`flex min-w-0 ${layout === 'cards' ? 'min-h-60' : ''} flex-col overflow-hidden rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-note ${selected ? 'border-ink ring-2 ring-ink/15' : 'border-line'}`}
     >
       {onSelect && (
         <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs font-bold text-muted">
@@ -209,7 +218,9 @@ function NoteCard({
           </time>
         </div>
       </header>
-      <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
+      <blockquote
+        className={`my-5 whitespace-pre-line font-serif text-lg font-medium text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] leading-relaxed' : 'leading-[1.42]'}`}
+      >
         <span className="-ml-2 text-library-quote-accent">“</span>
         {quoteExpanded ? note.quote : quotePreview}
         <span className="text-library-quote-accent">”</span>
@@ -312,6 +323,8 @@ export default function App() {
   const {
     view,
     setView,
+    layout,
+    setLayout,
     query,
     setQuery,
     filter,
@@ -340,7 +353,44 @@ export default function App() {
   const [credentialUnlocked, setCredentialUnlocked] = useState(false);
   const [encryptCredential, setEncryptCredential] = useState(false);
   const [toast, setToast] = useState('');
+  const [layoutReady, setLayoutReady] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    let changed = false;
+    function onLayoutChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
+      if (area !== 'local' || !changes.anchorNotesLibraryLayout) return;
+      changed = true;
+      setLayout(normalizeLibraryLayout(changes.anchorNotesLibraryLayout.newValue));
+      setLayoutReady(true);
+    }
+    browser.storage.onChanged.addListener(onLayoutChanged);
+    void browser.storage.local
+      .get('anchorNotesLibraryLayout')
+      .then((saved) => {
+        if (active && !changed) setLayout(normalizeLibraryLayout(saved.anchorNotesLibraryLayout));
+      })
+      .catch(() => {
+        if (active) setToast('Could not load library layout.');
+      })
+      .finally(() => {
+        if (active) setLayoutReady(true);
+      });
+    return () => {
+      active = false;
+      browser.storage.onChanged.removeListener(onLayoutChanged);
+    };
+  }, [setLayout]);
+
+  async function changeLayout(next: LibraryLayout) {
+    setLayout(next);
+    try {
+      await browser.storage.local.set({ anchorNotesLibraryLayout: next });
+    } catch {
+      setToast('Could not save library layout.');
+    }
+  }
 
   useEffect(() => {
     function onChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
@@ -395,6 +445,9 @@ export default function App() {
       }
     });
   }, [data.notes, filter, query, sortMode]);
+
+  const noteGridClass =
+    layout === 'list' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4';
 
   const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
   const batchStates = useMemo(() => new Map(batch?.items.map((item) => [item.id, item.state])), [batch]);
@@ -667,6 +720,20 @@ export default function App() {
                 ))}
               </div>
               <div className="flex flex-wrap items-center gap-3">
+                <div className="flex gap-1" role="group" aria-label="Reading layout">
+                  {(['cards', 'list'] as const).map((value) => (
+                    <button
+                      key={value}
+                      className={layout === value ? primaryButtonClass : buttonClass}
+                      type="button"
+                      aria-pressed={layout === value}
+                      disabled={!layoutReady}
+                      onClick={() => void changeLayout(value)}
+                    >
+                      {value === 'cards' ? 'Cards' : 'List'}
+                    </button>
+                  ))}
+                </div>
                 {!selecting && (
                   <button
                     className={buttonClass}
@@ -739,14 +806,12 @@ export default function App() {
                             </button>
                           </h2>
                         </header>
-                        <div
-                          id={panelId}
-                          className={`${isExpanded ? 'grid' : 'hidden'} grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4`}
-                        >
+                        <div id={panelId} className={isExpanded ? noteGridClass : 'hidden'}>
                           {group.notes.map((note) => (
                             <NoteCard
                               key={note.id}
                               note={note}
+                              layout={layout}
                               generationState={generationStates[note.id]}
                               batchState={batchStates.get(note.id)}
                               selected={selectedIds.has(note.id)}
@@ -761,11 +826,12 @@ export default function App() {
                   })}
                 </div>
               ) : (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
+                <div className={noteGridClass}>
                   {visibleNotes.map((note) => (
                     <NoteCard
                       key={note.id}
                       note={note}
+                      layout={layout}
                       generationState={generationStates[note.id]}
                       batchState={batchStates.get(note.id)}
                       selected={selectedIds.has(note.id)}
@@ -777,7 +843,7 @@ export default function App() {
                 </div>
               )
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4">
+              <div className={noteGridClass}>
                 <EmptyState hasNotes={data.notes.length > 0} />
               </div>
             )}
