@@ -192,7 +192,10 @@ function NoteCard({
         </label>
       )}
       <header className="border-b border-subtle-border pb-4">
-        <h3 className="line-clamp-2 text-base leading-snug font-bold break-words text-ink" title={articleTitle}>
+        <h3
+          className="line-clamp-2 font-serif text-base leading-snug font-bold break-words text-ink"
+          title={articleTitle}
+        >
           {articleTitle}
         </h3>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-overline font-bold text-muted">
