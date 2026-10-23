@@ -154,6 +154,7 @@ function NoteCard({
   onDelete: () => void;
 }) {
   const quotePreview = getLibraryCardPreview(note.quote);
+  const articleTitle = note.title.trim() || hostFromUrl(note.url);
   const quoteTruncated = isLibraryCardPreviewTruncated(note.quote);
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
@@ -196,6 +197,9 @@ function NoteCard({
           {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </time>
       </header>
+      <h3 className="mt-4 line-clamp-2 text-sm leading-snug font-semibold break-words text-label" title={articleTitle}>
+        {articleTitle}
+      </h3>
       <blockquote className="my-5 whitespace-pre-line font-serif text-lg font-medium leading-[1.42] text-library-quote">
         <span className="-ml-2 text-library-quote-accent">“</span>
         {quoteExpanded ? note.quote : quotePreview}

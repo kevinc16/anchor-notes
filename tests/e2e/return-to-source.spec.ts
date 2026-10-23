@@ -51,11 +51,12 @@ for (const delayed of [false, true]) {
     });
     await page.goto(`chrome-extension://${extensionId}/options.html`);
     const newTab = context.waitForEvent('page');
-    await page
-      .locator('article')
-      .filter({ hasText: 'target-note' })
-      .getByRole('link', { name: 'Return to source' })
-      .click();
+    const card = page.locator('article').filter({ hasText: 'target-note' });
+    await expect(card.getByRole('heading', { name: 'Return fixture', exact: true })).toBeVisible();
+    const sourceLink = card.getByRole('link', { name: 'Return to source' });
+    await sourceLink.focus();
+    await expect(sourceLink).toBeFocused();
+    await page.keyboard.press('Enter');
     const source = await newTab;
     await source.waitForURL(url);
     expect(page.url()).toContain('options.html');

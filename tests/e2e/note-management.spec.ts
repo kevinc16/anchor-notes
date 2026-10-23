@@ -45,6 +45,51 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
+test('distinguishes articles by title and falls back to the hostname for blank titles', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const longTitle = 'A long article title about keeping useful ideas attached to their original source '
+    .repeat(8)
+    .trim();
+  const titles = ['First article on this website', 'Second article on this website', longTitle, '', '   '];
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: titles.map((title, index) =>
+      makeNote(`title-${index}`, `${articleUrl}?article=${index}`, { title, body: `Article ${index}` }),
+    ),
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [index, title] of titles.entries()) {
+      const card = page.locator('article').filter({ hasText: `Article ${index}` });
+      const heading = card.getByRole('heading', { name: title.trim() || '127.0.0.1', exact: true });
+      await expect(heading).toBeVisible();
+      await expect(heading).toHaveAttribute('title', title.trim() || '127.0.0.1');
+      await expect(card.locator('header')).toContainText('127.0.0.1');
+      await expect(card.locator('time')).not.toBeEmpty();
+      expect(
+        await heading.evaluate((element) =>
+          element.compareDocumentPosition(element.parentElement!.querySelector('blockquote')!),
+        ),
+      ).toBe(4);
+      const dimensions = await heading.evaluate((element) => ({
+        height: element.getBoundingClientRect().height,
+        lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+        scrollHeight: element.scrollHeight,
+      }));
+      expect(dimensions.height).toBeLessThanOrEqual(dimensions.lineHeight * 2 + 1);
+      if (index === 2) expect(dimensions.scrollHeight).toBeGreaterThan(dimensions.height);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
+
 test('edits a saved highlight from the page editor', async ({ page, serviceWorker, articleUrl }) => {
   const note = makeNote('page-editor-note', articleUrl, { body: 'Original note', tags: ['research'] });
   await seedExtensionData(serviceWorker, {
