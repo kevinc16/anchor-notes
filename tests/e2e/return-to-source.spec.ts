@@ -50,6 +50,16 @@ for (const delayed of [false, true]) {
       notes: [note('target-note', url), note('other-note', url, 'Unrelated saved passage.')],
     });
     await page.goto(`chrome-extension://${extensionId}/options.html`);
+    // Observe completion before the source tab opens, including fast/static restores.
+    await context.addInitScript(() => {
+      document.addEventListener(
+        'scrollend',
+        () => {
+          document.documentElement.dataset.returnScrollEnded = 'true';
+        },
+        { once: true },
+      );
+    });
     const newTab = context.waitForEvent('page');
     const card = page.locator('article').filter({ hasText: 'target-note' });
     await expect(card.getByRole('heading', { name: 'Return fixture', exact: true })).toBeVisible();
@@ -79,6 +89,8 @@ for (const delayed of [false, true]) {
       )
       .toBeLessThan(40);
 
+    // Being near the center does not mean the smooth scroll has finished.
+    await expect(source.locator('html')).toHaveAttribute('data-return-scroll-ended', 'true');
     await source.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await source.locator('main').evaluate((main, html) => {
       main.innerHTML = html;
