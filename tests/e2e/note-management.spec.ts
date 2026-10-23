@@ -479,3 +479,112 @@ test('exports and imports a JSON backup', async ({ context, serviceWorker, exten
     await library.close();
   }
 });
+
+test('switches reading layouts without losing filters, selection, groups, or expansion', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const quote = `Reading passage. ${'A useful sentence for a longer reading preview. '.repeat(40)}`;
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [
+      makeNote('reading-one', articleUrl, {
+        quote,
+        body: 'Reading one',
+        tags: ['research'],
+        createdAt: '2025-01-01T00:00:00Z',
+      }),
+      makeNote('reading-two', 'https://other.example/reading', {
+        quote,
+        body: 'Reading two',
+        tags: ['research'],
+        createdAt: '2026-01-01T00:00:00Z',
+      }),
+      makeNote('excluded', articleUrl, { body: 'Excluded note', tags: ['other'] }),
+    ],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const cards = page.getByRole('button', { name: 'Cards', exact: true });
+  const list = page.getByRole('button', { name: 'List', exact: true });
+  await expect(cards).toHaveAttribute('aria-pressed', 'true');
+  await page.getByPlaceholder('Search notes, tags, or sources…').fill('Reading');
+  await page.getByRole('button', { name: 'research', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Sort notes' }).selectOption('oldest');
+  await page.getByRole('button', { name: 'Select notes', exact: true }).click();
+  const first = page.locator('article').filter({ hasText: 'Reading one' });
+  const second = page.locator('article').filter({ hasText: 'Reading two' });
+  await first.getByRole('checkbox').check();
+  const group = page.getByRole('button', { name: /other\.example 1 note/ });
+  await group.click();
+  const compact = (await first.locator('blockquote').innerText()).length;
+  await list.focus();
+  await page.keyboard.press('Enter');
+  await expect(list).toHaveAttribute('aria-pressed', 'true');
+  await expect(list).toBeFocused();
+  expect((await first.locator('blockquote').innerText()).length).toBeGreaterThan(compact * 3);
+  expect((await first.locator('blockquote').innerText()).length).toBeLessThanOrEqual(1202);
+  await expect(first.getByRole('checkbox')).toBeChecked();
+  await expect(second).toBeHidden();
+  await expect(group).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByPlaceholder('Search notes, tags, or sources…')).toHaveValue('Reading');
+  await expect(page.getByRole('combobox', { name: 'Sort notes' })).toHaveValue('oldest');
+  await page.screenshot({ path: test.info().outputPath('list-reading.png'), fullPage: true });
+  await first.getByRole('button', { name: 'Show more', exact: true }).click();
+  await expect(first.locator('blockquote')).toContainText(quote);
+  await cards.click();
+  await expect(first.getByRole('button', { name: 'Show less', exact: true })).toBeVisible();
+  await expect(first.getByRole('checkbox')).toBeChecked();
+  await list.click();
+  await first.getByRole('button', { name: 'Show less', exact: true }).click();
+  await page.getByRole('button', { name: 'Group by website', exact: true }).click();
+  await expect(second).toBeVisible();
+  await expect(page.locator('article')).toHaveCount(2);
+  const oneBox = await first.boundingBox();
+  const twoBox = await second.boundingBox();
+  expect(oneBox!.y + oneBox!.height).toBeLessThanOrEqual(twoBox!.y);
+  await expect(first.getByRole('checkbox')).toBeChecked();
+  await page.reload();
+  await expect(list).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('article')).toHaveCount(3);
+  expect((await readExtensionData(serviceWorker)).notes[0]?.quote).toBe(quote);
+  await cards.click();
+  await page.reload();
+  await expect(cards).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('uses safe layout defaults and keeps long reading excerpts within narrow windows', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('long-token', articleUrl, { quote: 'x'.repeat(1800) })],
+  });
+  await serviceWorker.evaluate(async () => {
+    const api = (
+      globalThis as unknown as {
+        chrome: { storage: { local: { set(items: Record<string, unknown>): Promise<void> } } };
+      }
+    ).chrome;
+    await api.storage.local.set({ anchorNotesLibraryLayout: { invalid: true } });
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  await expect(page.getByRole('button', { name: 'Cards', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await page.getByRole('button', { name: 'Show more', exact: true }).click();
+  for (const width of [1280, 640, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.locator('blockquote')).toContainText('x'.repeat(1800));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    const quote = await page.locator('blockquote').boundingBox();
+    expect(quote!.width).toBeLessThanOrEqual(width);
+    await expect(page.getByRole('button', { name: 'List', exact: true })).toBeVisible();
+    await page.screenshot({ path: test.info().outputPath(`list-${width}.png`), fullPage: true });
+  }
+});
