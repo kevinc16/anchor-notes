@@ -124,3 +124,29 @@ describe('library reading layout', () => {
     expect(normalizeLibraryLayout(value)).toBe(value);
   });
 });
+
+describe('clearing library filters', () => {
+  it('clears search, tag and selection while retaining sorting, layout and groups', () => {
+    const actions = useLibraryStore.getState();
+    actions.setQuery('article');
+    actions.setFilter('all');
+    expect(useLibraryStore.getState().filter).toBe('all');
+    actions.setSortMode('oldest');
+    actions.setGroupMode('none');
+    actions.setLayout('list');
+    actions.toggleWebsite('example.com');
+    actions.setSelecting(true);
+    actions.selectNotes(['one']);
+    actions.clearFilters();
+    expect(useLibraryStore.getState()).toMatchObject({
+      query: '',
+      filter: null,
+      selectedIds: new Set(),
+      selecting: true,
+      sortMode: 'oldest',
+      groupMode: 'none',
+      layout: 'list',
+      collapsedWebsites: new Set(['example.com']),
+    });
+  });
+});

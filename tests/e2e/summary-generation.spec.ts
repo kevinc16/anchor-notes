@@ -50,10 +50,11 @@ test('shows live summary progress in an open library and after reopening it', as
 }) => {
   let library = await openExtensionPage(context, extensionId, 'options.html');
   await startGeneration(page, serviceWorker, articleUrl);
-  await expect(library.getByRole('status')).toHaveText('Generating summary…');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Generating summary…');
   await library.emulateMedia({ reducedMotion: 'reduce' });
   expect(
     await library
+      .locator('article')
       .getByRole('status')
       .locator('[aria-hidden="true"]')
       .evaluate((element) => getComputedStyle(element).animationName),
@@ -61,7 +62,7 @@ test('shows live summary progress in an open library and after reopening it', as
   await expect(library.getByRole('button', { name: 'Edit', exact: true })).toBeEnabled();
   await library.close();
   library = await openExtensionPage(context, extensionId, 'options.html');
-  await expect(library.getByRole('status')).toHaveText('Generating summary…');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Generating summary…');
   await release(articleUrl);
   await expect(library.getByText('Organized by the local E2E provider.', { exact: true })).toBeVisible();
   await expect(library.getByText('Generating summary…')).toHaveCount(0);
@@ -100,9 +101,9 @@ test('ends loading and keeps the saved note after a provider error', async ({
 }) => {
   await startGeneration(page, serviceWorker, articleUrl);
   const library = await openExtensionPage(context, extensionId, 'options.html');
-  await expect(library.getByRole('status')).toHaveText('Generating summary…');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Generating summary…');
   await release(articleUrl, 'error');
-  await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
   await expect(library.getByRole('button', { name: 'Edit', exact: true })).toBeEnabled();
   expect((await readExtensionData(serviceWorker)).notes).toHaveLength(1);
 });
@@ -117,7 +118,7 @@ for (const action of ['edit', 'delete']) {
   }) => {
     await startGeneration(page, serviceWorker, articleUrl);
     const library = await openExtensionPage(context, extensionId, 'options.html');
-    await expect(library.getByRole('status')).toHaveText('Generating summary…');
+    await expect(library.locator('article').getByRole('status')).toHaveText('Generating summary…');
     if (action === 'edit') {
       await library.getByRole('button', { name: 'Edit', exact: true }).click();
       await library.getByRole('dialog').getByLabel('Summary').fill('My manual summary');
@@ -150,7 +151,7 @@ test('expires interrupted requests in an open library and after reopening', asyn
 }) => {
   await startGeneration(page, serviceWorker, articleUrl);
   let library = await openExtensionPage(context, extensionId, 'options.html');
-  await expect(library.getByRole('status')).toHaveText('Generating summary…');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Generating summary…');
   const id = (await readExtensionData(serviceWorker)).notes[0]!.id;
   await library.evaluate(async (noteId) => {
     const api = (
@@ -162,10 +163,10 @@ test('expires interrupted requests in an open library and after reopening', asyn
       [`anchorNotesSummary:${noteId}`]: { state: 'pending', expiresAt: Date.now() + 200 },
     });
   }, id);
-  await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
   await library.close();
   library = await openExtensionPage(context, extensionId, 'options.html');
-  await expect(library.getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
+  await expect(library.locator('article').getByRole('status')).toHaveText('Summary unavailable. Your note is saved.');
   await release(articleUrl);
 });
 
