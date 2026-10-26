@@ -27,10 +27,18 @@ export const useDataStore = create<DataStore>()((set) => ({
   },
 }));
 
+export type LibraryLayout = 'cards' | 'list';
+
+export function normalizeLibraryLayout(value: unknown): LibraryLayout {
+  return value === 'list' ? 'list' : 'cards';
+}
+
 export type SortMode = 'newest' | 'oldest' | 'source';
 
 interface LibraryStore {
   view: 'library' | 'settings';
+  layout: LibraryLayout;
+  setLayout: (layout: LibraryLayout) => void;
   query: string;
   filter: string;
   sortMode: SortMode;
@@ -52,6 +60,8 @@ interface LibraryStore {
 
 export const useLibraryStore = create<LibraryStore>()((set) => ({
   view: 'library',
+  layout: 'cards',
+  setLayout: (layout) => set({ layout }),
   query: '',
   filter: 'all',
   sortMode: 'newest',

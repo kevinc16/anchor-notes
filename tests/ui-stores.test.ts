@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../lib/settings';
 import type { AnchorData } from '../lib/types';
-import { useDataStore, useLibraryStore } from '../lib/ui-stores';
+import { normalizeLibraryLayout, useDataStore, useLibraryStore } from '../lib/ui-stores';
 
 const data: AnchorData = { schemaVersion: 1, notes: [], settings: { ...DEFAULT_SETTINGS } };
 
@@ -88,5 +88,39 @@ describe('library selection', () => {
     expect(useLibraryStore.getState().selectedIds).toEqual(new Set(['two']));
     actions.setSelecting(false);
     expect(useLibraryStore.getState().selectedIds.size).toBe(0);
+  });
+});
+
+describe('library reading layout', () => {
+  it('preserves browsing state and selected notes when switching layouts', () => {
+    const actions = useLibraryStore.getState();
+    actions.setQuery('research');
+    actions.setFilter('engineering');
+    actions.setSortMode('oldest');
+    actions.setGroupMode('none');
+    actions.toggleWebsite('example.com');
+    actions.setSelecting(true);
+    actions.selectNotes(['one', 'two']);
+    actions.setLayout('list');
+    expect(useLibraryStore.getState()).toMatchObject({
+      layout: 'list',
+      query: 'research',
+      filter: 'engineering',
+      sortMode: 'oldest',
+      groupMode: 'none',
+      collapsedWebsites: new Set(['example.com']),
+      selecting: true,
+      selectedIds: new Set(['one', 'two']),
+    });
+    actions.setLayout('cards');
+    expect(useLibraryStore.getState().selectedIds).toEqual(new Set(['one', 'two']));
+  });
+
+  it.each([undefined, null, '', 'grid', {}, 1])('defaults invalid saved layout %j to Cards', (value) => {
+    expect(normalizeLibraryLayout(value)).toBe('cards');
+  });
+
+  it.each(['cards', 'list'] as const)('restores the saved %s layout', (value) => {
+    expect(normalizeLibraryLayout(value)).toBe(value);
   });
 });
