@@ -25,53 +25,65 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
-test('keeps library navigation within narrow viewports and keyboard accessible', async ({ context, extensionId }) => {
-  const library = await openExtensionPage(context, extensionId, 'options.html');
-  try {
-    for (const width of [320, 375, 640, 760, 1024]) {
-      await library.setViewportSize({ width, height: 800 });
-      const libraryButton = library.getByRole('button', { name: /Library/ });
-      const settingsButton = library.getByRole('button', { name: /Settings/ });
+for (const fontFamily of ['inherit', 'Verdana, sans-serif']) {
+  test(`keeps library navigation within narrow viewports and keyboard accessible (${fontFamily})`, async ({
+    context,
+    extensionId,
+  }) => {
+    const library = await openExtensionPage(context, extensionId, 'options.html');
+    try {
+      await library.addStyleTag({ content: `aside { font-family: ${fontFamily}; }` });
+      for (const width of [320, 375, 640, 760, 1024]) {
+        await library.setViewportSize({ width, height: 800 });
+        const libraryButton = library.getByRole('button', { name: /Library/ });
+        const settingsButton = library.getByRole('button', { name: /Settings/ });
 
-      if (width < 760) {
-        const brand = await library.locator('aside > div').first().boundingBox();
-        const navigation = await library.getByRole('navigation').boundingBox();
-        expect(brand).not.toBeNull();
-        expect(navigation).not.toBeNull();
-        if (width === 320) {
-          expect(navigation!.x).toBe(brand!.x);
-          expect(navigation!.y).toBeGreaterThan(brand!.y + brand!.height);
-        } else {
-          expect(navigation!.x).toBeGreaterThan(brand!.x + brand!.width);
-          expect(navigation!.x + navigation!.width).toBeGreaterThan(width - 24);
-          expect(navigation!.y + navigation!.height / 2).toBeCloseTo(brand!.y + brand!.height / 2);
+        if (width < 760) {
+          const brand = await library.locator('aside > div').first().boundingBox();
+          const navigation = await library.getByRole('navigation').boundingBox();
+          expect(brand).not.toBeNull();
+          expect(navigation).not.toBeNull();
+          if (width === 320) {
+            expect(navigation!.y).toBeGreaterThan(brand!.y + brand!.height);
+          }
+          if (width >= 640) {
+            expect(navigation!.y).toBeLessThan(brand!.y + brand!.height);
+          }
+          // Font metrics determine whether intermediate widths fit on one row.
+          if (navigation!.y > brand!.y + brand!.height) {
+            expect(navigation!.x).toBe(brand!.x);
+          } else {
+            expect(navigation!.x).toBeGreaterThan(brand!.x + brand!.width);
+            expect(navigation!.x + navigation!.width).toBeGreaterThan(width - 24);
+            expect(navigation!.y + navigation!.height / 2).toBeCloseTo(brand!.y + brand!.height / 2);
+          }
+        }
+
+        for (const button of [settingsButton, libraryButton]) {
+          await libraryButton.focus();
+          if (button === settingsButton) await library.keyboard.press('Tab');
+          await expect(button).toBeFocused();
+          await expect.poll(() => isFocusVisible(button)).toBe(true);
+          expect(await computedStyle(button, 'outline-width')).toBe('2px');
+          const bounds = await button.boundingBox();
+          expect(bounds).not.toBeNull();
+          expect(bounds!.x).toBeGreaterThanOrEqual(4);
+          expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width - 4);
+          await library.keyboard.press('Enter');
+          await expect(
+            library.getByRole('heading', {
+              name: button === settingsButton ? 'Settings' : 'Saved from the web',
+              exact: true,
+            }),
+          ).toBeVisible();
+          expect(await library.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
         }
       }
-
-      for (const button of [settingsButton, libraryButton]) {
-        await libraryButton.focus();
-        if (button === settingsButton) await library.keyboard.press('Tab');
-        await expect(button).toBeFocused();
-        await expect.poll(() => isFocusVisible(button)).toBe(true);
-        expect(await computedStyle(button, 'outline-width')).toBe('2px');
-        const bounds = await button.boundingBox();
-        expect(bounds).not.toBeNull();
-        expect(bounds!.x).toBeGreaterThanOrEqual(4);
-        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width - 4);
-        await library.keyboard.press('Enter');
-        await expect(
-          library.getByRole('heading', {
-            name: button === settingsButton ? 'Settings' : 'Saved from the web',
-            exact: true,
-          }),
-        ).toBeVisible();
-        expect(await library.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-      }
+    } finally {
+      await library.close();
     }
-  } finally {
-    await library.close();
-  }
-});
+  });
+}
 
 test('shows hover and keyboard focus feedback in the library', async ({ context, extensionId }) => {
   const library = await openExtensionPage(context, extensionId, 'options.html');
