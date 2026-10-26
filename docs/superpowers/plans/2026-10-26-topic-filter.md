@@ -1,0 +1,13 @@
+# Issue #90: complete library tag filtering
+
+Design approved by the user through the preceding toolbar discussion and request to implement #90: replace the seven-tag toolbar strip with one compact searchable Topic picker. Most-used tags appear first inside the picker, with all tags available. This supersedes the issue's older instruction to retain the strip. Keep native disclosure, input and button semantics; no custom combobox or new dependencies.
+
+- [x] Tests first: all-tag frequency/alphabetic ordering; clear filters preserves sort/layout/group state and clears selection; browser tests for rare/exact/all-named tags, keyboard picker/card actions, search conjunction, empty/missing tags and responsive toolbar.
+- [x] Add deterministic tag listing to lib/tags.ts; use null as the no-tag-filter value so a real tag named all is selectable. Add atomic clearFilters to the existing UI store.
+- [x] Implement TopicFilter.tsx with a native details disclosure, search input, scrollable tag buttons, All notes action, Escape and focus return. Use existing tokens. Card tags become exact-filter buttons. Show result count, active search/tag, and Clear filters without changing sort/layout/group preferences.
+- [x] Adapt existing browser tests to the picker and verify all required checks, coverage, builds, Chromium E2E, screenshots and independent review. Record manual browser limitations accurately.
+Delivery: commit and push this feature in a separate PR stacked on #97 while it remains unmerged.
+
+Constraints: no note/schema/provider/permission changes; no remote requests for filtering; preserve the unrelated store-assets directory. Keep selected tags visible even after their final note is edited/deleted; display zero results and allow clear. Picker search does not alter the library's query. Test layout at laptop widths with many and long tags and at narrow widths; #96's existing 320px navigation overflow stays separate.
+
+Verification: 125 unit tests pass, including coverage; 42 Chromium E2E tests pass. The picker regression passed five additional consecutive runs after a delayed toggle event was found clearing newly typed search text and fixed by resetting only on close. Formatting, lint, strict compilation, Chrome and Firefox builds, Firefox manifest validation, and independent review pass. Screenshot inspection covers 1024px/1280px single-row controls, 375px narrow layout, and actual 200% Chromium zoom via chrome.tabs.setZoom. Manual installed Chrome/Firefox verification remains outstanding; Firefox Computer Use was previously not approved. Summary generation tests now scope status selectors to articles because filter results introduce another status region.

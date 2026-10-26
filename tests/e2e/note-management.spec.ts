@@ -306,17 +306,25 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(library.getByText('An older idea worth returning to.', { exact: false })).toBeHidden();
     await library.getByPlaceholder('Search notes, tags, or sources…').fill('');
 
-    await library.getByRole('button', { name: 'research', exact: true }).click();
+    await library
+      .locator('article')
+      .getByRole('button', { name: 'Filter by tag: research', exact: true })
+      .first()
+      .click();
     await expect(library.getByText('An older idea worth returning to.', { exact: false })).toBeVisible();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
-    await library.getByRole('button', { name: 'All notes', exact: true }).click();
+    await library.getByRole('button', { name: 'Clear filters', exact: true }).click();
 
     await library.getByRole('combobox').selectOption('oldest');
     await expect(library.locator('blockquote').first()).toContainText('An older idea worth returning to.');
 
     // A settings write refreshes the shared snapshot without resetting library controls.
     await library.getByPlaceholder('Search notes, tags, or sources…').fill('research');
-    await library.getByRole('button', { name: 'research', exact: true }).click();
+    await library
+      .locator('article')
+      .getByRole('button', { name: 'Filter by tag: research', exact: true })
+      .first()
+      .click();
     await library.getByRole('button', { name: 'Group by website', exact: true }).click();
     await library.getByRole('button', { name: /Settings/ }).click();
     await library.getByRole('button', { name: 'Coral', exact: true }).click();
@@ -333,7 +341,7 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(library.locator('article:visible')).toHaveCount(1);
     await expect(library.locator('article:visible')).toContainText('Older research note');
     await library.getByPlaceholder('Search notes, tags, or sources…').fill('');
-    await library.getByRole('button', { name: 'All notes', exact: true }).click();
+    await library.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await library.getByRole('button', { name: 'Group by website', exact: true }).click();
 
     await library.getByRole('combobox').selectOption('newest');
@@ -511,7 +519,7 @@ test('switches reading layouts without losing filters, selection, groups, or exp
   const list = page.getByRole('button', { name: 'List', exact: true });
   await expect(cards).toHaveAttribute('aria-pressed', 'true');
   await page.getByPlaceholder('Search notes, tags, or sources…').fill('Reading');
-  await page.getByRole('button', { name: 'research', exact: true }).click();
+  await page.locator('article').getByRole('button', { name: 'Filter by tag: research', exact: true }).first().click();
   await page.getByRole('combobox', { name: 'Sort notes' }).selectOption('oldest');
   await page.getByRole('button', { name: 'Select notes', exact: true }).click();
   const first = page.locator('article').filter({ hasText: 'Reading one' });
@@ -615,4 +623,195 @@ test('preserves saved quote whitespace in List previews and expanded quotes', as
   expect(await blockquote.textContent()).toContain('First line\nIndented paragraph\nLast line\n');
   expect(await blockquote.textContent()).not.toContain('\n\n');
   expect((await readExtensionData(serviceWorker)).notes[0]?.quote).toBe(quote);
+});
+
+test('retrieves rare and exact tags with keyboard controls and clears only search filters', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const notes = Array.from({ length: 12 }, (_, index) =>
+    makeNote(`topic-${index}`, articleUrl, {
+      quote: `Synthetic passage ${index}`,
+      tags: [`topic-${String(index).padStart(2, '0')}`],
+    }),
+  );
+  notes.push(makeNote('exact', articleUrl, { quote: 'Exact research passage', tags: ['research'] }));
+  notes.push(makeNote('substring', articleUrl, { quote: 'Different research passage', tags: ['research-tools'] }));
+  notes.push(makeNote('all-tag', articleUrl, { quote: 'A real tag named all', tags: ['all'] }));
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const topic = page.locator('summary').filter({ hasText: 'Topic:' });
+  await expect(topic).toHaveText('Topic: All notes');
+  await topic.focus();
+  await page.keyboard.press('Enter');
+  const tagSearch = page.getByRole('searchbox', { name: 'Find a tag' });
+  await expect(tagSearch).toBeFocused();
+  await tagSearch.fill('TOPIC-11');
+  const picker = page.getByRole('group', { name: 'Available tags', exact: true });
+  await expect(picker.getByRole('button', { name: /^Filter by tag:/ })).toHaveCount(1);
+  const rare = picker.getByRole('button', { name: 'Filter by tag: topic-11', exact: true });
+  await page.keyboard.press('Tab');
+  await expect(picker.getByRole('button', { name: 'All notes', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(rare).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(topic).toBeFocused();
+  await expect(topic).toHaveText('Topic: topic-11');
+  await expect(page.getByRole('status', { name: 'Filter results' })).toContainText('1 of 15 notes');
+  await expect(page.locator('article')).toHaveCount(1);
+  await expect(page.locator('article')).toContainText('Synthetic passage 11');
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await page.getByRole('button', { name: 'Group by website', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Sort notes' }).selectOption('oldest');
+  await page.getByPlaceholder('Search notes, tags, or sources…').fill('no such passage');
+  await expect(page.getByRole('status', { name: 'Filter results' })).toContainText('0 of 15 notes');
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(15);
+  await expect(topic).toHaveText('Topic: All notes');
+  await expect(page.getByPlaceholder('Search notes, tags, or sources…')).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'List', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Group by website', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await expect(page.getByRole('combobox', { name: 'Sort notes' })).toHaveValue('oldest');
+  const research = page
+    .locator('article')
+    .filter({ hasText: 'Exact research passage' })
+    .getByRole('button', { name: 'Filter by tag: research', exact: true });
+  await research.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('article')).toHaveCount(1);
+  await expect(page.locator('article')).toContainText('Exact research passage');
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await page
+    .locator('article')
+    .filter({ hasText: 'A real tag named all' })
+    .getByRole('button', { name: 'Filter by tag: all', exact: true })
+    .click();
+  await expect(page.locator('article')).toHaveCount(1);
+  await expect(page.locator('article')).toContainText('A real tag named all');
+  await topic.click();
+  await tagSearch.fill('missing');
+  await expect(page.getByText('No matching tags.', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(topic).toBeFocused();
+  await expect(tagSearch).toBeHidden();
+});
+
+test('keeps an edited or deleted active tag visible and handles a library without tags', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const note = makeNote('vanishing-tag', articleUrl, { tags: ['vanishing'] });
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes: [note] });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  await page.locator('article').getByRole('button', { name: 'Filter by tag: vanishing' }).click();
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [{ ...note, tags: [] }],
+  });
+  const result = page.getByRole('status', { name: 'Filter results' });
+  await expect(result).toContainText('0 of 1 notes');
+  await expect(result).toContainText('Topic: vanishing');
+  await page.locator('summary').filter({ hasText: 'Topic:' }).click();
+  await expect(page.getByText('No tags yet.', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(1);
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes: [note] });
+  await page.locator('article').getByRole('button', { name: 'Filter by tag: vanishing' }).click();
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes: [] });
+  await expect(result).toContainText('0 of 0 notes');
+  await expect(result).toContainText('Topic: vanishing');
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(result).toContainText('Topic: All notes');
+  await expect(page.getByRole('button', { name: 'Clear filters', exact: true })).toBeHidden();
+});
+
+test('keeps the topic picker compact with dozens of long tags on laptop and narrow screens', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const tags = Array.from(
+    { length: 40 },
+    (_, index) => `long-topic-${String(index).padStart(2, '0')}-${'x'.repeat(40)}`,
+  );
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('many-tags', articleUrl, { tags })],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  for (const width of [1280, 1024, 640, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    const topic = page.locator('summary').filter({ hasText: 'Topic:' });
+    if (width >= 1024) {
+      const topicBox = await topic.boundingBox();
+      const sortBox = await page.getByRole('combobox', { name: 'Sort notes' }).boundingBox();
+      expect(Math.abs(topicBox!.y - sortBox!.y)).toBeLessThan(12);
+    }
+    await topic.click();
+    await page.getByRole('searchbox', { name: 'Find a tag' }).fill('long-topic-39');
+    await page
+      .getByRole('group', { name: 'Available tags' })
+      .getByRole('button', { name: `Filter by tag: ${tags[39]}`, exact: true })
+      .click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await page.screenshot({
+      path: test.info().outputPath(`topics-${width}.png`),
+      fullPage: true,
+      animations: 'disabled',
+    });
+    await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  }
+});
+
+test('keeps tag filtering usable at 200 percent browser zoom', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'] })],
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  await serviceWorker.evaluate(async (id) => {
+    const api = (
+      globalThis as unknown as {
+        chrome: {
+          tabs: {
+            query(query: { url: string }): Promise<Array<{ id?: number }>>;
+            setZoom(tabId: number, factor: number): Promise<void>;
+          };
+        };
+      }
+    ).chrome;
+    const [tab] = await api.tabs.query({ url: `chrome-extension://${id}/options.html` });
+    if (tab?.id === undefined) throw new Error('Missing test library tab');
+    await api.tabs.setZoom(tab.id, 2);
+  }, extensionId);
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(640);
+  await page.locator('summary').filter({ hasText: 'Topic:' }).click();
+  await page.getByRole('searchbox', { name: 'Find a tag' }).fill('reading');
+  await page
+    .getByRole('group', { name: 'Available tags' })
+    .getByRole('button', { name: 'Filter by tag: reading', exact: true })
+    .click();
+  await expect(page.getByRole('status', { name: 'Filter results' })).toContainText('1 of 1 notes');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(640);
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('summary')).toHaveText('Topic: All notes');
+  await page.screenshot({ path: test.info().outputPath('topics-200-percent.png'), animations: 'disabled' });
 });

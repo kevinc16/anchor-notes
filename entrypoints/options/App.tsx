@@ -35,6 +35,8 @@ import { groupNotesByWebsite, hostFromUrl } from '@/lib/websites';
 import { useSummaryGeneration } from './use-summary-generation';
 import { useBulkGeneration } from './use-bulk-generation';
 import { BulkActions } from './BulkActions';
+import { TopicFilter } from './TopicFilter';
+import { getLibraryTags } from '@/lib/tags';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
@@ -78,12 +80,6 @@ function Brand() {
       </span>
       <span>Anchor</span>
     </div>
-  );
-}
-
-function Tag({ children }: { children: string }) {
-  return (
-    <span className="rounded-full bg-tag-background px-2 py-1 text-overline font-bold text-tag-text">{children}</span>
   );
 }
 
@@ -151,8 +147,12 @@ function NoteCard({
   onSelect,
   onEdit,
   onDelete,
+  onFilterTag,
+  activeTag,
 }: {
   note: AnchorNote;
+  onFilterTag: (tag: string) => void;
+  activeTag: string | null;
   layout: LibraryLayout;
   generationState?: SummaryGenerationStatus['state'];
   batchState?: BulkGeneration['items'][number]['state'];
@@ -268,7 +268,16 @@ function NoteCard({
       )}
       <div className="mt-auto flex flex-wrap gap-1.5">
         {note.tags.map((tag) => (
-          <Tag key={tag}>{tag}</Tag>
+          <button
+            key={tag}
+            type="button"
+            aria-label={`Filter by tag: ${tag}`}
+            aria-pressed={activeTag === tag}
+            className="max-w-full rounded-full bg-tag-background px-2 py-1 text-overline font-bold break-words text-tag-text [overflow-wrap:anywhere] transition hover:bg-stone-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            onClick={() => onFilterTag(tag)}
+          >
+            {tag}
+          </button>
         ))}
       </div>
       <footer className="mt-4xl flex items-center justify-between border-t border-subtle-border pt-3">
@@ -327,6 +336,7 @@ export default function App() {
     setLayout,
     query,
     setQuery,
+    clearFilters,
     filter,
     setFilter,
     sortMode,
@@ -419,18 +429,11 @@ export default function App() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const topics = useMemo(() => {
-    const counts = new Map<string, number>();
-    data.notes.flatMap((note) => note.tags).forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1));
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 7)
-      .map(([tag]) => tag);
-  }, [data.notes]);
+  const topics = useMemo(() => getLibraryTags(data.notes), [data.notes]);
 
   const visibleNotes = useMemo(() => {
     const notes = data.notes.filter(
-      (note) => (filter === 'all' || note.tags.includes(filter)) && noteMatches(note, query),
+      (note) => (filter === null || note.tags.includes(filter)) && noteMatches(note, query),
     );
     return [...notes].sort((a, b) => {
       switch (sortMode) {
@@ -706,20 +709,9 @@ export default function App() {
               </label>
             </header>
 
-            <div className="my-8 flex flex-wrap items-center justify-between gap-5 border-b border-line pb-3.5">
-              <div className="flex gap-2 overflow-x-auto">
-                {['all', ...topics].map((topic) => (
-                  <button
-                    key={topic}
-                    className={`whitespace-nowrap rounded-full px-3 py-2 text-meta font-bold transition ${filter === topic ? 'bg-ink text-white hover:bg-stone-700' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
-                    type="button"
-                    onClick={() => setFilter(topic)}
-                  >
-                    {topic === 'all' ? 'All notes' : topic}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="my-8 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3.5">
+              <TopicFilter tags={topics} value={filter} onChange={setFilter} />
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex gap-1" role="group" aria-label="Reading layout">
                   {(['cards', 'list'] as const).map((value) => (
                     <button
@@ -763,6 +755,23 @@ export default function App() {
                   <option value="source">By source</option>
                 </select>
               </div>
+            </div>
+
+            <div
+              role="status"
+              aria-label="Filter results"
+              className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted"
+            >
+              <span>
+                {visibleNotes.length} of {data.notes.length} notes
+              </span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">Topic: {filter ?? 'All notes'}</span>
+              {query && <span className="min-w-0 [overflow-wrap:anywhere]">Search: {query}</span>}
+              {(filter !== null || query !== '') && (
+                <button className={buttonClass} type="button" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
             </div>
 
             {(selecting || batch) && (
@@ -811,6 +820,8 @@ export default function App() {
                             <NoteCard
                               key={note.id}
                               note={note}
+                              activeTag={filter}
+                              onFilterTag={setFilter}
                               layout={layout}
                               generationState={generationStates[note.id]}
                               batchState={batchStates.get(note.id)}
@@ -831,6 +842,8 @@ export default function App() {
                     <NoteCard
                       key={note.id}
                       note={note}
+                      activeTag={filter}
+                      onFilterTag={setFilter}
                       layout={layout}
                       generationState={generationStates[note.id]}
                       batchState={batchStates.get(note.id)}

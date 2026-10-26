@@ -40,7 +40,7 @@ interface LibraryStore {
   layout: LibraryLayout;
   setLayout: (layout: LibraryLayout) => void;
   query: string;
-  filter: string;
+  filter: string | null;
   sortMode: SortMode;
   groupMode: 'website' | 'none';
   collapsedWebsites: Set<string>;
@@ -52,7 +52,8 @@ interface LibraryStore {
   retainSelected: (ids: string[]) => void;
   setView: (view: LibraryStore['view']) => void;
   setQuery: (query: string) => void;
-  setFilter: (filter: string) => void;
+  clearFilters: () => void;
+  setFilter: (filter: string | null) => void;
   setSortMode: (sortMode: SortMode) => void;
   setGroupMode: (groupMode: LibraryStore['groupMode']) => void;
   toggleWebsite: (website: string) => void;
@@ -63,7 +64,7 @@ export const useLibraryStore = create<LibraryStore>()((set) => ({
   layout: 'cards',
   setLayout: (layout) => set({ layout }),
   query: '',
-  filter: 'all',
+  filter: null,
   sortMode: 'newest',
   groupMode: 'website',
   collapsedWebsites: new Set(),
@@ -86,6 +87,7 @@ export const useLibraryStore = create<LibraryStore>()((set) => ({
     }),
   setView: (view) => set({ view }),
   setQuery: (query) => set({ query, selectedIds: new Set() }),
+  clearFilters: () => set({ query: '', filter: null, selectedIds: new Set() }),
   setFilter: (filter) => set({ filter, selectedIds: new Set() }),
   setSortMode: (sortMode) => set({ sortMode }),
   setGroupMode: (groupMode) => set({ groupMode }),
