@@ -726,16 +726,15 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                {!selecting && (
-                  <button
-                    className={buttonClass}
-                    type="button"
-                    onClick={() => setSelecting(true)}
-                    disabled={!data.notes.length}
-                  >
-                    Select notes
-                  </button>
-                )}
+                <button
+                  className={selecting ? primaryButtonClass : buttonClass}
+                  type="button"
+                  aria-expanded={selecting}
+                  onClick={() => setSelecting(!selecting)}
+                  disabled={!selecting && !data.notes.length}
+                >
+                  {selecting ? 'Done selecting' : 'Select notes'}
+                </button>
                 <button
                   className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink hover:bg-stone-200' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
                   type="button"
@@ -781,7 +780,6 @@ export default function App() {
                 matchingIds={visibleNotes.map((note) => note.id)}
                 batch={batch}
                 onSelect={selectNotes}
-                onExit={() => setSelecting(false)}
               />
             )}
 

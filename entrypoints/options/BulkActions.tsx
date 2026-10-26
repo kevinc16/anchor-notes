@@ -15,14 +15,12 @@ export function BulkActions({
   matchingIds,
   batch,
   onSelect,
-  onExit,
 }: {
   selecting: boolean;
   ids: string[];
   matchingIds: string[];
   batch?: BulkGeneration;
   onSelect: (ids: string[]) => void;
-  onExit: () => void;
 }) {
   const [operation, setOperation] = useState<TagOperation>('add');
   const [tags, setTags] = useState('');
@@ -85,9 +83,6 @@ export function BulkActions({
             </button>
             <button className={buttonClass} type="button" onClick={() => onSelect([])} disabled={!ids.length}>
               Clear selection
-            </button>
-            <button className={buttonClass} type="button" onClick={onExit}>
-              Done selecting
             </button>
           </div>
           <p className="text-xs text-muted">

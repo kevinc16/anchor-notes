@@ -57,6 +57,33 @@ test.beforeEach(async ({ serviceWorker, articleUrl }) => {
   });
 });
 
+test('keeps the selection control focused and clears selection when exiting', async ({ context, extensionId }) => {
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  for (const layout of ['Cards', 'List']) {
+    await library.getByRole('button', { name: layout, exact: true }).click();
+    for (const width of [1280, 390]) {
+      await library.setViewportSize({ width, height: 844 });
+      const select = library.getByRole('button', { name: 'Select notes', exact: true });
+      await select.focus();
+      await select.press('Enter');
+      const done = library.getByRole('button', { name: 'Done selecting', exact: true });
+      await expect(done).toBeFocused();
+      await expect(done).toHaveAttribute('aria-expanded', 'true');
+      await library.getByRole('button', { name: /Select all matching/ }).click();
+      await expect(library.getByText('3 selected', { exact: true })).toBeVisible();
+      await done.focus();
+      await done.press('Space');
+      await expect(select).toBeFocused();
+      await expect(select).toHaveAttribute('aria-expanded', 'false');
+      await expect(library.getByRole('checkbox')).toHaveCount(0);
+      await select.press('Enter');
+      await expect(library.getByText('0 selected', { exact: true })).toBeVisible();
+      await done.press('Enter');
+      await library.getByRole('button', { name: 'Group by website', exact: true }).click();
+    }
+  }
+});
+
 test('selects filtered and collapsed notes and patches tags locally in either layout', async ({
   context,
   serviceWorker,
