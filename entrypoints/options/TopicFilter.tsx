@@ -29,7 +29,7 @@ export function TopicFilter({
   return (
     <details
       ref={detailsRef}
-      className="relative w-40 max-w-full shrink-0"
+      className="relative min-w-0 max-w-40 grow basis-32"
       onToggle={(event) => {
         if (event.currentTarget.open) searchRef.current?.focus();
         else setSearch('');

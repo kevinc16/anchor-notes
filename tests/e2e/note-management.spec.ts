@@ -815,3 +815,21 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   await expect(page.locator('summary')).toHaveText('Topic: All notes');
   await page.screenshot({ path: test.info().outputPath('topics-200-percent.png'), animations: 'disabled' });
 });
+
+test('keeps laptop toolbar controls together with wider fallback fonts', async ({
+  page,
+  serviceWorker,
+  extensionId,
+}) => {
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes: [] });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  // System and native-control font metrics vary between macOS and the Linux CI runner.
+  await page.addStyleTag({ content: 'main summary, main button, main select { font-family: Verdana, sans-serif; }' });
+  for (const width of [1280, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    const topic = await page.locator('summary').boundingBox();
+    const sort = await page.getByRole('combobox', { name: 'Sort notes' }).boundingBox();
+    expect(Math.abs(topic!.y - sort!.y)).toBeLessThan(12);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
