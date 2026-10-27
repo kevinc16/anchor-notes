@@ -646,9 +646,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <aside className="fixed inset-y-0 left-0 flex w-[var(--layout-sidebar-width)] flex-col border-r border-line bg-sidebar px-4xl pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:items-center">
+      <aside className="fixed inset-y-0 left-0 flex w-[var(--layout-sidebar-width)] flex-col border-r border-line bg-sidebar px-4xl pb-5 pt-6 max-[760px]:static max-[760px]:h-auto max-[760px]:w-full max-[760px]:flex-row max-[760px]:flex-wrap max-[760px]:items-center max-[760px]:justify-between max-[760px]:gap-3">
         <Brand />
-        <nav className="mt-10 grid gap-1 max-[760px]:ml-auto max-[760px]:mt-0 max-[760px]:flex">
+        <nav className="mt-10 grid gap-1 max-[760px]:mt-0 max-[760px]:flex">
           {(
             [
               ['library', '⌂', 'Library'],
