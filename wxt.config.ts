@@ -8,7 +8,7 @@ export default defineConfig({
   }),
   manifest: (env) => ({
     name: 'Anchor Notes',
-    version: '0.4.0',
+    version: '0.5.0',
     description: 'Highlight the web, keep durable notes, and remember the important things.',
     permissions: ['storage', 'contextMenus'],
     host_permissions: ['<all_urls>'],
