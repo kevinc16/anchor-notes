@@ -299,7 +299,8 @@
   background: transparent;
 }
 .anchor-remove:hover {
-  background: rgba(156, 56, 47, 0.08);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 #anchor-notes-popover .anchor-remove {
   justify-self: start;

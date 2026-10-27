@@ -200,6 +200,10 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
     expect(primary!.x + primary!.width).toBeCloseTo(actions!.x + actions!.width, 0);
     await popover.screenshot({ path: test.info().outputPath(`editor-footer-${width}.png`) });
   }
+  const removeAction = popover.getByRole('button', { name: 'Remove highlight', exact: true });
+  await removeAction.hover();
+  expect(await computedStyle(removeAction, 'background-color')).toBe('rgba(0, 0, 0, 0)');
+  expect(await computedStyle(removeAction, 'text-decoration-line')).toBe('underline');
   await save.focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
