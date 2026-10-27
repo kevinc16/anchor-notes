@@ -50,7 +50,7 @@ export default function App() {
   }
 
   return (
-    <div className="max-h-[600px] min-h-[480px] w-[390px] overflow-y-auto bg-paper text-ink">
+    <div className="max-h-[600px] min-h-[480px] w-[390px] max-w-full overflow-y-auto bg-paper text-ink">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-4xl py-3xl backdrop-blur-xl">
         <Brand />
         <button
@@ -71,7 +71,7 @@ export default function App() {
           </p>
         )}
         <section>
-          <p className="text-overline font-extrabold uppercase tracking-[0.14em] text-muted">On this page</p>
+          <p className="text-overline font-medium uppercase tracking-[0.14em] text-muted">On this page</p>
           <h1 className="mt-2 truncate font-serif text-popup-title font-semibold leading-[1.14] tracking-[-0.02em]">
             {page.title}
           </h1>
@@ -86,7 +86,7 @@ export default function App() {
         </div>
 
         <section>
-          <div className="mb-3 flex justify-between text-overline font-extrabold uppercase tracking-[0.08em] text-muted">
+          <div className="mb-3 flex justify-between text-overline font-medium uppercase tracking-[0.08em] text-muted">
             <span>
               {notes.length} highlight{notes.length === 1 ? '' : 's'}
             </span>
@@ -108,16 +108,19 @@ export default function App() {
             <div className="grid gap-2.5">
               {notes.map((note) => (
                 <article key={note.id} className="rounded-xl border border-line bg-card p-2xl">
-                  <blockquote className="font-serif text-sm font-medium leading-[1.45] text-quote">
+                  <blockquote className="font-serif text-lg font-medium leading-relaxed text-quote [overflow-wrap:anywhere]">
                     <span className="text-quote-accent">“</span>
                     {note.quote}
                     <span className="text-quote-accent">”</span>
                   </blockquote>
-                  {note.body && <p className="mt-2 text-xs leading-relaxed text-muted">{note.body}</p>}
+                  {note.body && (
+                    <div className="mt-2">
+                      <p className="mb-1 text-meta font-medium text-muted">Personal note</p>
+                      <p className="text-sm leading-relaxed text-ink [overflow-wrap:anywhere]">{note.body}</p>
+                    </div>
+                  )}
                   <footer className="mt-3 flex items-center justify-between">
-                    <span className="text-overline text-stone-400">
-                      {new Date(note.createdAt).toLocaleDateString()}
-                    </span>
+                    <span className="text-meta text-muted">{new Date(note.createdAt).toLocaleDateString()}</span>
                     <button
                       className="rounded-full px-2 py-1 text-meta font-bold text-ink transition hover:bg-stone-100 hover:text-ink"
                       type="button"

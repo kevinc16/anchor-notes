@@ -157,3 +157,62 @@ test('shows hover and keyboard focus feedback in the page editor', async ({ page
   await expect.poll(() => isFocusVisible(saveButton)).toBe(true);
   expect(await computedStyle(saveButton, 'outline-width')).toBe('2px');
 });
+
+test('keeps enlarged page editor text and actions within a narrow viewport', async ({
+  page,
+  serviceWorker,
+  articleUrl,
+}) => {
+  await page.setViewportSize({ width: 320, height: 500 });
+  await page.goto(articleUrl, { waitUntil: 'networkidle' });
+  await page.locator('#passage').selectText();
+  await triggerCaptureSelection(serviceWorker);
+  const composer = page.locator('#anchor-notes-composer');
+  await expect(composer).toBeVisible();
+  const bounds = await composer.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(500);
+  expect(await computedStyle(composer.locator('textarea'), 'font-size')).toBe('14px');
+  expect(await computedStyle(composer.locator('.anchor-composer-quote'), 'font-size')).toBe('18px');
+  await composer.locator('textarea').fill('A readable personal note.');
+  await composer.getByRole('button', { name: 'Save note', exact: true }).click();
+  await page.locator('mark.anchor-note-highlight').first().click();
+  const popover = page.locator('#anchor-notes-popover');
+  await expect(popover).toBeVisible();
+  expect(await popover.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  const save = popover.getByRole('button', { name: 'Save changes', exact: true });
+  for (const width of [320, 375, 640]) {
+    await page.setViewportSize({ width, height: 500 });
+    const library = await popover.getByRole('button', { name: 'Open library', exact: true }).boundingBox();
+    const remove = await popover.getByRole('button', { name: 'Remove highlight', exact: true }).boundingBox();
+    const primary = await save.boundingBox();
+    expect(library!.y + library!.height).toBeLessThanOrEqual(remove!.y);
+    expect(remove!.y + remove!.height / 2).toBeCloseTo(primary!.y + primary!.height / 2, 0);
+    expect(remove!.x).toBeCloseTo(library!.x - 8, 0);
+    const removeTextX = await popover.locator('.anchor-remove').evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect().x;
+    });
+    expect(removeTextX).toBeCloseTo(library!.x, 0);
+    const actions = await popover.locator('.anchor-composer-actions').boundingBox();
+    expect(primary!.x + primary!.width).toBeCloseTo(actions!.x + actions!.width, 0);
+    await popover.screenshot({ path: test.info().outputPath(`editor-footer-${width}.png`) });
+  }
+  const removeAction = popover.getByRole('button', { name: 'Remove highlight', exact: true });
+  await removeAction.hover();
+  await expect.poll(() => computedStyle(removeAction, 'background-color')).toBe('rgba(156, 56, 47, 0.08)');
+  expect(await computedStyle(removeAction, 'text-decoration-line')).toBe('none');
+  const removeBounds = await removeAction.boundingBox();
+  const panelBounds = await popover.boundingBox();
+  expect(removeBounds!.x - panelBounds!.x).toBeGreaterThanOrEqual(10);
+  await popover.screenshot({ path: test.info().outputPath('editor-footer-hover.png') });
+  await save.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(save).toBeFocused();
+  await expect.poll(() => isFocusVisible(save)).toBe(true);
+  await save.press('Enter');
+  await expect(popover).toHaveCount(0);
+});

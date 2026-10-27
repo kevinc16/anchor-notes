@@ -45,6 +45,62 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
+test('keeps labeled note content readable in both layouts at narrow widths', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [
+      makeNote('readable', articleUrl, {
+        title: 'A long source title '.repeat(15),
+        body: 'Personal interpretation '.repeat(20),
+        summary: 'Summary interpretation '.repeat(20),
+        tags: ['research', 'x'.repeat(100)],
+      }),
+      makeNote('quote-only', articleUrl, { body: '', tags: [] }),
+    ],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const card = page.locator('article').filter({ hasText: 'Personal interpretation' });
+  for (const layout of ['Cards', 'List']) {
+    await page.getByRole('button', { name: layout, exact: true }).click();
+    for (const width of [1280, 375, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(card.getByText('Personal note', { exact: true })).toBeVisible();
+      await expect(card.getByText('Summary', { exact: true })).toBeVisible();
+      for (const text of [card.locator('time'), card.getByRole('button', { name: 'Filter by tag: research' })]) {
+        expect(await text.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(
+          12,
+        );
+      }
+      for (const text of [card.getByText(/^Personal interpretation/), card.getByText(/^Summary interpretation/)]) {
+        expect(await text.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(
+          13,
+        );
+        expect(await text.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      const edit = card.getByRole('button', { name: 'Edit', exact: true });
+      await edit.focus();
+      await expect(edit).toBeFocused();
+      await edit.press('Enter');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+      if (width === 1280) {
+        await page.screenshot({ path: test.info().outputPath(`readable-${layout.toLowerCase()}.png`), fullPage: true });
+      }
+    }
+  }
+  const quoteOnly = page.locator('article').filter({ hasNotText: 'Personal interpretation' });
+  await expect(quoteOnly.getByText('Personal note', { exact: true })).toHaveCount(0);
+  await expect(quoteOnly.getByText('Summary', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('readable-list-320.png'), fullPage: true });
+});
+
 test('distinguishes articles by title and falls back to the hostname for blank titles', async ({
   page,
   serviceWorker,
@@ -427,7 +483,7 @@ test('cleans and bounds library card previews without changing the editable note
     await expect(collapseQuoteToggle).toHaveClass(/font-sans/);
     await expect(collapseQuoteToggle).toHaveClass(/text-meta/);
     expect(await collapseQuoteToggle.getAttribute('class')).toBe(quoteToggleClass);
-    await expect(card.locator('p').first()).toHaveText(body);
+    await expect(card.getByText(body.trim(), { exact: true })).toBeVisible();
 
     await card.getByRole('button', { name: 'Edit' }).click();
     const dialog = library.getByRole('dialog');
@@ -793,7 +849,7 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
     settings: DEFAULT_SETTINGS,
-    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'] })],
+    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'], summary: 'A readable summary at browser zoom.' })],
   });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`chrome-extension://${extensionId}/options.html`);
@@ -823,7 +879,39 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(640);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await expect(page.locator('summary')).toHaveText('Topic: All notes');
+  const card = page.locator('article');
+  await expect(card.getByText('Personal note', { exact: true })).toBeVisible();
+  await expect(card.getByText('Summary', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByRole('dialog').getByLabel('Summary')).toHaveValue('A readable summary at browser zoom.');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.screenshot({ path: test.info().outputPath('topics-200-percent.png'), animations: 'disabled' });
+});
+
+test('labels personal notes in the popup without adding empty labels', async ({
+  page,
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('popup-body', articleUrl), makeNote('popup-empty', articleUrl, { body: '' })],
+  });
+  await page.goto(articleUrl, { waitUntil: 'networkidle' });
+  const popup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
+  try {
+    await expect(popup.locator('article')).toHaveCount(2);
+    await expect(popup.getByText('Personal note', { exact: true })).toHaveCount(1);
+    const body = popup.getByText('popup-body body', { exact: true });
+    await expect(body).toBeVisible();
+    expect(await body.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(13);
+    await popup.screenshot({ path: test.info().outputPath('readable-popup.png') });
+  } finally {
+    await popup.close();
+  }
 });
 
 test('keeps laptop toolbar controls together with wider fallback fonts', async ({
@@ -838,6 +926,10 @@ test('keeps laptop toolbar controls together with wider fallback fonts', async (
   for (const width of [1280, 1024]) {
     await page.setViewportSize({ width, height: 900 });
     const topic = await page.locator('summary').boundingBox();
+    const topicLabel = await page.locator('summary > span').boundingBox();
+    expect(Math.abs(topicLabel!.y + topicLabel!.height / 2 - topic!.y - topic!.height / 2)).toBeLessThanOrEqual(1);
+    const cards = await page.getByRole('button', { name: 'Cards', exact: true }).boundingBox();
+    expect(topic!.height).toBeCloseTo(cards!.height, 0);
     const sort = await page.getByRole('combobox', { name: 'Sort notes' }).boundingBox();
     expect(Math.abs(topic!.y - sort!.y)).toBeLessThan(12);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
