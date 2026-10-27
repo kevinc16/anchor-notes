@@ -1,5 +1,10 @@
 #anchor-notes-delete-confirmation {
   all: initial;
+  --anchor-color-panel-border: #e6dfd4;
+  --anchor-color-surface: #fbf8f1;
+  --anchor-color-ink: #24211d;
+  --anchor-color-field-border: #e6dfd4;
+  --anchor-color-input-surface: #fffefa;
   box-sizing: border-box;
   display: none;
   position: fixed;
@@ -37,6 +42,7 @@
   font-size: 24px;
   font-weight: 600;
   line-height: 1.3;
+  text-transform: none;
 }
 
 #anchor-notes-delete-confirmation p {

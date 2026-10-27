@@ -45,6 +45,62 @@ test.beforeEach(async ({ serviceWorker }) => {
   await resetExtensionStorage(serviceWorker);
 });
 
+test('keeps labeled note content readable in both layouts at narrow widths', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [
+      makeNote('readable', articleUrl, {
+        title: 'A long source title '.repeat(15),
+        body: 'Personal interpretation '.repeat(20),
+        summary: 'Summary interpretation '.repeat(20),
+        tags: ['research', 'x'.repeat(100)],
+      }),
+      makeNote('quote-only', articleUrl, { body: '', tags: [] }),
+    ],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const card = page.locator('article').filter({ hasText: 'Personal interpretation' });
+  for (const layout of ['Cards', 'List']) {
+    await page.getByRole('button', { name: layout, exact: true }).click();
+    for (const width of [1280, 375, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(card.getByText('Personal note', { exact: true })).toBeVisible();
+      await expect(card.getByText('Summary', { exact: true })).toBeVisible();
+      for (const text of [card.locator('time'), card.getByRole('button', { name: 'Filter by tag: research' })]) {
+        expect(await text.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(
+          12,
+        );
+      }
+      for (const text of [card.getByText(/^Personal interpretation/), card.getByText(/^Summary interpretation/)]) {
+        expect(await text.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(
+          13,
+        );
+        expect(await text.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      const edit = card.getByRole('button', { name: 'Edit', exact: true });
+      await edit.focus();
+      await expect(edit).toBeFocused();
+      await edit.press('Enter');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+      if (width === 1280) {
+        await page.screenshot({ path: test.info().outputPath(`readable-${layout.toLowerCase()}.png`), fullPage: true });
+      }
+    }
+  }
+  const quoteOnly = page.locator('article').filter({ hasNotText: 'Personal interpretation' });
+  await expect(quoteOnly.getByText('Personal note', { exact: true })).toHaveCount(0);
+  await expect(quoteOnly.getByText('Summary', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('readable-list-320.png'), fullPage: true });
+});
+
 test('distinguishes articles by title and falls back to the hostname for blank titles', async ({
   page,
   serviceWorker,
@@ -153,7 +209,7 @@ test('removes a saved highlight from the page editor', async ({
   });
 
   await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
-  await page.addStyleTag({ content: 'button { text-transform: uppercase; }' });
+  await page.addStyleTag({ content: 'button, h2 { text-transform: uppercase; }' });
   const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
   const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
@@ -170,18 +226,27 @@ test('removes a saved highlight from the page editor', async ({
   const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await expect(removeButton).toBeVisible();
 
-  const confirmation = page.getByRole('dialog', { name: 'Delete note?' });
+  const confirmation = page.getByRole('dialog', { name: 'Remove highlight?' });
   await removeButton.click();
   await expect(confirmation).toBeVisible();
+  await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+  await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+  await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+  await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+    'This will delete the saved note and remove its highlight. This cannot be undone.',
+  );
+  await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+  await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
+  await expect(confirmation.getByRole('heading')).toHaveCSS('text-transform', 'none');
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancel).toHaveCSS('text-transform', 'none');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toHaveCSS(
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toHaveCSS(
     'text-transform',
     'none',
   );
   await expect(cancel).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toBeFocused();
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(cancel).toBeFocused();
   await page.screenshot({ path: test.info().outputPath('page-delete-confirmation.png') });
@@ -203,7 +268,7 @@ test('removes a saved highlight from the page editor', async ({
   await expect(targetMarks).toHaveCount(3);
 
   await removeButton.click();
-  await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+  await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
   await expect(popover).toBeHidden();
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight removed');
   await expect(targetMarks).toHaveCount(0);
@@ -370,10 +435,18 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(library.getByRole('dialog').getByLabel('Summary')).toHaveValue('');
     await library.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
 
-    const deleteButton = newerCard.getByRole('button', { name: 'Delete', exact: true });
+    const deleteButton = newerCard.getByRole('button', { name: 'Remove highlight', exact: true });
     await deleteButton.click();
-    const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
+    const confirmation = library.getByRole('dialog', { name: 'Remove highlight?' });
     await expect(confirmation).toBeVisible();
+    await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+    await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+    await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+    await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+      'This will delete the saved note and remove its highlight. This cannot be undone.',
+    );
+    await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+    await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
     await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
     await library.screenshot({ path: test.info().outputPath('library-delete-confirmation.png') });
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -384,7 +457,7 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(confirmation).toBeHidden();
     await expect(newerCard).toBeVisible();
     await deleteButton.click();
-    await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+    await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
   } finally {
     await library.close();
@@ -427,7 +500,7 @@ test('cleans and bounds library card previews without changing the editable note
     await expect(collapseQuoteToggle).toHaveClass(/font-sans/);
     await expect(collapseQuoteToggle).toHaveClass(/text-meta/);
     expect(await collapseQuoteToggle.getAttribute('class')).toBe(quoteToggleClass);
-    await expect(card.locator('p').first()).toHaveText(body);
+    await expect(card.getByText(body.trim(), { exact: true })).toBeVisible();
 
     await card.getByRole('button', { name: 'Edit' }).click();
     const dialog = library.getByRole('dialog');
@@ -842,7 +915,7 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
     settings: DEFAULT_SETTINGS,
-    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'] })],
+    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'], summary: 'A readable summary at browser zoom.' })],
   });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`chrome-extension://${extensionId}/options.html`);
@@ -872,7 +945,39 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(640);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await expect(page.locator('summary')).toHaveText('Topic: All notes');
+  const card = page.locator('article');
+  await expect(card.getByText('Personal note', { exact: true })).toBeVisible();
+  await expect(card.getByText('Summary', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByRole('dialog').getByLabel('Summary')).toHaveValue('A readable summary at browser zoom.');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.screenshot({ path: test.info().outputPath('topics-200-percent.png'), animations: 'disabled' });
+});
+
+test('labels personal notes in the popup without adding empty labels', async ({
+  page,
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [makeNote('popup-body', articleUrl), makeNote('popup-empty', articleUrl, { body: '' })],
+  });
+  await page.goto(articleUrl, { waitUntil: 'networkidle' });
+  const popup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
+  try {
+    await expect(popup.locator('article')).toHaveCount(2);
+    await expect(popup.getByText('Personal note', { exact: true })).toHaveCount(1);
+    const body = popup.getByText('popup-body body', { exact: true });
+    await expect(body).toBeVisible();
+    expect(await body.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(13);
+    await popup.screenshot({ path: test.info().outputPath('readable-popup.png') });
+  } finally {
+    await popup.close();
+  }
 });
 
 test('keeps laptop toolbar controls together with wider fallback fonts', async ({
@@ -887,6 +992,10 @@ test('keeps laptop toolbar controls together with wider fallback fonts', async (
   for (const width of [1280, 1024]) {
     await page.setViewportSize({ width, height: 900 });
     const topic = await page.locator('summary').boundingBox();
+    const topicLabel = await page.locator('summary > span').boundingBox();
+    expect(Math.abs(topicLabel!.y + topicLabel!.height / 2 - topic!.y - topic!.height / 2)).toBeLessThanOrEqual(1);
+    const cards = await page.getByRole('button', { name: 'Cards', exact: true }).boundingBox();
+    expect(topic!.height).toBeCloseTo(cards!.height, 0);
     const sort = await page.getByRole('combobox', { name: 'Sort notes' }).boundingBox();
     expect(Math.abs(topic!.y - sort!.y)).toBeLessThan(12);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);

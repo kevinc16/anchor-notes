@@ -201,15 +201,15 @@ function NoteCard({
           Select note
         </label>
       )}
-      <header className="border-b border-subtle-border pb-4">
+      <header className="border-b border-subtle-border pb-3">
         <h3
           className="line-clamp-2 font-serif text-base leading-snug font-bold break-words text-ink"
           title={articleTitle}
         >
           {articleTitle}
         </h3>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-overline font-bold text-muted">
-          <span>{hostFromUrl(note.url)}</span>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-meta font-normal text-muted">
+          <span className="[overflow-wrap:anywhere]">{hostFromUrl(note.url)}</span>
           <time>
             {new Date(note.createdAt).toLocaleDateString(undefined, {
               month: 'short',
@@ -220,7 +220,7 @@ function NoteCard({
         </div>
       </header>
       <blockquote
-        className={`my-5 font-serif text-lg font-medium text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] whitespace-pre-wrap leading-relaxed' : 'whitespace-pre-line leading-[1.42]'}`}
+        className={`my-4 font-serif text-lg font-medium leading-relaxed text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] whitespace-pre-wrap' : 'whitespace-pre-line'}`}
       >
         <span className="-ml-2 text-library-quote-accent">“</span>
         {quoteExpanded ? note.quote : quotePreview}
@@ -238,10 +238,16 @@ function NoteCard({
           </button>
         </div>
       )}
-      {note.body && <p className="mb-4 text-xs leading-relaxed text-muted">{note.body}</p>}
+      {note.body && (
+        <div className="mb-3">
+          <p className="mb-1 text-meta font-medium text-muted">Personal note</p>
+          <p className="text-sm leading-relaxed text-ink [overflow-wrap:anywhere]">{note.body}</p>
+        </div>
+      )}
+      {(generationState || note.summary) && <p className="mb-1 text-meta font-medium text-muted">Summary</p>}
       <div role="status" aria-live="polite" aria-atomic="true">
         {(generationState || note.summary) && (
-          <p className="mb-4 rounded-md bg-summary-background p-2.5 text-meta leading-relaxed text-muted">
+          <p className="mb-3 rounded-md bg-summary-background p-2.5 text-sm leading-relaxed text-ink [overflow-wrap:anywhere]">
             {generationState === 'pending' ? (
               <span className="flex items-center gap-2">
                 <span
@@ -274,7 +280,7 @@ function NoteCard({
             type="button"
             aria-label={`Filter by tag: ${tag}`}
             aria-pressed={activeTag === tag}
-            className={`max-w-full rounded-full px-2 py-1 text-overline font-bold break-words [overflow-wrap:anywhere] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${activeTag === tag ? 'bg-ink text-white hover:bg-stone-700' : 'bg-tag-background text-tag-text hover:bg-stone-200'}`}
+            className={`max-w-full rounded-full px-2 py-1 text-meta font-medium break-words [overflow-wrap:anywhere] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${activeTag === tag ? 'bg-ink text-white hover:bg-stone-700' : 'bg-tag-background text-tag-text hover:bg-stone-200'}`}
             onClick={() => onFilterTag(activeTag === tag ? null : tag)}
           >
             {tag}
@@ -283,7 +289,7 @@ function NoteCard({
       </div>
       <footer className="mt-4xl flex flex-wrap items-center justify-between gap-2 border-t border-subtle-border pt-3">
         <a
-          className="inline-flex min-h-8 items-center gap-1.5 rounded px-1 text-meta font-extrabold text-ink no-underline transition hover:bg-stone-50 hover:text-quote-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded px-1 text-meta font-extrabold text-ink no-underline transition hover:text-quote-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           href={note.url}
           target="_blank"
           rel="noreferrer"
@@ -307,7 +313,7 @@ function NoteCard({
             type="button"
             onClick={onDelete}
           >
-            Delete
+            Remove highlight
           </button>
         </div>
       </footer>
@@ -318,7 +324,7 @@ function NoteCard({
 function Field({ label, children, help }: { label: string; children: React.ReactNode; help?: string }) {
   return (
     <label className="mb-4 grid gap-2">
-      <span className="text-meta font-extrabold text-label">{label}</span>
+      <span className="text-meta font-medium text-label">{label}</span>
       {children}
       {help && <span className="text-xs leading-relaxed text-muted">{help}</span>}
     </label>
@@ -451,7 +457,9 @@ export default function App() {
   }, [data.notes, filter, query, sortMode]);
 
   const noteGridClass =
-    layout === 'list' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4';
+    layout === 'list'
+      ? 'grid grid-cols-1 gap-4'
+      : 'grid grid-cols-[repeat(auto-fill,minmax(min(290px,100%),1fr))] gap-4';
 
   const websiteGroups = useMemo(() => groupNotesByWebsite(visibleNotes), [visibleNotes]);
   const batchStates = useMemo(() => new Map(batch?.items.map((item) => [item.id, item.state])), [batch]);
@@ -711,9 +719,9 @@ export default function App() {
               </label>
             </header>
 
-            <div className="my-8 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3.5">
+            <div className="my-8 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3.5">
               <TopicFilter tags={topics} value={filter} onChange={setFilter} />
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div className="flex gap-1" role="group" aria-label="Reading layout">
                   {(['cards', 'list'] as const).map((value) => (
                     <button
@@ -803,7 +811,7 @@ export default function App() {
                               onClick={() => toggleWebsite(group.website)}
                             >
                               <span className="font-serif text-xl font-semibold">{group.website}</span>
-                              <span className="text-meta font-bold text-muted">
+                              <span className="text-meta font-medium text-muted">
                                 {group.notes.length} note{group.notes.length === 1 ? '' : 's'}
                               </span>
                               <Icon
