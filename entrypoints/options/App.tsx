@@ -152,7 +152,7 @@ function NoteCard({
   activeTag,
 }: {
   note: AnchorNote;
-  onFilterTag: (tag: string) => void;
+  onFilterTag: (tag: string | null) => void;
   activeTag: string | null;
   layout: LibraryLayout;
   generationState?: SummaryGenerationStatus['state'];
@@ -274,8 +274,8 @@ function NoteCard({
             type="button"
             aria-label={`Filter by tag: ${tag}`}
             aria-pressed={activeTag === tag}
-            className="max-w-full rounded-full bg-tag-background px-2 py-1 text-overline font-bold break-words text-tag-text [overflow-wrap:anywhere] transition hover:bg-stone-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            onClick={() => onFilterTag(tag)}
+            className={`max-w-full rounded-full px-2 py-1 text-overline font-bold break-words [overflow-wrap:anywhere] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${activeTag === tag ? 'bg-ink text-white hover:bg-stone-700' : 'bg-tag-background text-tag-text hover:bg-stone-200'}`}
+            onClick={() => onFilterTag(activeTag === tag ? null : tag)}
           >
             {tag}
           </button>
