@@ -229,6 +229,14 @@ test('removes a saved highlight from the page editor', async ({
   const confirmation = page.getByRole('dialog', { name: 'Remove highlight?' });
   await removeButton.click();
   await expect(confirmation).toBeVisible();
+  await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+  await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+  await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+  await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+    'This will delete the saved note and remove its highlight. This cannot be undone.',
+  );
+  await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+  await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
   await expect(confirmation.getByRole('heading')).toHaveCSS('text-transform', 'none');
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancel).toHaveCSS('text-transform', 'none');
@@ -431,6 +439,14 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await deleteButton.click();
     const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
     await expect(confirmation).toBeVisible();
+    await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+    await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+    await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+    await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+      'This will delete the saved note and remove its highlight. This cannot be undone.',
+    );
+    await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+    await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
     await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
     await library.screenshot({ path: test.info().outputPath('library-delete-confirmation.png') });
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
