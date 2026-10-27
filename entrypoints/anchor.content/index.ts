@@ -7,6 +7,7 @@ import { readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
 import { findTextRange, normalizeQuoteWhitespace } from '@/lib/text-range';
 import type { AnchorNote, ExtensionMessage, HighlightAnchor, HighlightColor, MessageResponse } from '@/lib/types';
+import closeIcon from '@/assets/icons/close.svg?raw';
 import './style.css';
 
 const COLORS: HighlightColor[] = ['yellow', 'mint', 'lilac', 'coral'];
@@ -274,7 +275,7 @@ export default defineContentScript({
         <div class="anchor-popover-header">
           <span class="anchor-composer-kicker">Saved note</span>
           <button class="anchor-popover-close" type="button" aria-label="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12 M6 18 18 6" /></svg>
+            ${closeIcon}
           </button>
         </div>
         <div class="anchor-composer-quote"></div>
