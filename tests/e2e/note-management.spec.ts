@@ -435,9 +435,9 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(library.getByRole('dialog').getByLabel('Summary')).toHaveValue('');
     await library.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
 
-    const deleteButton = newerCard.getByRole('button', { name: 'Delete', exact: true });
+    const deleteButton = newerCard.getByRole('button', { name: 'Remove highlight', exact: true });
     await deleteButton.click();
-    const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
+    const confirmation = library.getByRole('dialog', { name: 'Remove highlight?' });
     await expect(confirmation).toBeVisible();
     await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
     await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
@@ -457,7 +457,7 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(confirmation).toBeHidden();
     await expect(newerCard).toBeVisible();
     await deleteButton.click();
-    await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+    await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
   } finally {
     await library.close();

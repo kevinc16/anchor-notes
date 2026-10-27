@@ -207,9 +207,9 @@ test('rejects overlapping batches and preserves edits and deletions during regen
   await library
     .locator('article')
     .filter({ hasText: 'Quote three' })
-    .getByRole('button', { name: 'Delete', exact: true })
+    .getByRole('button', { name: 'Remove highlight', exact: true })
     .click();
-  await library.getByRole('dialog').getByRole('button', { name: 'Delete note', exact: true }).click();
+  await library.getByRole('dialog').getByRole('button', { name: 'Remove highlight', exact: true }).click();
   await expect(library.getByText('2 selected', { exact: true })).toBeVisible();
   await release(articleUrl);
   await release(articleUrl);
