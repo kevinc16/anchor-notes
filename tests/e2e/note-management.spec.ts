@@ -209,7 +209,7 @@ test('removes a saved highlight from the page editor', async ({
   });
 
   await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
-  await page.addStyleTag({ content: 'button { text-transform: uppercase; }' });
+  await page.addStyleTag({ content: 'button, h2 { text-transform: uppercase; }' });
   const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
   const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
@@ -226,18 +226,27 @@ test('removes a saved highlight from the page editor', async ({
   const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await expect(removeButton).toBeVisible();
 
-  const confirmation = page.getByRole('dialog', { name: 'Delete note?' });
+  const confirmation = page.getByRole('dialog', { name: 'Remove highlight?' });
   await removeButton.click();
   await expect(confirmation).toBeVisible();
+  await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+  await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+  await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+  await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+    'This will delete the saved note and remove its highlight. This cannot be undone.',
+  );
+  await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+  await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
+  await expect(confirmation.getByRole('heading')).toHaveCSS('text-transform', 'none');
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancel).toHaveCSS('text-transform', 'none');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toHaveCSS(
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toHaveCSS(
     'text-transform',
     'none',
   );
   await expect(cancel).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toBeFocused();
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(cancel).toBeFocused();
   await page.screenshot({ path: test.info().outputPath('page-delete-confirmation.png') });
@@ -259,7 +268,7 @@ test('removes a saved highlight from the page editor', async ({
   await expect(targetMarks).toHaveCount(3);
 
   await removeButton.click();
-  await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+  await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
   await expect(popover).toBeHidden();
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight removed');
   await expect(targetMarks).toHaveCount(0);
@@ -426,10 +435,18 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(library.getByRole('dialog').getByLabel('Summary')).toHaveValue('');
     await library.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
 
-    const deleteButton = newerCard.getByRole('button', { name: 'Delete', exact: true });
+    const deleteButton = newerCard.getByRole('button', { name: 'Remove highlight', exact: true });
     await deleteButton.click();
-    const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
+    const confirmation = library.getByRole('dialog', { name: 'Remove highlight?' });
     await expect(confirmation).toBeVisible();
+    await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
+    await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
+    await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+    await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
+      'This will delete the saved note and remove its highlight. This cannot be undone.',
+    );
+    await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
+    await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
     await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
     await library.screenshot({ path: test.info().outputPath('library-delete-confirmation.png') });
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -440,7 +457,7 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(confirmation).toBeHidden();
     await expect(newerCard).toBeVisible();
     await deleteButton.click();
-    await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+    await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
     await expect(library.getByText('A newer idea for the product roadmap.', { exact: false })).toBeHidden();
   } finally {
     await library.close();

@@ -313,7 +313,7 @@ function NoteCard({
             type="button"
             onClick={onDelete}
           >
-            Delete
+            Remove highlight
           </button>
         </div>
       </footer>

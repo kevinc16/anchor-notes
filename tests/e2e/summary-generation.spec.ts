@@ -124,8 +124,8 @@ for (const action of ['edit', 'delete']) {
       await library.getByRole('dialog').getByLabel('Summary').fill('My manual summary');
       await library.getByRole('dialog').getByRole('button', { name: 'Save changes', exact: true }).click();
     } else {
-      await library.getByRole('button', { name: 'Delete', exact: true }).click();
-      await library.getByRole('dialog').getByRole('button', { name: 'Delete note', exact: true }).click();
+      await library.getByRole('button', { name: 'Remove highlight', exact: true }).click();
+      await library.getByRole('dialog').getByRole('button', { name: 'Remove highlight', exact: true }).click();
       await expect(library.locator('article')).toHaveCount(0);
     }
     await release(articleUrl);
