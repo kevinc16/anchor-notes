@@ -784,6 +784,55 @@ test('retrieves rare and exact tags with keyboard controls and clears only searc
   await expect(tagSearch).toBeHidden();
 });
 
+test('toggles the active tag off and highlights the filtered tag chip', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  const notes = [
+    makeNote('tag-toggle-research', articleUrl, {
+      quote: 'Searchable research note',
+      tags: ['research', 'reading'],
+    }),
+    makeNote('tag-toggle-reading', articleUrl, {
+      quote: 'Searchable reading note',
+      tags: ['reading'],
+    }),
+    makeNote('tag-toggle-other', articleUrl, {
+      quote: 'Unmatched research note',
+      tags: ['research'],
+    }),
+  ];
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, settings: DEFAULT_SETTINGS, notes });
+  await page.goto('chrome-extension://' + extensionId + '/options.html');
+
+  const search = page.getByPlaceholder('Search notes, tags, or sources…');
+  const topic = page.locator('summary').filter({ hasText: 'Topic:' });
+  await search.fill('Searchable');
+  await expect(page.locator('article')).toHaveCount(2);
+
+  const researchCard = page.locator('article').filter({ hasText: 'Searchable research note' });
+  const researchTag = researchCard.getByRole('button', { name: 'Filter by tag: research', exact: true });
+  const readingTag = researchCard.getByRole('button', { name: 'Filter by tag: reading', exact: true });
+  const readingBackground = await readingTag.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  await researchTag.click();
+  await page.mouse.move(0, 0);
+  await expect(topic).toHaveText('Topic: research');
+  await expect(page.locator('article')).toHaveCount(1);
+  await expect(researchTag).toHaveAttribute('aria-pressed', 'true');
+  await expect(researchTag).not.toHaveCSS('background-color', readingBackground);
+
+  await researchTag.click();
+  await page.mouse.move(0, 0);
+  await expect(topic).toHaveText('Topic: All notes');
+  await expect(page.locator('article')).toHaveCount(2);
+  await expect(search).toHaveValue('Searchable');
+  await expect(researchTag).toHaveAttribute('aria-pressed', 'false');
+  await expect(researchTag).toHaveCSS('background-color', readingBackground);
+});
+
 test('keeps an edited or deleted active tag visible and handles a library without tags', async ({
   page,
   serviceWorker,
