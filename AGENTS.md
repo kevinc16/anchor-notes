@@ -118,18 +118,19 @@ The GitHub Actions workflow in `.github/workflows/ci.yml` installs with `npm ci`
 
 ## GitHub workflow
 
-- Create a GitHub issue for every feature request and every bug before implementation. Use the issue to capture the problem, expected behavior, scope, and acceptance criteria. Label issues properly using the existing GitHub labels.
-- Use the in-repository templates when creating GitHub work items: `.github/ISSUE_TEMPLATE/feature_request.md` for features, `.github/ISSUE_TEMPLATE/bug_report.md` for bugs, and `.github/pull_request_template.md` for pull requests. Complete the relevant sections and checklists, remove template comments before submitting, and follow the privacy/security guidance in each template.
-- Use the same title convention for issues and pull requests: `[Feature]: <description>` for features and `[Bug]: <description>` for bugs, matching the existing issue titles. Write concise, sentence-case descriptions. Use the linked issue's title for its PR when the scope is unchanged; if the PR covers only part of the issue, keep the same prefix and describe that scope.
-- Keep feature work and bug fixes in separate pull requests. Do not combine a new feature with an unrelated bug fix in one PR.
+- Create a GitHub issue for every feature request, bug, and chore before implementation. Use the issue to capture the problem, expected behavior, scope, and acceptance criteria. Use `enhancement` for features, `bug` for defects, and `chore` for maintenance. Add relevant subject labels such as `documentation` as needed.
+- Use the in-repository templates when creating GitHub work items: `.github/ISSUE_TEMPLATE/feature_request.md` for features, `.github/ISSUE_TEMPLATE/bug_report.md` for bugs, `.github/ISSUE_TEMPLATE/chore.md` for chores, and `.github/pull_request_template.md` for pull requests. Complete the relevant sections and checklists, remove template comments before submitting, and follow the privacy/security guidance in each template.
+- Use the same title convention for issues and pull requests: `[Feature]: <description>` for features, `[Bug]: <description>` for bugs, and `[Chore]: <description>` for chores. Write concise, sentence-case descriptions. Use the linked issue's title for its PR when the scope is unchanged; if the PR covers only part of the issue, keep the same prefix and describe that scope.
+- Classify documentation cleanup, routine dependency maintenance, tooling, and CI upkeep as chores. Use Feature for new user-facing capabilities and Bug for defects, even when the implementation touches dependencies or tooling.
+- Keep feature work, bug fixes, and unrelated chores in separate pull requests. Changes needed to complete the linked issue may stay together; each PR should have one clear purpose.
 - Use clear Markdown in issue and PR descriptions, including headings, bullets or checklists, and links where useful. Each PR should have one clear purpose, link its GitHub issue, summarize user-visible behavior, and list tests/manual verification performed.
 - Keep commits focused and avoid unrelated refactors or generated output. Do not commit `node_modules/`, `.output/`, `.wxt/`, coverage data, or ZIP artifacts.
-- If work reveals a separate bug or feature, record it as a new GitHub issue and handle it in its own PR.
+- If work reveals a separate bug, feature, or chore, record it as a new GitHub issue and handle it in its own PR.
 - Branch names should be concise but descriptive of the issue.
 
 ## Review checklist
 
-- Is the change scoped to one feature or one bug fix?
+- Is the change scoped to one feature, bug fix, or chore?
 - Is there a linked GitHub issue?
 - Are shared types, storage normalization, and runtime messages still compatible?
 - Are sensitive note/provider values protected from logs and accidental network calls?
