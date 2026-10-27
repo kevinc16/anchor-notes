@@ -322,7 +322,7 @@ export default defineContentScript({
         ?.addEventListener('click', () => void openLibrary());
       popover.querySelector<HTMLButtonElement>('.anchor-remove')?.addEventListener('click', async () => {
         try {
-          if (!(await confirmNoteDeletion(popover))) return;
+          if (!(await confirmNoteDeletion(popover, 'remove-highlight'))) return;
           const result = (await browser.runtime.sendMessage({
             type: 'DELETE_NOTE',
             id: note.id,

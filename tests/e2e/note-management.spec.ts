@@ -209,7 +209,7 @@ test('removes a saved highlight from the page editor', async ({
   });
 
   await page.goto(articleUrl + '#remove', { waitUntil: 'networkidle' });
-  await page.addStyleTag({ content: 'button { text-transform: uppercase; }' });
+  await page.addStyleTag({ content: 'button, h2 { text-transform: uppercase; }' });
   const targetMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + target.id + '"]');
   const otherMarks = page.locator('mark.anchor-note-highlight[data-anchor-id="' + other.id + '"]');
   await expect(targetMarks).toHaveCount(3);
@@ -226,18 +226,19 @@ test('removes a saved highlight from the page editor', async ({
   const removeButton = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await expect(removeButton).toBeVisible();
 
-  const confirmation = page.getByRole('dialog', { name: 'Delete note?' });
+  const confirmation = page.getByRole('dialog', { name: 'Remove highlight?' });
   await removeButton.click();
   await expect(confirmation).toBeVisible();
+  await expect(confirmation.getByRole('heading')).toHaveCSS('text-transform', 'none');
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancel).toHaveCSS('text-transform', 'none');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toHaveCSS(
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toHaveCSS(
     'text-transform',
     'none',
   );
   await expect(cancel).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(confirmation.getByRole('button', { name: 'Delete note', exact: true })).toBeFocused();
+  await expect(confirmation.getByRole('button', { name: 'Remove highlight', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(cancel).toBeFocused();
   await page.screenshot({ path: test.info().outputPath('page-delete-confirmation.png') });
@@ -259,7 +260,7 @@ test('removes a saved highlight from the page editor', async ({
   await expect(targetMarks).toHaveCount(3);
 
   await removeButton.click();
-  await confirmation.getByRole('button', { name: 'Delete note', exact: true }).click();
+  await confirmation.getByRole('button', { name: 'Remove highlight', exact: true }).click();
   await expect(popover).toBeHidden();
   await expect(page.locator('#anchor-notes-toast')).toHaveText('Highlight removed');
   await expect(targetMarks).toHaveCount(0);
