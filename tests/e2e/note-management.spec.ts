@@ -360,6 +360,16 @@ test('searches, groups, edits, and deletes notes in the library', async ({
     await expect(newerCard.getByText('Edited product note', { exact: true })).toBeVisible();
     await expect(library.getByText('A manually edited summary.', { exact: true })).toBeVisible();
 
+    await newerCard.getByRole('button', { name: 'Edit', exact: true }).click();
+    await library.getByRole('dialog').getByLabel('Summary').fill('');
+    await library.getByRole('dialog').getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(library.getByRole('dialog')).toBeHidden();
+    await expect(library.getByText('A manually edited summary.', { exact: true })).toHaveCount(0);
+    expect((await readExtensionData(serviceWorker)).notes.find((note) => note.id === 'newer')?.summary).toBeUndefined();
+    await newerCard.getByRole('button', { name: 'Edit', exact: true }).click();
+    await expect(library.getByRole('dialog').getByLabel('Summary')).toHaveValue('');
+    await library.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+
     const deleteButton = newerCard.getByRole('button', { name: 'Delete', exact: true });
     await deleteButton.click();
     const confirmation = library.getByRole('dialog', { name: 'Delete note?' });
