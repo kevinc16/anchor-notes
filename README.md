@@ -98,6 +98,12 @@ npm run zip:firefox # create a Firefox extension archive
 
 CI runs this command for pull requests and pushes to `main`, adds the concise summary to the workflow summary, and uploads the full `coverage/` directory as a build artifact. Coverage is advisory for now: CI fails when tests or report generation fail, but no percentage threshold fails the job. The initial baseline on `main` (2026-09-01) is 71.34% statements, 70.32% branches, 69.04% functions, and 74.50% lines (122/171 statements, 64/91 branches, 29/42 functions, and 114/153 lines). Revisit the baseline before introducing enforced thresholds.
 
+### Playwright E2E CI
+
+Only the E2E job in `.github/workflows/ci.yml` runs in the official Playwright container (`mcr.microsoft.com/playwright:v1.62.1-noble`), which includes browser binaries and system dependencies. The job still uses Node.js 22, `npm ci`, the extension build, and the existing persistent Chromium context with extension loading. Other CI jobs run directly on GitHub-hosted runners.
+
+When upgrading Playwright, update `@playwright/test` and regenerate `package-lock.json`, then set the E2E container image to the exact resolved `playwright` version in that lockfile, retaining the `-noble` suffix. Check the resolved version with `node -p "require('./package-lock.json').packages['node_modules/playwright'].version"`. The image and dependency versions must match so Playwright can find the bundled browsers; do not add a browser or APT installation step to this job. Run the complete E2E suite in GitHub Actions after upgrading, including responsive navigation cases, and check the uploaded reports and diagnostics.
+
 ### Playwright monitoring with Checkly
 
 The report publishing job can upload Chromium E2E results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these values in the **prod** environment under **Settings → Environments → prod**:
