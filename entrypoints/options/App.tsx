@@ -37,6 +37,7 @@ import { useBulkGeneration } from './use-bulk-generation';
 import { BulkActions } from './BulkActions';
 import { TopicFilter } from './TopicFilter';
 import { getLibraryTags } from '@/lib/tags';
+import { Icon } from '@/components/Icon';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
@@ -280,9 +281,9 @@ function NoteCard({
           </button>
         ))}
       </div>
-      <footer className="mt-4xl flex items-center justify-between border-t border-subtle-border pt-3">
+      <footer className="mt-4xl flex flex-wrap items-center justify-between gap-2 border-t border-subtle-border pt-3">
         <a
-          className="rounded px-1 py-0.5 text-meta font-extrabold text-ink no-underline transition hover:bg-stone-50 hover:text-quote-accent"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded px-1 text-meta font-extrabold text-ink no-underline transition hover:bg-stone-50 hover:text-quote-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           href={note.url}
           target="_blank"
           rel="noreferrer"
@@ -291,18 +292,18 @@ function NoteCard({
             if (event.button === 1) void returnToSource(event);
           }}
         >
-          Return to source ↗
+          Return to source <Icon name="external" />
         </a>
         <div className="flex gap-2">
           <button
-            className="rounded-full px-2 py-1 text-meta font-bold text-muted transition hover:bg-stone-50 hover:text-ink"
+            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-muted transition hover:bg-stone-50 hover:text-ink"
             type="button"
             onClick={onEdit}
           >
             Edit
           </button>
           <button
-            className="rounded-full px-2 py-1 text-meta font-bold text-danger transition hover:bg-red-50 hover:text-danger"
+            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-danger transition hover:bg-red-50 hover:text-danger"
             type="button"
             onClick={onDelete}
           >
@@ -651,17 +652,17 @@ export default function App() {
         <nav className="mt-10 grid gap-1 max-[760px]:mt-0 max-[760px]:flex">
           {(
             [
-              ['library', '⌂', 'Library'],
-              ['settings', '⚙', 'Settings'],
+              ['library', 'Library'],
+              ['settings', 'Settings'],
             ] as const
-          ).map(([id, icon, label]) => (
+          ).map(([id, label]) => (
             <button
               key={id}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body font-bold transition hover:bg-active hover:text-ink ${view === id ? 'bg-active text-ink shadow-sm' : 'text-muted'}`}
               type="button"
               onClick={() => setView(id)}
             >
-              <span>{icon}</span>
+              <Icon name={id} />
               {label}
             </button>
           ))}
@@ -698,10 +699,11 @@ export default function App() {
                 </h1>
               </div>
               <label className="flex h-11 w-[min(360px,35vw)] items-center gap-2 rounded-full border border-line bg-card px-3.5 max-[760px]:w-full">
-                <span className="text-xl text-muted">⌕</span>
+                <Icon name="search" className="text-muted" />
                 <input
                   className="w-full border-0 bg-transparent text-body outline-none"
                   type="search"
+                  aria-label="Search notes, tags, or sources"
                   placeholder="Search notes, tags, or sources…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -804,12 +806,10 @@ export default function App() {
                               <span className="text-meta font-bold text-muted">
                                 {group.notes.length} note{group.notes.length === 1 ? '' : 's'}
                               </span>
-                              <span
-                                className={`ml-auto text-lg text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`}
-                                aria-hidden="true"
-                              >
-                                ⌄
-                              </span>
+                              <Icon
+                                name="chevron"
+                                className={`ml-auto text-muted transition-transform ${isExpanded ? '' : '-rotate-90'}`}
+                              />
                             </button>
                           </h2>
                         </header>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { EMPTY_DATA, hostFromUrl, normalizeUrl, readData } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage } from '@/lib/types';
 import { useDataStore } from '@/lib/ui-stores';
+import { Icon } from '@/components/Icon';
 
 interface PageState {
   tabId?: number;
@@ -59,7 +60,7 @@ export default function App() {
           aria-label="Open library"
           onClick={() => void browser.runtime.openOptionsPage()}
         >
-          ↗
+          <Icon name="external" />
         </button>
       </header>
 

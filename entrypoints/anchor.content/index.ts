@@ -7,6 +7,7 @@ import { readData } from '@/lib/storage';
 import { parseTags } from '@/lib/tags';
 import { findTextRange, normalizeQuoteWhitespace } from '@/lib/text-range';
 import type { AnchorNote, ExtensionMessage, HighlightAnchor, HighlightColor, MessageResponse } from '@/lib/types';
+import closeIcon from '@/assets/icons/close.svg?raw';
 import './style.css';
 
 const COLORS: HighlightColor[] = ['yellow', 'mint', 'lilac', 'coral'];
@@ -273,7 +274,9 @@ export default defineContentScript({
       popover.innerHTML = `
         <div class="anchor-popover-header">
           <span class="anchor-composer-kicker">Saved note</span>
-          <button class="anchor-popover-close" type="button" aria-label="Close">×</button>
+          <button class="anchor-popover-close" type="button" aria-label="Close">
+            ${closeIcon}
+          </button>
         </div>
         <div class="anchor-composer-quote"></div>
         <label class="anchor-note-field">

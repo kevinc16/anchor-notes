@@ -62,7 +62,6 @@
   --anchor-font-size-quote: 12px;
   --anchor-font-size-body: 12px;
   --anchor-font-size-button: 10px;
-  --anchor-font-size-close: 16px;
   --anchor-font-weight-regular: 400;
   --anchor-font-weight-medium: 500;
   --anchor-font-weight-semibold: 600;
@@ -304,8 +303,10 @@
   justify-content: space-between;
 }
 .anchor-popover-close {
-  width: 28px;
-  height: 28px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
   padding: var(--anchor-spacing-zero);
   border: 0;
   border-radius: var(--anchor-radius-full);
@@ -313,7 +314,6 @@
   color: var(--anchor-color-muted);
   cursor: pointer;
   font-family: var(--anchor-font-family);
-  font-size: var(--anchor-font-size-close);
   font-weight: var(--anchor-font-weight-regular);
   line-height: 1;
   transition:
