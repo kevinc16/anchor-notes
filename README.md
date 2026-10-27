@@ -202,6 +202,15 @@ Stores are in-memory and scoped to each extension page. Popup and options pages 
 
 Settings and note edit drafts remain component-local. API key drafts, passphrases, and decrypted credentials never enter Zustand. The snapshot contains only the already-persisted settings; encrypted keys remain ciphertext, and unlocked keys stay in extension session storage through the existing credential helpers. Changing a UI control does not write data; save, delete, and import handlers persist through the existing helpers and then refresh the snapshot.
 
+## Extension permissions
+
+- `storage` saves notes and settings locally and holds temporary credentials and task state in session storage.
+- `contextMenus` provides the selection menu action to save a highlight.
+- `<all_urls>` lets the content script capture selections and automatically restore highlights on supported webpages. Host access also lets the popup read the current page URL and title and supports requests to user-configured AI providers when enabled.
+- Firefox's optional `browsingActivity` and `websiteContent` data collection consent is requested only for remote AI organization.
+
+The extension does not request `tabs` or `activeTab`. Its tab messaging, tab creation, navigation, and tab-close handling do not require those permissions; existing host access covers page metadata. Browser-internal pages remain unsupported.
+
 ## Privacy and limitations
 
 See the [Anchor Notes Privacy Policy](https://github.com/kevinc16/anchor-notes/blob/main/PRIVACY.md) for the information Anchor Notes stores locally and sends to optional remote organizers.
