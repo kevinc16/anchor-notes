@@ -289,7 +289,7 @@ function NoteCard({
       </div>
       <footer className="mt-4xl flex flex-wrap items-center justify-between gap-2 border-t border-subtle-border pt-3">
         <a
-          className="inline-flex min-h-8 items-center gap-1.5 rounded px-1 text-meta font-extrabold text-ink no-underline transition hover:bg-stone-50 hover:text-quote-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded px-1 text-meta font-extrabold text-ink no-underline transition hover:text-quote-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           href={note.url}
           target="_blank"
           rel="noreferrer"
