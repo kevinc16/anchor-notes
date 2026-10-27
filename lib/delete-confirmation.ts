@@ -7,11 +7,11 @@ export async function confirmNoteDeletion(parent: HTMLElement = document.body): 
   dialog.setAttribute('aria-describedby', 'anchor-delete-description');
   dialog.innerHTML = `
     <form method="dialog">
-      <h2 id="anchor-delete-title">Remove highlight?</h2>
+      <h2 id="anchor-delete-title">Delete note?</h2>
       <p id="anchor-delete-description">This will delete the saved note and remove its highlight. This cannot be undone.</p>
       <footer>
         <button type="submit" value="cancel" autofocus>Cancel</button>
-        <button type="submit" value="delete">Remove highlight</button>
+        <button type="submit" value="delete">Delete</button>
       </footer>
     </form>`;
   parent.appendChild(dialog);
