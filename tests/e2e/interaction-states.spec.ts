@@ -157,3 +157,36 @@ test('shows hover and keyboard focus feedback in the page editor', async ({ page
   await expect.poll(() => isFocusVisible(saveButton)).toBe(true);
   expect(await computedStyle(saveButton, 'outline-width')).toBe('2px');
 });
+
+test('keeps enlarged page editor text and actions within a narrow viewport', async ({
+  page,
+  serviceWorker,
+  articleUrl,
+}) => {
+  await page.setViewportSize({ width: 320, height: 500 });
+  await page.goto(articleUrl, { waitUntil: 'networkidle' });
+  await page.locator('#passage').selectText();
+  await triggerCaptureSelection(serviceWorker);
+  const composer = page.locator('#anchor-notes-composer');
+  await expect(composer).toBeVisible();
+  const bounds = await composer.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(500);
+  expect(await computedStyle(composer.locator('textarea'), 'font-size')).toBe('14px');
+  expect(await computedStyle(composer.locator('.anchor-composer-quote'), 'font-size')).toBe('18px');
+  await composer.locator('textarea').fill('A readable personal note.');
+  await composer.getByRole('button', { name: 'Save note', exact: true }).click();
+  await page.locator('mark.anchor-note-highlight').first().click();
+  const popover = page.locator('#anchor-notes-popover');
+  await expect(popover).toBeVisible();
+  expect(await popover.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  const save = popover.getByRole('button', { name: 'Save changes', exact: true });
+  await save.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(save).toBeFocused();
+  await expect.poll(() => isFocusVisible(save)).toBe(true);
+  await save.press('Enter');
+  await expect(popover).toHaveCount(0);
+});

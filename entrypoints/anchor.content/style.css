@@ -58,10 +58,10 @@
   all: initial;
   --anchor-font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --anchor-font-serif: Georgia, Cambria, 'Times New Roman', serif;
-  --anchor-font-size-label: 10px;
-  --anchor-font-size-quote: 12px;
-  --anchor-font-size-body: 12px;
-  --anchor-font-size-button: 10px;
+  --anchor-font-size-label: 12px;
+  --anchor-font-size-quote: 18px;
+  --anchor-font-size-body: 14px;
+  --anchor-font-size-button: 12px;
   --anchor-font-weight-regular: 400;
   --anchor-font-weight-medium: 500;
   --anchor-font-weight-semibold: 600;
@@ -113,6 +113,9 @@
 #anchor-notes-composer,
 #anchor-notes-popover {
   width: 340px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
   padding: var(--anchor-spacing-4xl);
   border: 1px solid var(--anchor-color-panel-border);
   border-radius: var(--anchor-radius-2xl);
@@ -123,7 +126,7 @@
 .anchor-composer-kicker {
   color: var(--anchor-color-kicker);
   font-size: var(--anchor-font-size-label);
-  font-weight: var(--anchor-font-weight-extrabold);
+  font-weight: var(--anchor-font-weight-medium);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -133,7 +136,8 @@
   font-family: var(--anchor-font-serif);
   font-size: var(--anchor-font-size-quote);
   font-weight: var(--anchor-font-weight-medium);
-  line-height: 1.45;
+  line-height: 1.625;
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -145,8 +149,8 @@
   color: var(--anchor-color-muted);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-label);
-  font-weight: var(--anchor-font-weight-bold);
-  line-height: 1;
+  font-weight: var(--anchor-font-weight-medium);
+  line-height: 1.4;
 }
 .anchor-note-field + .anchor-note-field {
   margin-top: var(--anchor-spacing-lg);
@@ -187,14 +191,16 @@
 }
 .anchor-color-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--anchor-spacing-md);
   align-items: center;
   justify-content: space-between;
   margin-top: var(--anchor-spacing-xl);
   color: var(--anchor-color-muted);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-label);
-  font-weight: var(--anchor-font-weight-bold);
-  line-height: 1;
+  font-weight: var(--anchor-font-weight-medium);
+  line-height: 1.4;
 }
 .anchor-color-picker {
   display: flex;
@@ -240,6 +246,7 @@
 }
 .anchor-composer-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--anchor-spacing-md);
   margin-top: var(--anchor-spacing-xl);
