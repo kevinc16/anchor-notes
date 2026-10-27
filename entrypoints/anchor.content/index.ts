@@ -293,7 +293,7 @@ export default defineContentScript({
         </div>
         <div class="anchor-composer-actions">
           <button class="anchor-open-library" type="button">Open library</button>
-          <button class="anchor-remove" type="button">Remove highlight</button>
+          <button class="anchor-remove" type="button">Delete</button>
           <button class="anchor-save" type="button">Save changes</button>
         </div>`;
       document.body.appendChild(popover);

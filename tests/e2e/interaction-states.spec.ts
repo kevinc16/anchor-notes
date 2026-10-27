@@ -185,7 +185,7 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
   for (const width of [320, 375, 640]) {
     await page.setViewportSize({ width, height: 500 });
     const library = await popover.getByRole('button', { name: 'Open library', exact: true }).boundingBox();
-    const remove = await popover.getByRole('button', { name: 'Remove highlight', exact: true }).boundingBox();
+    const remove = await popover.getByRole('button', { name: 'Delete', exact: true }).boundingBox();
     const primary = await save.boundingBox();
     expect(library!.y + library!.height).toBeLessThanOrEqual(remove!.y);
     expect(remove!.y + remove!.height / 2).toBeCloseTo(primary!.y + primary!.height / 2, 0);
@@ -200,7 +200,7 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
     expect(primary!.x + primary!.width).toBeCloseTo(actions!.x + actions!.width, 0);
     await popover.screenshot({ path: test.info().outputPath(`editor-footer-${width}.png`) });
   }
-  const removeAction = popover.getByRole('button', { name: 'Remove highlight', exact: true });
+  const removeAction = popover.getByRole('button', { name: 'Delete', exact: true });
   await removeAction.hover();
   await expect.poll(() => computedStyle(removeAction, 'background-color')).toBe('rgba(156, 56, 47, 0.08)');
   expect(await computedStyle(removeAction, 'text-decoration-line')).toBe('none');

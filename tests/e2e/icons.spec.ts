@@ -84,7 +84,7 @@ test('keeps popup navigation named and the page editor close target keyboard acc
   const source = library.getByRole('link', { name: 'Return to source', exact: true });
   await expectDecorativeIcon(source);
   await expectKeyboardTarget(source);
-  for (const name of ['Edit', 'Remove highlight']) {
+  for (const name of ['Edit', 'Delete']) {
     await expectKeyboardTarget(library.getByRole('button', { name, exact: true }));
   }
   await library.getByRole('button', { name: 'Edit', exact: true }).click();
