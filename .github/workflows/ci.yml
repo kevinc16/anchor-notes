@@ -249,6 +249,9 @@ jobs:
       - name: Validate Firefox manifest
         run: npm run validate:firefox
 
+      - name: Check source archive isolation and rebuild
+        run: npm run test:packaging
+
   publish-playwright-report:
     name: Publish Playwright report
     if: ${{ always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}

@@ -1,8 +1,45 @@
+import { execFileSync } from 'node:child_process';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
+  zip: {
+    includeSources: [
+      'assets/**',
+      'components/**',
+      'entrypoints/**',
+      'lib/**',
+      'public/**',
+      'styles/**',
+      'package.json',
+      'package-lock.json',
+      'wxt.config.ts',
+      'tsconfig.json',
+      '.nvmrc',
+      'LICENSE',
+      'README.md',
+      'docs/development.md',
+      'docs/dependency-maintenance.md',
+      'scripts/validate-firefox-build.mjs',
+    ],
+  },
+  hooks: {
+    'zip:sources:start': (wxt) => {
+      // Directory allowlists alone still include unrelated local files inside source folders.
+      const files = execFileSync('git', ['ls-files', '-z', '--', ...wxt.config.zip.includeSources], {
+        cwd: wxt.config.zip.sourcesRoot,
+        encoding: 'utf8',
+      })
+        .split('\0')
+        .filter((file) => file === '.nvmrc' || (file && !file.split('/').some((part) => part.startsWith('.'))));
+      if (!files.includes('package.json') || !files.includes('package-lock.json')) {
+        throw new Error('Source packaging requires a Git checkout with tracked build inputs.');
+      }
+      // WXT interprets these as globs; treat Git filenames as literal paths.
+      wxt.config.zip.includeSources = files.map((file) => file.replace(/[\\*?[\]{}()|"]/g, '\\$&'));
+    },
+  },
   vite: () => ({
     plugins: [tailwindcss()],
   }),

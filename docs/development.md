@@ -34,10 +34,19 @@ npm run build     # create .output/chrome-mv3
 npm run build:firefox # create .output/firefox-mv2
 npm run validate:firefox # validate the generated Firefox manifest
 npm run zip       # create a store-ready extension archive
-npm run zip:firefox # create a Firefox extension archive
+npm run zip:firefox # create Firefox extension and source archives
+npm run test:packaging # check archive contents and rebuild extracted sources
 ```
 
 Before handing off a change, run `npm run format:check`, `npm run lint`, `npm test`, and `npm run compile`. See [AGENTS.md](../AGENTS.md#testing-expectations) for additional checks required by the change.
+
+### Source packaging
+
+`npm run zip:firefox` creates both an extension ZIP and a source ZIP in `.output/`. Source packaging requires Git and a checkout with tracked build inputs: only tracked files from the source/build allowlist in `wxt.config.ts` are included, using their current working-tree contents. Add intended new source files to Git before packaging. Untracked files and generated reports are excluded, including files inside source directories; hidden files are excluded except the explicitly included `.nvmrc` runtime pin.
+
+To reproduce the Firefox build from a source ZIP, extract it into an empty directory, select Node.js using `nvm install` and `nvm use`, then run `npm ci`, `npm run build:firefox`, and `npm run validate:firefox`. Building extracted sources does not require Git metadata. Tailwind scans only the runtime source directories so development-only documentation and tests cannot change the generated CSS. The source ZIP contains build inputs and build instructions; test suites and development reports are not part of it.
+
+`npm run test:packaging` requires Git and `unzip`. It packages a temporary checkout containing synthetic local files and reports, verifies the source and extension ZIP contents, then extracts the sources and rebuilds Firefox without Git metadata, using the installed dependencies. All temporary files are removed. CI runs this check in the Firefox job.
 
 ### Unit test coverage
 

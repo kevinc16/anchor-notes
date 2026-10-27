@@ -16,6 +16,7 @@
     "lint:ts": "eslint . --max-warnings=0",
     "lint:css": "stylelint \"styles/**/*.css\" \"entrypoints/**/*.css\"",
     "test": "vitest run",
+    "test:packaging": "node scripts/test-source-archive.mjs",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:headed": "npm run build && playwright test --headed",
