@@ -303,6 +303,7 @@
 }
 #anchor-notes-popover .anchor-remove {
   justify-self: start;
+  padding-inline: var(--anchor-spacing-zero);
 }
 .anchor-composer-actions .anchor-open-library {
   grid-column: 1 / -1;

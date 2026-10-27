@@ -190,6 +190,12 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
     expect(library!.y + library!.height).toBeLessThanOrEqual(remove!.y);
     expect(remove!.y + remove!.height / 2).toBeCloseTo(primary!.y + primary!.height / 2, 0);
     expect(remove!.x).toBeCloseTo(library!.x, 0);
+    const removeTextX = await popover.locator('.anchor-remove').evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect().x;
+    });
+    expect(removeTextX).toBeCloseTo(library!.x, 0);
     const actions = await popover.locator('.anchor-composer-actions').boundingBox();
     expect(primary!.x + primary!.width).toBeCloseTo(actions!.x + actions!.width, 0);
     await popover.screenshot({ path: test.info().outputPath(`editor-footer-${width}.png`) });
