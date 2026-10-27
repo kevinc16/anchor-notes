@@ -10,7 +10,7 @@ export default defineConfig({
     name: 'Anchor Notes',
     version: '0.4.0',
     description: 'Highlight the web, keep durable notes, and remember the important things.',
-    permissions: ['storage', 'tabs', 'activeTab', 'contextMenus'],
+    permissions: ['storage', 'contextMenus'],
     host_permissions: ['<all_urls>'],
     action: {
       default_title: 'Anchor Notes',
