@@ -299,12 +299,13 @@
   background: transparent;
 }
 .anchor-remove:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  background: rgba(156, 56, 47, 0.08);
 }
 #anchor-notes-popover .anchor-remove {
   justify-self: start;
-  padding-inline: var(--anchor-spacing-zero);
+  margin-inline-start: calc(-1 * var(--anchor-spacing-md));
+  padding-inline: var(--anchor-spacing-md);
+  border-radius: var(--anchor-radius-sm);
 }
 .anchor-composer-actions .anchor-open-library {
   grid-column: 1 / -1;

@@ -189,7 +189,7 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
     const primary = await save.boundingBox();
     expect(library!.y + library!.height).toBeLessThanOrEqual(remove!.y);
     expect(remove!.y + remove!.height / 2).toBeCloseTo(primary!.y + primary!.height / 2, 0);
-    expect(remove!.x).toBeCloseTo(library!.x, 0);
+    expect(remove!.x).toBeCloseTo(library!.x - 8, 0);
     const removeTextX = await popover.locator('.anchor-remove').evaluate((element) => {
       const range = document.createRange();
       range.selectNodeContents(element);
@@ -202,8 +202,12 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
   }
   const removeAction = popover.getByRole('button', { name: 'Remove highlight', exact: true });
   await removeAction.hover();
-  expect(await computedStyle(removeAction, 'background-color')).toBe('rgba(0, 0, 0, 0)');
-  expect(await computedStyle(removeAction, 'text-decoration-line')).toBe('underline');
+  await expect.poll(() => computedStyle(removeAction, 'background-color')).toBe('rgba(156, 56, 47, 0.08)');
+  expect(await computedStyle(removeAction, 'text-decoration-line')).toBe('none');
+  const removeBounds = await removeAction.boundingBox();
+  const panelBounds = await popover.boundingBox();
+  expect(removeBounds!.x - panelBounds!.x).toBeGreaterThanOrEqual(10);
+  await popover.screenshot({ path: test.info().outputPath('editor-footer-hover.png') });
   await save.focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
