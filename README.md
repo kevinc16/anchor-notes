@@ -1,234 +1,82 @@
 # Anchor Notes
 
-A local-first browser extension for highlighting the web, attaching notes, and finding those ideas again—even when a page's markup changes.
+A local-first browser extension for highlighting webpage text, attaching notes, and finding them again. Highlights restore using the saved quote and surrounding text, even when page markup changes.
 
-## Why this exists
+Notes and settings stay in browser-local extension storage. There is no Anchor Notes backend.
 
-Normal browser highlights are fragile and easy to forget. Anchor Notes addresses three specific problems:
+## Features
 
-- **Pages change:** every highlight stores the exact quote plus surrounding text and page metadata. Restoration searches by quote context instead of relying only on a brittle DOM path.
-- **Saved pages disappear into bookmarks:** a searchable library groups notes by inferred topic and source, with a direct link back to the page.
-- **Notes need structure:** private on-device rules add useful topic tags automatically. An optional OpenAI-compatible provider can generate richer tags and summaries for new notes.
-
-All data is stored in the browser's local extension storage. There is no Anchor Notes server.
+- Highlight text, choose colors and text coverage, and click highlights to edit notes.
+- Browse current-page notes in the popup; search, sort, filter, and group them by website in the library.
+- Generate topic tags locally, edit tags in bulk, or optionally use AI for tags and summaries.
+- Export and import notes as JSON backups.
 
 ## Install for development
 
-Requirements: Node.js 24 LTS (24.22.1 or newer within 24.x) and npm. Run `nvm install` and `nvm use` to select the version pinned in `.nvmrc`; all CI setup steps read that same file. See the [runtime and dependency maintenance notes](docs/dependency-maintenance.md) for support status, upgrade decisions, and the latest advisory review.
+Requires **Node.js 24 LTS** (24.22.1 or newer within 24.x) and npm. Firefox builds require **Firefox 140+**.
 
 ```sh
+nvm install
+nvm use
 npm install
 npm run dev
 ```
 
-The default development command starts both Chrome and Firefox watch processes. It writes the unpacked builds to `.output/chrome-mv3-dev` and `.output/firefox-mv2-dev`. Use `npm run dev:chrome` or `npm run dev:firefox` when you only need one browser target.
+`npm run dev` watches and rebuilds both browsers. Use `npm run dev:chrome` or `npm run dev:firefox` for one browser. Keep the command running while developing.
 
-Then:
+### Chrome
 
-1. Open `chrome://extensions` in Chrome.
-2. Enable **Developer mode**.
-3. Click **Load unpacked**.
-4. Select `.output/chrome-mv3-dev`.
-5. Select text on a normal webpage and press **Option/Alt + Shift + H**, or use the right-click menu.
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Choose **Load unpacked** and select `.output/chrome-mv3-dev`.
 
-Chrome does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight.
+### Firefox
 
-For live development in Firefox only, keep WXT running with:
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Choose **Load Temporary Add-on…** and select `.output/firefox-mv2-dev/manifest.json`.
 
-```sh
-npm run dev:firefox
-```
+WXT rebuilds on source changes and reloads the temporary extension when connected to Firefox. If Firefox does not open automatically, load the manifest manually. Temporary add-ons are removed when Firefox restarts; load the manifest again afterward.
 
-Then:
+After installation, refresh already-open webpages. Select text and press **Option/Alt + Shift + H**, or use the right-click menu, to save a highlight. Open the toolbar popup for current-page notes or press **Option/Alt + Shift + L** for the library.
 
-1. Open `about:debugging#/runtime/this-firefox` in Firefox.
-2. Click **This Firefox**, then **Load Temporary Add-on…**.
-3. Select `.output/firefox-mv2-dev/manifest.json`.
-
-Keep the development command running while you work. WXT watches the source files and rebuilds the Firefox development bundle, and reloads the temporary extension when Firefox is available to its development runner. If Firefox does not open automatically, load the generated manifest manually as described above.
-
-For a one-time Firefox build without watch mode:
+### Build and check
 
 ```sh
-npm run build:firefox
+npm run format:check      # check TypeScript, TSX, and CSS formatting
+npm run lint              # run ESLint and Stylelint
+npm test                  # run unit tests
+npm run compile           # check TypeScript
+npm run build             # build .output/chrome-mv3
+npm run build:firefox      # build .output/firefox-mv2
+npm run validate:firefox   # validate the Firefox manifest
 ```
 
-1. Open `about:debugging#/runtime/this-firefox` in Firefox.
-2. Click **This Firefox**, then **Load Temporary Add-on…**.
-3. Select `.output/firefox-mv2/manifest.json`.
+Load one-time builds using the same browser steps above, selecting `.output/chrome-mv3` or `.output/firefox-mv2/manifest.json` instead of the development paths.
 
-Firefox does not inject extensions into already-open tabs after installation. Refresh a page once before creating the first highlight. Temporary add-ons are removed when Firefox restarts, so rebuild and load the manifest again during local development.
+## Optional AI organization
 
-The store build targets Firefox 140 or newer because it uses Firefox's built-in data-collection consent experience for optional remote organization.
+Local topic tagging runs without network requests. In **Settings**, enable AI organization and choose OpenRouter, Ollama, or a custom OpenAI-compatible provider to generate tags and summaries for new notes. Existing notes are sent only through **Regenerate tags and summaries** in the library.
 
-## Tooling
-
-- **WXT** owns extension entrypoints, manifest generation, development mode, and packaging.
-- **Vite** is WXT's bundler and runs the Tailwind and React plugins.
-- **React** powers the toolbar popup and full-page notes library.
-- **TypeScript** provides strict types for notes, storage, messages, and browser APIs.
-- **Tailwind CSS v4** styles both React entrypoints through its Vite plugin.
-- **ESLint** checks TypeScript and TSX with the recommended `typescript-eslint` rules.
-- **Stylelint** checks project CSS while recognizing Tailwind CSS v4 directives.
-- **Prettier** formats TypeScript, TSX, and CSS consistently.
-
-Useful commands:
-
-```sh
-npm run dev       # watch and rebuild the development extension
-npm run dev:chrome # watch and rebuild the Chrome development extension
-npm run dev:firefox # watch and rebuild the Firefox development extension
-npm run format    # format TypeScript, TSX, and CSS
-npm run format:check # check formatting without changing files
-npm run lint      # lint TypeScript, TSX, and CSS
-npm run lint:fix  # format and automatically fix lint violations where supported
-npm test          # run highlight and LLM integration regression tests
-npm run test:coverage # run unit tests and write the coverage reports
-npm run compile   # run strict TypeScript checks
-npm run build     # create .output/chrome-mv3
-npm run build:firefox # create .output/firefox-mv2
-npm run validate:firefox # validate the generated Firefox manifest
-npm run zip       # create a store-ready extension archive
-npm run zip:firefox # create a Firefox extension archive
-```
-
-### Unit test coverage
-
-`npm run test:coverage` runs the Vitest suite with the V8 coverage provider. It measures the browser-independent code in `lib/**/*.ts`, excluding the type-only `lib/types.ts` contract, and writes reports to the ignored `coverage/` directory. The text summary is saved as `coverage/coverage-summary.txt`, the detailed HTML report is available at `coverage/index.html`, and `coverage/lcov.info` is available for coverage tooling.
-
-CI runs this command for pull requests and pushes to `main`, adds the concise summary to the workflow summary, and uploads the full `coverage/` directory as a build artifact. Coverage is advisory for now: CI fails when tests or report generation fail, but no percentage threshold fails the job. The initial baseline on `main` (2026-09-01) is 71.34% statements, 70.32% branches, 69.04% functions, and 74.50% lines (122/171 statements, 64/91 branches, 29/42 functions, and 114/153 lines). Revisit the baseline before introducing enforced thresholds.
-
-### Playwright E2E CI
-
-Only the E2E job in `.github/workflows/ci.yml` runs in the official Playwright container (`mcr.microsoft.com/playwright:v1.64.1-noble`), which includes browser binaries and system dependencies. The job still uses Node.js 24, `npm ci`, the extension build, and the existing persistent Chromium context with extension loading. Other CI jobs run directly on GitHub-hosted runners.
-
-When upgrading Playwright, update `@playwright/test` and regenerate `package-lock.json`, then set the E2E container image to the exact resolved `playwright` version in that lockfile, retaining the `-noble` suffix. Check the resolved version with `node -p "require('./package-lock.json').packages['node_modules/playwright'].version"`. The image and dependency versions must match so Playwright can find the bundled browsers; do not add a browser or APT installation step to this job. Run the complete E2E suite in GitHub Actions after upgrading, including responsive navigation cases, and check the uploaded reports and diagnostics.
-
-### Playwright monitoring with Checkly
-
-The report publishing job can upload Chromium E2E results to [Checkly Test Sessions](https://www.checklyhq.com/docs/detect/testing/playwright-reporter/) using the official `@checkly/playwright-reporter`. To enable it, configure these values in the **prod** environment under **Settings → Environments → prod**:
-
-- **Secret** `CHECKLY_API_KEY`: a Checkly API key with access to the intended account.
-- **Variable** `CHECKLY_ACCOUNT_ID`: the account ID from Checkly's account settings, added under **Environment variables**.
-- **Variable** `CHECKLY_UPLOAD`: set to `true` to enable uploads; set to `false` to disable them.
-
-Uploads run on pushes to `main` and same-repository pull requests targeting `main`, when the `prod` environment has both credentials configured and `CHECKLY_UPLOAD=true`. Fork PRs and runs without credentials skip uploads. Local runs do not upload by default, even if Checkly credentials are present: the reporter requires `CI=true`, `CHECKLY_UPLOAD=true`, and both credentials. Keep credentials out of local configuration files and source control.
-
-The test job only generates local HTML and blob reports, then saves them as GitHub artifacts. The separate **Publish Playwright report** job downloads those artifacts and uploads them to Checkly using `playwright merge-reports`; it runs after successful or failed tests without rerunning them. Only this publishing job selects the `prod` environment and passes Checkly credentials to the upload step. Checkly records the available test results, screenshots, traces, and videos. Git metadata is detected by the reporter; the session name includes the branch and GitHub run ID/attempt. Open the session through the **Checkly** section in the workflow summary or the existing Playwright PR comment. CI continues to generate the HTML report and retain GitHub artifacts for 14 days.
-
-The browser test step preserves Playwright's exit status. Upload errors remain visible in the separate publishing job; when an enabled upload produces no session link, the summary reports it as unavailable and emits a warning. Missing credentials skip reporting without failing tests. A terminated job may not finish uploading. This integration monitors CI runs; it does not schedule extension tests in Checkly's hosted browsers or configure alerts.
-
-Only run this suite against its synthetic fixtures and temporary browser profiles. The reporter scrubs recognized secret environment values and sensitive HTTP headers from reports and traces. Screenshots and videos can still show everything rendered on screen, so never use real notes, private webpages, or live provider credentials in these tests. Inspect artifacts before enabling uploads or adding new fixtures.
-
-To verify setup, run a trusted CI build and confirm its session and artifacts are accessible. Also verify a deliberately failing test uploads its diagnostics while CI remains failed, and confirm a run without Checkly secrets still produces GitHub artifacts. The local unit suite covers upload gating and session-link reporting without contacting Checkly.
-
-## Features
-
-- Highlight selected webpage text and attach a note.
-- Restore highlights using quote, prefix, and suffix context.
-- Open and edit a note by clicking its highlight on the original page.
-- Choose a default color, recolor individual highlights, and set global small, medium, or entire-element text coverage.
-- Browse notes for the current page from the toolbar popup.
-- Group notes by website, or search, sort, filter, edit, delete, and revisit them in the library.
-- Automatic local topic tags with no network requests.
-- Optional OpenAI-compatible LLM organization.
-- JSON export/import for backups and portability.
-- React UI with a typed WXT build pipeline.
-
-## Local tag generation
-
-Every new note is tagged locally before any optional LLM organization runs:
-
-1. Anchor Notes lowercases the page title, highlighted quote, and note body.
-2. It checks that text against fixed keyword lists for `design`, `engineering`, `research`, `product`, `ideas`, and `learning`.
-3. Each matching keyword contributes one point. The three highest-scoring topics are retained.
-4. A short label derived from the source hostname is appended.
-5. Duplicate tags are removed and the result is limited to four tags.
-
-This path is deterministic and makes no network requests. It uses substring matching and a small English vocabulary, so its suggestions can be broad or incomplete. Tags can be corrected in the library or directly from the saved-highlight editor on the webpage.
-
-## Bulk organization
-
-In the library, choose **Select notes** to show card checkboxes. Select individual notes or **Select all matching notes**, which includes matching notes in collapsed website groups. Search or topic changes clear selection; sorting and grouping preserve it. Deleted notes are removed from selection.
-
-Use **Add tags**, **Remove tags**, or **Replace tags** to edit the selected notes without sending any data to a provider. Tags are trimmed, lowercased, and de-duplicated. Replacing with an empty field clears all tags on the selected notes; the action button shows the affected count.
-
-**Regenerate tags and summaries** explicitly sends the selected notes to the enabled LLM provider and replaces their tags and summaries on success. Requests run two at a time, with per-note progress and completed/failed/skipped counts. Failed or unusable responses retain existing values. Notes edited or deleted during generation are skipped. **Retry failed notes** processes only failed items from the last batch. Closing the library does not cancel a running batch; interrupted background work is reported as failed and can be retried. Batch status is session-only and excluded from backups.
-
-Enable a provider and unlock any encrypted key in Settings before regenerating. Firefox also requires the existing remote-data consent. Optional custom generation prompts are tracked separately in [issue #82](https://github.com/kevinc16/anchor-notes/issues/82).
-
-## Optional LLM setup
-
-Open **Anchor Notes → Settings** and choose an organizer:
-
-- **OpenRouter:** uses `https://openrouter.ai/api/v1/chat/completions` and defaults to the `openrouter/free` router. Add an OpenRouter API key and optionally choose a specific open or free model slug.
-- **Ollama:** connects locally through `http://localhost:11434/v1/chat/completions`. Pull the model in Ollama first, then enter the same model name in Anchor Notes. Local Ollama does not require an API key.
-- **Custom:** accepts any OpenAI-compatible chat-completions endpoint, model, and optional bearer token.
-
-Notes created while an LLM provider is enabled are sent automatically. Existing notes are sent only when you explicitly choose **Regenerate tags and summaries** in the library. Local topic rules remain the default.
-
-The library shows **Generating summary…** on each note while its LLM request is running and updates automatically when it finishes. Failed, empty, or interrupted requests show **Summary unavailable. Your note is saved.**; pending indicators expire after one minute. Notes and local tags remain saved, and late results cannot replace manual edits or restore deleted notes. Generation status lasts only for the browser session and is excluded from JSON backups.
-
-Remote-provider API keys use browser extension local storage by default. That storage is local to the browser profile, but browsers do not encrypt it for the extension. The Settings page labels this clearly and offers optional passphrase encryption; encryption is never enabled or applied automatically.
-
-When encryption is selected, Anchor Notes derives a key from a passphrase with PBKDF2-SHA-256 (250,000 iterations) and stores only AES-GCM ciphertext plus the salt, IV, and algorithm metadata. The passphrase is never stored. After unlocking, the decrypted API key lives only in non-persistent extension session storage and must be unlocked again after the browser restarts. Losing the passphrase requires replacing the API key. This protects the credential at rest, but not against a compromised browser profile or malicious extension code running while the key is unlocked.
-
-If a new highlight is saved while an encrypted API key is locked, Anchor Notes saves the highlight and local tags but tells you that the key was not used. Unlock the key with its passphrase in Settings before relying on AI organization.
-
-For a production release, route model calls through a small authenticated backend instead of shipping end-user API keys in extension storage.
-
-## Project layout
-
-```text
-entrypoints/
-  background.ts         # commands, context menu, persistence orchestration
-  anchor.content/       # selection capture and resilient restoration
-  popup/                # React current-page notes app
-  options/              # React library and settings app
-lib/                    # typed storage, note models, and organization logic
-styles/                 # shared Tailwind theme and base styles
-public/                 # extension icons copied into the build
-wxt.config.ts           # manifest, React module, and Tailwind/Vite config
-```
-
-## UI state management
-
-The popup and library use the typed Zustand stores in `lib/ui-stores.ts`:
-
-- `useDataStore` caches the latest normalized `AnchorData` snapshot and tracks read status. Entrypoints call `loadData(readData)` on mount and after successful writes. A failed read keeps the previous snapshot and exposes a generic error without provider details.
-- `useLibraryStore` owns library navigation, search, topic filtering, sorting, grouping, and collapsed websites. Derived note lists remain computed from the snapshot and these controls.
-
-Stores are in-memory and scoped to each extension page. Popup and options pages have separate JavaScript contexts; they share the store definition, not a live instance. There is no Zustand persistence middleware, browser localStorage mirror, or automatic cross-page synchronization. Browser extension local storage remains the source of truth through `lib/storage.ts`, which still normalizes reads and writes. Existing runtime messages continue to handle content-script/background operations; stores do not call browser APIs or send messages.
-
-Settings and note edit drafts remain component-local. API key drafts, passphrases, and decrypted credentials never enter Zustand. The snapshot contains only the already-persisted settings; encrypted keys remain ciphertext, and unlocked keys stay in extension session storage through the existing credential helpers. Changing a UI control does not write data; save, delete, and import handlers persist through the existing helpers and then refresh the snapshot.
-
-## Extension permissions
-
-- `storage` saves notes and settings locally and holds temporary credentials and task state in session storage.
-- `contextMenus` provides the selection menu action to save a highlight.
-- `<all_urls>` lets the content script capture selections and automatically restore highlights on supported webpages. Host access also lets the popup read the current page URL and title and supports requests to user-configured AI providers when enabled.
-- Firefox's optional `browsingActivity` and `websiteContent` data collection consent is requested only for remote AI organization.
-
-The extension does not request `tabs` or `activeTab`. Its tab messaging, tab creation, navigation, and tab-close handling do not require those permissions; existing host access covers page metadata. Browser-internal pages remain unsupported.
+See the [organization guide](docs/organization.md) for provider setup, bulk actions, generation status, and API key encryption.
 
 ## Privacy and limitations
 
-See the [Anchor Notes Privacy Policy](https://github.com/kevinc16/anchor-notes/blob/main/PRIVACY.md) for the information Anchor Notes stores locally and sends to optional remote organizers.
+- Notes stay in the current browser profile; browser sync is not used. Export JSON for backups or transfers.
+- Remote AI sends the saved quote, note, page title, and URL to the configured provider. Ollama stays on-device when using its local endpoint. Firefox requests consent before remote organization; local features need no such consent.
+- API keys are plaintext in local extension storage by default. Optional passphrase encryption keeps unlocked keys in session storage until the browser restarts.
+- Highlights may not restore if the quoted text changes substantially. The saved quote and note remain in the library.
+- Browser-internal pages and some extension gallery pages block content scripts.
 
-- Browser sync is deliberately not used; large note collections can exceed sync quotas.
-- If a page removes or substantially rewrites the quoted sentence, the extension retains the quote and note in the library but may not be able to reapply the visual highlight.
-- Some browser-internal pages and extension gallery pages do not permit content scripts.
-- Enabling OpenRouter or a custom remote LLM sends the saved quote, note, title, and URL to that provider. Ollama requests stay on the machine when its local endpoint is used.
-- Remote LLM API keys are plaintext in local extension storage by default. Passphrase encryption is available as an explicit opt-in in Settings.
-- Firefox keeps the core local-only workflow available without data transmission. Enabling a remote organizer asks Firefox for permission before selected page content and browsing context can be sent to that provider.
+The extension uses `storage`, `contextMenus`, and `<all_urls>` access to save notes, capture selections, restore highlights, read page metadata, and contact enabled providers. It does not request `tabs` or `activeTab`. Firefox’s optional `browsingActivity` and `websiteContent` consent applies only to remote organization.
 
-## Roadmap
+Read the [privacy policy](PRIVACY.md) for details.
 
-- Optional encrypted sync.
-- Archived page snapshots or Internet Archive links.
-- Fuzzy anchoring for lightly edited quote text.
-- Collections, backlinks, and related-note suggestions.
-- Automated browser tests and store packaging.
+## Documentation
+
+- [Organization guide](docs/organization.md): local tags, bulk editing, AI providers, and credentials.
+- [Development reference](docs/development.md): tooling, commands, coverage, Playwright/Checkly CI, project layout, and UI state.
+- [Dependency maintenance](docs/dependency-maintenance.md): runtime support, upgrades, and security reviews.
+- [Agent and contributor guide](AGENTS.md): implementation conventions, testing, and GitHub workflow.
+- [Issue tracker](https://github.com/kevinc16/anchor-notes/issues): planned work and bug reports.
 
 ## License
 
