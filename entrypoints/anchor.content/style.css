@@ -305,7 +305,7 @@
   justify-self: start;
   margin-inline-start: calc(-1 * var(--anchor-spacing-md));
   padding-inline: var(--anchor-spacing-md);
-  border-radius: var(--anchor-radius-sm);
+  border-radius: var(--anchor-radius-full);
 }
 .anchor-composer-actions .anchor-open-library {
   grid-column: 1 / -1;
