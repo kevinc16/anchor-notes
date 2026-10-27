@@ -182,6 +182,18 @@ test('keeps enlarged page editor text and actions within a narrow viewport', asy
   await expect(popover).toBeVisible();
   expect(await popover.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   const save = popover.getByRole('button', { name: 'Save changes', exact: true });
+  for (const width of [320, 375, 640]) {
+    await page.setViewportSize({ width, height: 500 });
+    const library = await popover.getByRole('button', { name: 'Open library', exact: true }).boundingBox();
+    const remove = await popover.getByRole('button', { name: 'Remove highlight', exact: true }).boundingBox();
+    const primary = await save.boundingBox();
+    expect(library!.y + library!.height).toBeLessThanOrEqual(remove!.y);
+    expect(remove!.y + remove!.height / 2).toBeCloseTo(primary!.y + primary!.height / 2, 0);
+    expect(remove!.x).toBeCloseTo(library!.x, 0);
+    const actions = await popover.locator('.anchor-composer-actions').boundingBox();
+    expect(primary!.x + primary!.width).toBeCloseTo(actions!.x + actions!.width, 0);
+    await popover.screenshot({ path: test.info().outputPath(`editor-footer-${width}.png`) });
+  }
   await save.focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');

@@ -251,6 +251,11 @@
   gap: var(--anchor-spacing-md);
   margin-top: var(--anchor-spacing-xl);
 }
+#anchor-notes-popover .anchor-composer-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
 .anchor-composer-actions button {
   border: 0;
   border-radius: var(--anchor-radius-full);
@@ -296,13 +301,22 @@
 .anchor-remove:hover {
   background: rgba(156, 56, 47, 0.08);
 }
-.anchor-open-library {
-  margin-right: auto;
+#anchor-notes-popover .anchor-remove {
+  justify-self: start;
+}
+.anchor-composer-actions .anchor-open-library {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: var(--anchor-spacing-sm) var(--anchor-spacing-zero);
+  border-radius: var(--anchor-radius-xs);
   color: var(--anchor-color-open-library);
-  background: var(--anchor-color-open-library-surface);
+  background: transparent;
+  font-weight: var(--anchor-font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .anchor-open-library:hover {
-  background: #e4ded2;
+  color: var(--anchor-color-dark);
 }
 .anchor-popover-header {
   display: flex;
