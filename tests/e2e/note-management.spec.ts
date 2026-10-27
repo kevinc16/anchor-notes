@@ -926,6 +926,10 @@ test('keeps laptop toolbar controls together with wider fallback fonts', async (
   for (const width of [1280, 1024]) {
     await page.setViewportSize({ width, height: 900 });
     const topic = await page.locator('summary').boundingBox();
+    const topicLabel = await page.locator('summary > span').boundingBox();
+    expect(Math.abs(topicLabel!.y + topicLabel!.height / 2 - topic!.y - topic!.height / 2)).toBeLessThanOrEqual(1);
+    const cards = await page.getByRole('button', { name: 'Cards', exact: true }).boundingBox();
+    expect(topic!.height).toBeCloseTo(cards!.height, 0);
     const sort = await page.getByRole('combobox', { name: 'Sort notes' }).boundingBox();
     expect(Math.abs(topic!.y - sort!.y)).toBeLessThan(12);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);

@@ -48,7 +48,7 @@ export function TopicFilter({
       }}
     >
       <summary
-        className="cursor-pointer rounded-full border border-line bg-card px-3 py-2 text-xs font-bold text-ink marker:text-muted hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="min-h-9 cursor-pointer rounded-full border border-line bg-card px-3 py-2 text-xs font-bold text-ink marker:text-muted hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         title={`Topic: ${value ?? 'All notes'}`}
       >
         <span className="inline-block max-w-[calc(100%-1rem)] truncate align-middle">
