@@ -28,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
@@ -61,7 +61,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       # Keep this version aligned with Playwright in package-lock.json (see README).
-      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
       options: --ipc=host
     timeout-minutes: 15
     permissions:
@@ -198,7 +198,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
@@ -237,7 +237,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
@@ -268,7 +268,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies

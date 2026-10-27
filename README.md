@@ -14,7 +14,7 @@ All data is stored in the browser's local extension storage. There is no Anchor 
 
 ## Install for development
 
-Requirements: Node.js 22 or newer and npm.
+Requirements: Node.js 24 LTS (24.22.1 or newer within 24.x) and npm. Run `nvm install` and `nvm use` to select the version pinned in `.nvmrc`; all CI setup steps read that same file. See the [runtime and dependency maintenance notes](docs/dependency-maintenance.md) for support status, upgrade decisions, and the latest advisory review.
 
 ```sh
 npm install
@@ -100,7 +100,7 @@ CI runs this command for pull requests and pushes to `main`, adds the concise su
 
 ### Playwright E2E CI
 
-Only the E2E job in `.github/workflows/ci.yml` runs in the official Playwright container (`mcr.microsoft.com/playwright:v1.62.1-noble`), which includes browser binaries and system dependencies. The job still uses Node.js 22, `npm ci`, the extension build, and the existing persistent Chromium context with extension loading. Other CI jobs run directly on GitHub-hosted runners.
+Only the E2E job in `.github/workflows/ci.yml` runs in the official Playwright container (`mcr.microsoft.com/playwright:v1.64.1-noble`), which includes browser binaries and system dependencies. The job still uses Node.js 24, `npm ci`, the extension build, and the existing persistent Chromium context with extension loading. Other CI jobs run directly on GitHub-hosted runners.
 
 When upgrading Playwright, update `@playwright/test` and regenerate `package-lock.json`, then set the E2E container image to the exact resolved `playwright` version in that lockfile, retaining the `-noble` suffix. Check the resolved version with `node -p "require('./package-lock.json').packages['node_modules/playwright'].version"`. The image and dependency versions must match so Playwright can find the bundled browsers; do not add a browser or APT installation step to this job. Run the complete E2E suite in GitHub Actions after upgrading, including responsive navigation cases, and check the uploaded reports and diagnostics.
 
