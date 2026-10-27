@@ -42,7 +42,7 @@ wxt.config.ts               # manifest, WXT modules, and Vite plugins
 
 ## Development commands
 
-Use Node.js 22 or newer and npm.
+Use Node.js 24 LTS (24.22.1 or newer within 24.x) and npm. `.nvmrc` pins the development/CI runtime; use `nvm install` and `nvm use` before installing dependencies. Keep `.nvmrc`, `engines.node`, `@types/node`, and runtime guidance aligned. Dependency upgrade decisions and security review are recorded in `docs/dependency-maintenance.md`.
 
 ```sh
 npm install                 # install dependencies and prepare WXT types

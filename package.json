@@ -26,32 +26,35 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zustand": "^5.0.15"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
-    "@checkly/playwright-reporter": "^1.14.0",
+    "@checkly/playwright-reporter": "^1.15.0",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^26.4.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/coverage-v8": "^5.0.5",
     "@wxt-dev/module-react": "^1.2.2",
-    "eslint": "^10.9.1",
-    "globals": "^17.11.0",
-    "happy-dom": "^20.11.12",
-    "prettier": "^3.9.6",
-    "stylelint": "^17.14.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "happy-dom": "^21.0.4",
+    "prettier": "^3.9.10",
+    "stylelint": "^17.16.0",
     "stylelint-config-recommended": "^18.0.0",
     "stylelint-config-tailwindcss": "^1.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.69.0",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11",
-    "wxt": "^0.21.4"
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "wxt": "^0.21.5"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
   }
 }
