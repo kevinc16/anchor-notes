@@ -44,9 +44,15 @@ export async function saveNote(note: AnchorNote): Promise<AnchorNote> {
     const index = notes.findIndex((item) => item.id === note.id);
     if (index >= 0) {
       const existing = notes[index];
-      if (existing) notes[index] = { ...existing, ...note, updatedAt: new Date().toISOString() };
+      if (existing) {
+        const updated = { ...existing, ...note, updatedAt: new Date().toISOString() };
+        if (!note.summary?.trim() && Object.hasOwn(note, 'summary')) delete updated.summary;
+        notes[index] = updated;
+      }
     } else {
-      notes.unshift(note);
+      const added = { ...note };
+      if (!added.summary?.trim()) delete added.summary;
+      notes.unshift(added);
     }
     return notes;
   });

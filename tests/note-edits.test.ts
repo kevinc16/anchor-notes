@@ -55,7 +55,7 @@ describe('applyLibraryNoteEdits', () => {
     });
   });
 
-  it('removes the optional summary when the field is cleared', () => {
+  it('keeps an empty summary to signal that storage should clear it', () => {
     const updated = applyLibraryNoteEdits(note('Generated summary'), {
       body: 'Original note',
       summary: '   ',
@@ -63,6 +63,6 @@ describe('applyLibraryNoteEdits', () => {
       color: 'yellow',
     });
 
-    expect(updated).not.toHaveProperty('summary');
+    expect(updated.summary).toBe('');
   });
 });

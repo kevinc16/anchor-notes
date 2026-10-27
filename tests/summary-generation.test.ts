@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS } from '../lib/settings';
 import type { AnchorNote } from '../lib/types';
+import { applyLibraryNoteEdits } from '../lib/note-edits';
 
 const memory = vi.hoisted(() => new Map<string, unknown>());
 vi.mock('#imports', () => ({
@@ -166,6 +167,21 @@ describe('summary generation', () => {
       expect(notes[0]).toMatchObject({ summary: 'My summary', body: 'My edit', tags: ['example'] });
     else expect(notes).toEqual([]);
     expect(status()).toBeUndefined();
+  });
+
+  it.each(['', '   '])('persists a cleared summary after serializing the edit (%j)', async (summary) => {
+    const original = { ...note(), summary: 'Existing summary' };
+    await saveNote(original);
+    const edited = applyLibraryNoteEdits(original, {
+      body: original.body,
+      summary,
+      tags: original.tags.join(', '),
+      color: original.color,
+    });
+
+    await saveNote(JSON.parse(JSON.stringify(edited)) as AnchorNote);
+
+    expect((await readData()).notes[0]).not.toHaveProperty('summary');
   });
 
   it('keeps simultaneous saves and generation results independent', async () => {

@@ -18,7 +18,7 @@ export function applyLibraryNoteEdits(note: AnchorNote, edits: LibraryNoteEdits)
   };
 
   if (summary) updated.summary = summary;
-  else delete updated.summary;
+  else updated.summary = '';
 
   return updated;
 }
