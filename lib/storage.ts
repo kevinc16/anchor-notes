@@ -123,6 +123,6 @@ export function normalizeData(value: unknown): AnchorData {
 }
 
 export function noteMatches(note: AnchorNote, query: string): boolean {
-  const haystack = [note.quote, note.body, note.title, note.url, ...note.tags].join(' ').toLowerCase();
+  const haystack = [note.quote, note.body, note.title, note.url, ...note.tags, note.summary].join(' ').toLowerCase();
   return haystack.includes(query.trim().toLowerCase());
 }

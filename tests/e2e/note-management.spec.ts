@@ -257,6 +257,67 @@ test('shows only the active page notes in the popup and can scroll to one', asyn
   }
 });
 
+test('retrieves saved summaries with local search and preserves library controls', async ({
+  page,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(serviceWorker, {
+    schemaVersion: 1,
+    settings: DEFAULT_SETTINGS,
+    notes: [
+      makeNote('older-summary', articleUrl, {
+        title: 'Older article',
+        summary: 'Distinctive synthesis from the older article.',
+        createdAt: '2026-01-01T00:00:00Z',
+      }),
+      makeNote('newer-summary', articleUrl, {
+        title: 'Newer article',
+        summary: 'Another distinctive synthesis.',
+        createdAt: '2026-02-01T00:00:00Z',
+      }),
+      makeNote('other-topic', articleUrl, {
+        summary: 'Distinctive synthesis in a different topic.',
+        tags: ['research-tools'],
+      }),
+      makeNote('legacy', articleUrl),
+      makeNote('empty-summary', articleUrl, { summary: '' }),
+    ],
+  });
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  const search = page.getByRole('searchbox', { name: 'Search notes, tags, or sources', exact: true });
+  const articles = page.locator('article');
+  await expect(articles).toHaveCount(5);
+  await search.focus();
+  await page.keyboard.insertText('  DISTINCTIVE SYNTHESIS  ');
+  await expect(articles).toHaveCount(3);
+  const tag = articles
+    .filter({ has: page.getByRole('heading', { name: 'Older article', exact: true }) })
+    .getByRole('button', { name: 'Filter by tag: research', exact: true });
+  await tag.focus();
+  await page.keyboard.press('Enter');
+  await expect(articles).toHaveCount(2);
+  await page.getByRole('combobox', { name: 'Sort notes' }).selectOption('oldest');
+
+  for (const layout of ['Cards', 'List']) {
+    await page.getByRole('button', { name: layout, exact: true }).click();
+    await expect(articles).toHaveCount(2);
+    await expect(articles.nth(0).getByRole('heading')).toHaveText('Older article');
+    await expect(articles.nth(1).getByRole('heading')).toHaveText('Newer article');
+  }
+  await page.getByRole('button', { name: 'Group by website', exact: true }).click();
+  await expect(articles).toHaveCount(2);
+  await expect(articles.first().getByRole('heading')).toHaveText('Older article');
+  await page.setViewportSize({ width: 375, height: 900 });
+  await search.fill('synthesis');
+  await expect(articles).toHaveCount(2);
+  await search.fill('no matching summary');
+  await expect(articles).toHaveCount(0);
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(articles).toHaveCount(5);
+});
+
 test('searches, groups, edits, and deletes notes in the library', async ({
   context,
   serviceWorker,
@@ -774,7 +835,7 @@ test('keeps the topic picker compact with dozens of long tags on laptop and narr
   }
 });
 
-test('keeps tag filtering usable at 200 percent browser zoom', async ({
+test('keeps summary search and tag filtering usable at 200 percent browser zoom', async ({
   page,
   serviceWorker,
   extensionId,
@@ -783,7 +844,7 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
   await seedExtensionData(serviceWorker, {
     schemaVersion: 1,
     settings: DEFAULT_SETTINGS,
-    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'] })],
+    notes: [makeNote('zoom-tag', articleUrl, { tags: ['reading'], summary: 'Distinctive synthesis.' })],
   });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`chrome-extension://${extensionId}/options.html`);
@@ -803,6 +864,8 @@ test('keeps tag filtering usable at 200 percent browser zoom', async ({
     await api.tabs.setZoom(tab.id, 2);
   }, extensionId);
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(640);
+  await page.getByRole('searchbox', { name: 'Search notes, tags, or sources', exact: true }).fill('synthesis');
+  await expect(page.locator('article')).toHaveCount(1);
   await page.locator('summary').filter({ hasText: 'Topic:' }).click();
   await page.getByRole('searchbox', { name: 'Find a tag' }).fill('reading');
   await page
