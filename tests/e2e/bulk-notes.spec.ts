@@ -139,12 +139,14 @@ test('regenerates with partial failure, survives reopening, and retries only fai
 }) => {
   let library = await openExtensionPage(context, extensionId, 'options.html');
   await selectAll(library);
+  await library.getByLabel('AI prompt (optional)', { exact: true }).fill('Focus on browser extension tradeoffs');
   await library.getByRole('button', { name: 'Regenerate tags and summaries', exact: true }).click();
   await expect(library.getByText('Generating summary…')).toHaveCount(2);
   await expect(library.getByText('Waiting for regeneration…', { exact: true })).toHaveCount(1);
   await expect(library.getByRole('button', { name: 'Regenerate tags and summaries', exact: true })).toBeDisabled();
   await library.close();
   library = await openExtensionPage(context, extensionId, 'options.html');
+  await expect(library.getByLabel('AI prompt (optional)', { exact: true })).toHaveCount(0);
   await expect(library.getByText('Generating summary…')).toHaveCount(2);
   await release(articleUrl, true);
   await expect(library.getByText('Regeneration failed. Existing tags and summary kept.', { exact: true })).toHaveCount(
@@ -157,7 +159,14 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   );
   const failed = (await readExtensionData(serviceWorker)).notes.filter((n) => n.summary?.startsWith('Summary'));
   expect(failed).toHaveLength(1);
+  await library.getByLabel('AI prompt (optional)', { exact: true }).fill('Focus on practical takeaways');
+  const retryRequest = context.waitForEvent('request', {
+    predicate: (request) => request.method() === 'POST' && request.url().includes('/v1/chat/completions'),
+  });
   await library.getByRole('button', { name: 'Retry failed notes', exact: true }).click();
+  expect(JSON.parse((await retryRequest).postDataJSON().messages[1].content).guidance).toBe(
+    'Focus on practical takeaways',
+  );
   await expect(library.getByText('Generating summary…')).toHaveCount(1);
   await release(articleUrl);
   await expect(library.getByRole('status', { name: 'Bulk regeneration progress' })).toContainText(
@@ -166,6 +175,53 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   expect(
     (await readExtensionData(serviceWorker)).notes.every((n) => n.summary === 'Organized by the local E2E provider.'),
   ).toBe(true);
+});
+
+test('applies optional guidance only to selected notes and keeps it out of storage', async ({
+  context,
+  extensionId,
+  articleUrl,
+  serviceWorker,
+}) => {
+  const requests: Array<Record<string, string>> = [];
+  context.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/v1/chat/completions')) {
+      requests.push(JSON.parse(request.postDataJSON().messages[1].content));
+    }
+  });
+  const library = await openExtensionPage(context, extensionId, 'options.html');
+  await library.getByRole('button', { name: 'Select notes', exact: true }).click();
+  await library.getByPlaceholder('Search notes, tags, or sources…').fill('Quote one');
+  await library.getByRole('button', { name: /Select all matching/ }).click();
+  const prompt = 'Use browser extension tags and summarize implementation tradeoffs';
+  await library.getByLabel('AI prompt (optional)', { exact: true }).fill(prompt);
+  await library.getByLabel('Bulk tags', { exact: true }).fill('local');
+  await library.getByRole('button', { name: 'Apply tags', exact: true }).click();
+  await expect(library.getByRole('status').filter({ hasText: '1 notes updated' })).toBeVisible();
+  expect(requests).toEqual([]);
+  await library.getByRole('button', { name: 'Regenerate tags and summaries', exact: true }).click();
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0]).toMatchObject({ quote: 'Quote one', note: 'Body one', guidance: prompt });
+  await release(articleUrl);
+  await expect(library.getByRole('status', { name: 'Bulk regeneration progress' })).toContainText('1 completed');
+  const data = await readExtensionData(serviceWorker);
+  expect(data.notes.find((n) => n.id === 'one')).toMatchObject({ quote: 'Quote one', body: 'Body one' });
+  expect(data.notes.find((n) => n.id === 'two')).toEqual(note('two', articleUrl));
+  expect(data.notes.find((n) => n.id === 'three')).toEqual(note('three', 'https://example.com/article'));
+  const stored = await serviceWorker.evaluate(async () => {
+    const api = (
+      globalThis as unknown as {
+        chrome: {
+          storage: { local: { get(keys: null): Promise<unknown> }; session: { get(keys: null): Promise<unknown> } };
+        };
+      }
+    ).chrome;
+    return JSON.stringify([await api.storage.local.get(null), await api.storage.session.get(null)]);
+  });
+  expect(stored).not.toContain(prompt);
+  await library.reload();
+  await library.getByRole('button', { name: 'Select notes', exact: true }).click();
+  await expect(library.getByLabel('AI prompt (optional)', { exact: true })).toHaveValue('');
 });
 
 test('blocks disabled AI without preventing local tag edits', async ({ context, extensionId, serviceWorker }) => {

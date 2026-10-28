@@ -78,7 +78,7 @@ export default defineBackground(() => {
           .then((tagResult) => ({ ok: true, tagResult }))
           .catch(() => ({ ok: false, error: 'Could not update tags.' }));
       }
-      return startBulkGeneration(message.ids)
+      return startBulkGeneration(message.ids, message.prompt)
         .then((batch) => ({ ok: true, batch }))
         .catch((error: unknown) => ({
           ok: false,

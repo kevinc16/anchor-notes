@@ -83,7 +83,7 @@ export type ExtensionMessage =
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
   | { type: 'BULK_EDIT_TAGS'; ids: string[]; operation: TagOperation; tags: string }
-  | { type: 'START_BULK_GENERATION'; ids: string[] }
+  | { type: 'START_BULK_GENERATION'; ids: string[]; prompt?: string }
   | { type: 'GET_BULK_GENERATION' }
   | { type: 'GET_NOTE'; id: string }
   | { type: 'DELETE_NOTE'; id: string }

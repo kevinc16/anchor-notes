@@ -117,6 +117,39 @@ function completion() {
 }
 
 describe('bulk generation', () => {
+  it('sends the same guidance independently to selected notes without storing it', async () => {
+    await enableAI();
+    for (const id of ['one', 'two', 'unselected']) await saveNote({ ...note(id), quote: `Quote ${id}` });
+    const contexts: Array<Record<string, string>> = [];
+    vi.stubGlobal('fetch', async (_url: string, request: RequestInit) => {
+      contexts.push(JSON.parse(JSON.parse(request.body as string).messages[1].content));
+      return completion();
+    });
+    const prompt = 'Emphasize practical takeaways and browser extension tags';
+    await startBulkGeneration(['one', 'two'], prompt);
+    await vi.waitFor(async () =>
+      expect((await getBulkGeneration())?.items.map((i) => i.state)).toEqual(['completed', 'completed']),
+    );
+    expect(contexts).toHaveLength(2);
+    expect(contexts.map((context) => context.quote).sort()).toEqual(['Quote one', 'Quote two']);
+    for (const context of contexts) {
+      expect(context.guidance).toBe(prompt);
+      expect(context.note).toBe('Original body');
+      expect(JSON.stringify(context)).not.toContain('unselected');
+    }
+    const data = await readData();
+    expect(data.notes.find((n) => n.id === 'unselected')).toEqual({ ...note('unselected'), quote: 'Quote unselected' });
+    for (const id of ['one', 'two'])
+      expect(data.notes.find((n) => n.id === id)).toMatchObject({ quote: `Quote ${id}`, body: 'Original body' });
+    expect(JSON.stringify([...memory])).not.toContain(prompt);
+  });
+
+  it('rejects malformed guidance without sending requests or exposing its contents', async () => {
+    await expect(startBulkGeneration(['one'], { private: 'sensitive' } as never)).rejects.toThrow(
+      'Enter a valid optional prompt.',
+    );
+  });
+
   it('requires enabled AI and unlocked credentials before sending any notes', async () => {
     await saveNote(note('one'));
     let requests = 0;
@@ -137,7 +170,7 @@ describe('bulk generation', () => {
     for (const id of ['one', 'two', 'three', 'four']) await saveNote(note(id));
     const finishes: Array<(response: Response) => void> = [];
     vi.stubGlobal('fetch', () => new Promise<Response>((resolve) => finishes.push(resolve)));
-    const batch = await startBulkGeneration(['one', 'two', 'three', 'four', 'one', 'missing']);
+    const batch = await startBulkGeneration(['one', 'two', 'three', 'four', 'one', 'missing'], 'Focus on research');
     expect(batch.items).toHaveLength(5);
     await vi.waitFor(() => expect(finishes).toHaveLength(2));
     await expect(startBulkGeneration(['three'])).rejects.toThrow(/already/);
@@ -177,7 +210,7 @@ describe('bulk generation', () => {
           finish = resolve;
         }),
     );
-    await startBulkGeneration(['one']);
+    await startBulkGeneration(['one'], 'Focus on practical takeaways');
     await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
     await bulkEditTags(['one'], 'replace', 'manual');
     finish(completion());

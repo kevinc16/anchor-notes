@@ -56,6 +56,8 @@ Load one-time builds using the same browser steps above, selecting `.output/chro
 
 Local topic tagging runs without network requests. In **Settings**, enable AI organization and choose OpenRouter, Ollama, or a custom OpenAI-compatible provider to generate tags and summaries for new notes. Existing notes are sent only through **Regenerate tags and summaries** in the library.
 
+To guide regeneration, choose **Select notes**, select one or more notes, and enter an **AI prompt (optional)** before choosing **Regenerate tags and summaries**. The same guidance accompanies each selected note independently and can influence both topic tags and summary emphasis; leaving it blank keeps the default instructions. Guidance does not change the saved quote or note body. It is sent to your configured provider but is not saved in extension storage or backups. **Retry failed notes** uses the current prompt field; after reopening or reloading the library, enter the guidance again if needed.
+
 See the [organization guide](docs/organization.md) for provider setup, bulk actions, generation status, and API key encryption.
 
 ## Privacy and limitations
