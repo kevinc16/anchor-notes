@@ -1,4 +1,8 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+
+@source '../components';
+@source '../entrypoints';
+@source '../lib';
 
 @theme {
   --color-paper: #fbf8f1;
