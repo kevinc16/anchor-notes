@@ -220,7 +220,7 @@ function NoteCard({
         </div>
       </header>
       <blockquote
-        className={`my-4 font-serif text-lg font-medium leading-relaxed text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'max-w-[70ch] whitespace-pre-wrap' : 'whitespace-pre-line'}`}
+        className={`my-4 font-serif text-lg font-medium leading-relaxed text-library-quote [overflow-wrap:anywhere] ${layout === 'list' ? 'whitespace-pre-wrap' : 'whitespace-pre-line'}`}
       >
         <span className="-ml-2 text-library-quote-accent">“</span>
         {quoteExpanded ? note.quote : quotePreview}

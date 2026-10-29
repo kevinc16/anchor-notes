@@ -666,12 +666,17 @@ test('uses safe layout defaults and keeps long reading excerpts within narrow wi
   await expect(page.getByRole('button', { name: 'Cards', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await page.getByRole('button', { name: 'Show more', exact: true }).click();
-  for (const width of [1280, 640, 375]) {
+  for (const width of [1920, 1280, 640, 375]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(page.locator('blockquote')).toContainText('x'.repeat(1800));
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     const quote = await page.locator('blockquote').boundingBox();
     expect(quote!.width).toBeLessThanOrEqual(width);
+    const contentWidth = await page.locator('article').evaluate((article) => {
+      const style = getComputedStyle(article);
+      return article.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    });
+    expect(quote!.width).toBeCloseTo(contentWidth, 0);
     await expect(page.getByRole('button', { name: 'List', exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`list-${width}.png`), fullPage: true });
   }
