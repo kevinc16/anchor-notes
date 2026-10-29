@@ -69,6 +69,17 @@ export function BulkActions({
 
   return (
     <section aria-label="Bulk note actions" className="mb-6 grid gap-4 rounded-2xl border border-line bg-card p-5">
+      {failedIds.length > 0 && (
+        <div role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
+          <p className="font-bold">
+            Could not regenerate {failedIds.length} note{failedIds.length === 1 ? '' : 's'}.
+          </p>
+          <p className="mt-1">
+            Existing tags and summaries were kept for failed notes. Check your provider settings and use Retry failed
+            notes to try again.
+          </p>
+        </div>
+      )}
       {selecting && (
         <>
           <div className="flex flex-wrap items-center gap-2">
