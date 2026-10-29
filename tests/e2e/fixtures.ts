@@ -61,6 +61,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
             });
             pending.end(
               JSON.stringify({
+                ...(result === 'error' ? { error: { message: 'The provider is temporarily unavailable.' } } : {}),
                 choices: [
                   {
                     message: {

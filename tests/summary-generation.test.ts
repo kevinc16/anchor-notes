@@ -28,7 +28,12 @@ vi.mock('#imports', () => ({
 }));
 
 import { deleteNote, readData, saveNote } from '../lib/storage';
-import { generateSummary, getSummaryGenerationState, SUMMARY_GENERATION_PREFIX } from '../lib/summary-generation';
+import {
+  generateSummary,
+  getSummaryGenerationState,
+  getSummaryGenerationError,
+  SUMMARY_GENERATION_PREFIX,
+} from '../lib/summary-generation';
 
 const settings = {
   ...DEFAULT_SETTINGS,
@@ -84,6 +89,35 @@ afterEach(() => {
 });
 
 describe('summary generation', () => {
+  it('does not expose arbitrary exceptions containing private content', async () => {
+    const original = note();
+    await saveNote(original);
+    vi.stubGlobal('fetch', async () => {
+      throw new Error('private exception content');
+    });
+    expect(await generateSummary(original, settings, true)).toBe('failed');
+    expect(getSummaryGenerationError(original.id)).toBe(
+      'AI generation failed. Check your connection and provider settings, then try again.',
+    );
+    expect(JSON.stringify([...memory])).not.toContain('private exception content');
+  });
+
+  it('keeps provider error details in memory only and clears them on retry', async () => {
+    const original = { ...note(), summary: 'Keep this summary' };
+    await saveNote(original);
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(JSON.stringify({ error: { message: 'Insufficient credits.' } }), { status: 402 }),
+    );
+    expect(await generateSummary(original, settings, true)).toBe('failed');
+    expect(getSummaryGenerationError(original.id)).toBe('AI request failed (402): Insufficient credits.');
+    expect((await readData()).notes[0]).toEqual(original);
+    expect(JSON.stringify([...memory])).not.toContain('Insufficient credits.');
+    vi.stubGlobal('fetch', async () => completion());
+    expect(await generateSummary(original, settings, true)).toBe('completed');
+    expect(getSummaryGenerationError(original.id)).toBeUndefined();
+  });
+
   it('exposes pending status, then saves the summary and clears the status', async () => {
     const original = note();
     await saveNote(original);

@@ -30,6 +30,14 @@ export function BulkActions({
   const [result, setResult] = useState('');
   const running = isBulkGenerationActive(batch);
   const failedIds = batch?.items.filter((item) => item.state === 'failed').map((item) => item.id) ?? [];
+  const failureMessages = [
+    ...new Set(
+      batch?.items
+        .filter((item) => item.state === 'failed')
+        .map((item) => item.error)
+        .filter(Boolean),
+    ),
+  ];
 
   async function applyTags() {
     setBusy(true);
@@ -80,6 +88,13 @@ export function BulkActions({
             Existing tags and summaries were kept for failed notes. Check your provider settings and use Retry failed
             notes to try again.
           </p>
+          {failureMessages.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 [overflow-wrap:anywhere]">
+              {failureMessages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       {selecting && (

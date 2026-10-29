@@ -151,6 +151,7 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   await release(articleUrl, true);
   const failureAlert = library.getByRole('alert');
   await expect(failureAlert).toContainText('Could not regenerate 1 note.');
+  await expect(failureAlert).toContainText('AI request failed (503): The provider is temporarily unavailable.');
   await expect(failureAlert).toContainText('Existing tags and summaries were kept for failed notes.');
   await expect(library.getByText('Regeneration failed. Existing tags and summary kept.', { exact: true })).toHaveCount(
     1,
@@ -167,6 +168,7 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   await expect(failureAlert).toBeVisible();
   await library.reload();
   await expect(library.getByRole('alert')).toContainText('Could not regenerate 1 note.');
+  await expect(library.getByRole('alert')).toContainText('The provider is temporarily unavailable.');
   await library.getByLabel('AI prompt (optional)', { exact: true }).fill('Focus on practical takeaways');
   const retryRequest = context.waitForEvent('request', {
     predicate: (request) => request.method() === 'POST' && request.url().includes('/v1/chat/completions'),

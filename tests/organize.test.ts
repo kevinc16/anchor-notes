@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { organizeLocally, organizeWithAI } from '../lib/organize';
-import type { AnchorSettings } from '../lib/types';
+import { AIOrganizationError, organizeLocally, organizeWithAI } from '../lib/organize';
 import { DEFAULT_SETTINGS } from '../lib/settings';
+import type { AnchorSettings } from '../lib/types';
 
 const note = {
   title: 'Open models',
@@ -66,6 +66,65 @@ describe('organizeWithAI', () => {
       guidance: prompt,
     });
     expect(result).toEqual({ tags: ['ai', 'open-source'], summary: 'Local model setup' });
+  });
+
+  it('distinguishes a non-JSON provider response from invalid model JSON', async () => {
+    vi.stubGlobal('fetch', async () => new Response('<html>Gateway error</html>'));
+    await expect(organizeWithAI(note, DEFAULT_SETTINGS)).rejects.toThrow(
+      'The AI provider returned an invalid JSON response.',
+    );
+  });
+
+  it.each([
+    [402, { error: { message: 'Insufficient credits.' } }, 'AI request failed (402): Insufficient credits.'],
+    [429, { error: 'Rate limit exceeded.' }, 'AI request failed (429): Rate limit exceeded.'],
+    [503, { message: 'Model unavailable.' }, 'AI request failed (503): Model unavailable.'],
+    [503, { error: { message: 123 }, message: 'Model unavailable.' }, 'AI request failed (503): Model unavailable.'],
+    [503, { error: { message: ' ' }, message: 'Model unavailable.' }, 'AI request failed (503): Model unavailable.'],
+    [
+      200,
+      { error: { message: 'Provider rejected the request.' } },
+      'AI provider error: Provider rejected the request.',
+    ],
+  ])('exposes the provider error for HTTP %s', async (status, payload, expected) => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify(payload), { status }));
+    await expect(organizeWithAI(note, DEFAULT_SETTINGS)).rejects.toThrow(expected);
+  });
+
+  it.each(['<html>Gateway unavailable</html>', '', '{invalid', '{"error": {"message": 123}}'])(
+    'falls back to HTTP status for an unreadable error response (%j)',
+    async (body) => {
+      vi.stubGlobal('fetch', async () => new Response(body, { status: 502 }));
+      await expect(organizeWithAI(note, DEFAULT_SETTINGS)).rejects.toThrow('AI request failed (502).');
+    },
+  );
+
+  it('bounds provider details and redacts the configured API key', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(JSON.stringify({ error: { message: `Bad key synthetic-secret: ${'x'.repeat(1000)}` } }), {
+          status: 401,
+        }),
+    );
+    const error = await organizeWithAI(note, { ...DEFAULT_SETTINGS, aiApiKey: 'synthetic-secret' }).catch(
+      (error) => error,
+    );
+    expect(error).toBeInstanceOf(AIOrganizationError);
+    expect(error.message).toContain('[redacted]');
+    expect(error.message).not.toContain('synthetic-secret');
+    expect(error.message.length).toBeLessThanOrEqual(350);
+  });
+
+  it('reports malformed completion JSON without exposing model output', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: 'private malformed model output' } }] })),
+    );
+    await expect(organizeWithAI(note, DEFAULT_SETTINGS)).rejects.toThrow(
+      'The AI provider returned invalid tags and summary JSON.',
+    );
   });
 
   it('uses OpenRouter attribution and bearer headers', async () => {

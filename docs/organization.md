@@ -22,6 +22,8 @@ Use **Add tags**, **Remove tags**, or **Replace tags** to edit the selected note
 
 **Regenerate tags and summaries** explicitly sends the selected notes to the enabled LLM provider and replaces their tags and summaries on success. Requests run two at a time, with per-note progress and completed/failed/skipped counts. Failed or unusable responses retain existing values. Notes edited or deleted during generation are skipped. **Retry failed notes** processes only failed items from the last batch. Closing the library does not cancel a running batch; interrupted background work is reported as failed and can be retried. Batch status is session-only and excluded from backups.
 
+Failed batches show a prominent alert. When available, it includes the provider's error message and HTTP status; unreadable responses and invalid model JSON get a clear fallback. Provider messages are shortened, displayed as text, and have the configured API key redacted. Error details remain only in background memory, outside browser storage and backups. Reopening the library can show them while that background instance is alive; after a restart, the generic failure alert remains and requests can be retried.
+
 Enable a provider and unlock any encrypted key in Settings before regenerating. Firefox also requires the existing remote-data consent. Optional custom generation prompts are tracked separately in [issue #82](https://github.com/kevinc16/anchor-notes/issues/82).
 
 ## Optional LLM setup
