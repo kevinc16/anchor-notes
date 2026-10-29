@@ -53,7 +53,8 @@ async function resolveGenerationSettings(settings: AnchorSettings): Promise<Anch
   return settings;
 }
 
-export async function startBulkGeneration(ids: string[]): Promise<BulkGeneration> {
+export async function startBulkGeneration(ids: string[], prompt?: string): Promise<BulkGeneration> {
+  if (prompt !== undefined && typeof prompt !== 'string') throw new Error('Enter a valid optional prompt.');
   if (starting || running) throw new Error('A regeneration batch is already running. Wait for it to finish.');
   starting = true;
   try {
@@ -71,7 +72,7 @@ export async function startBulkGeneration(ids: string[]): Promise<BulkGeneration
     running = batch;
     await browser.storage.session.set({ [BULK_GENERATION_KEY]: batch });
     const snapshot = structuredClone(batch);
-    void runBatch(batch, data.notes).finally(() => {
+    void runBatch(batch, data.notes, prompt).finally(() => {
       running = undefined;
     });
     return snapshot;
@@ -83,7 +84,7 @@ export async function startBulkGeneration(ids: string[]): Promise<BulkGeneration
   }
 }
 
-async function runBatch(batch: BulkGeneration, originals: AnchorNote[]): Promise<void> {
+async function runBatch(batch: BulkGeneration, originals: AnchorNote[], prompt?: string): Promise<void> {
   const notes = new Map(originals.map((note) => [note.id, note]));
   let index = 0;
   let publishing = Promise.resolve();
@@ -106,7 +107,7 @@ async function runBatch(batch: BulkGeneration, originals: AnchorNote[]): Promise
           item.state = 'pending';
           await publish();
           const settings = await resolveGenerationSettings((await readData()).settings);
-          item.state = await generateSummary(original, settings, true);
+          item.state = await generateSummary(original, settings, true, prompt);
         }
       } catch {
         item.state = 'failed';

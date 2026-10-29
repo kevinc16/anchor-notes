@@ -25,6 +25,7 @@ export async function generateSummary(
   note: AnchorNote,
   settings: AnchorSettings,
   preserveExisting = false,
+  prompt?: string,
 ): Promise<GenerationOutcome> {
   if (generatingIds.has(note.id)) return 'skipped';
   generatingIds.add(note.id);
@@ -36,7 +37,7 @@ export async function generateSummary(
     await browser.storage.session.set({
       [key]: { state: 'pending', expiresAt } satisfies SummaryGenerationStatus,
     });
-    const generated = await organizeWithAI(note, settings, controller.signal);
+    const generated = await organizeWithAI(note, settings, controller.signal, prompt);
     // A suspended background must not apply a result after the UI has timed it out.
     if (controller.signal.aborted || Date.now() >= expiresAt) throw new Error('Summary generation timed out.');
     generated.summary = generated.summary.trim();

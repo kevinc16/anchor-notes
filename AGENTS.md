@@ -79,6 +79,7 @@ Prettier covers TypeScript, TSX, and CSS. ESLint covers TypeScript/TSX, and Styl
 - Keep local organization deterministic and network-free. Automatic AI organization is only for newly saved notes when the independent AI toggle and a remote provider are enabled. Existing notes may be sent only through the explicit library regeneration action, with the same toggle, credential, and Firefox consent checks.
 - Never add a remote request for core highlighting, saving, searching, or restoring behavior.
 - Treat API keys, passphrases, decrypted credentials, note contents, and URLs as sensitive. Do not log them, commit them, or add them to test fixtures unnecessarily.
+- Optional AI generation prompts are sensitive request-only content. Keep them out of notes, settings, session progress, logs, and backups; only explicit library regeneration passes them to the provider.
 - Keep credential migrations backward compatible: plaintext remains the default, encrypted secrets use the existing versioned PBKDF2/AES-GCM format, and decrypted keys live only in extension session storage.
 - Use the existing Tailwind theme tokens and content-script CSS conventions instead of introducing a second styling system.
 
