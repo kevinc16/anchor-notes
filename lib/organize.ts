@@ -44,6 +44,7 @@ export async function organizeWithAI(
   note: Pick<AnchorNote, 'title' | 'url' | 'quote' | 'body'>,
   settings: AnchorSettings,
   signal?: AbortSignal,
+  prompt?: string,
 ): Promise<{ tags: string[]; summary: string }> {
   const isOpenRouter = settings.aiProvider === 'openrouter';
   if (isOpenRouter && !settings.aiApiKey) throw new Error('Add an OpenRouter API key in Settings first.');
@@ -71,7 +72,13 @@ export async function organizeWithAI(
         },
         {
           role: 'user',
-          content: JSON.stringify({ title: note.title, url: note.url, quote: note.quote, note: note.body }),
+          content: JSON.stringify({
+            title: note.title,
+            url: note.url,
+            quote: note.quote,
+            note: note.body,
+            ...(prompt?.trim() ? { guidance: prompt.trim() } : {}),
+          }),
         },
       ],
     }),

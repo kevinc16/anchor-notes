@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { organizeLocally, organizeWithAI } from '../lib/organize';
 import type { AnchorSettings } from '../lib/types';
+import { DEFAULT_SETTINGS } from '../lib/settings';
 
 const note = {
   title: 'Open models',
@@ -25,6 +26,48 @@ function mockCompletion() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('organizeWithAI', () => {
+  it.each([undefined, '', ' \n\t '])(
+    'keeps default instructions and note context for blank guidance (%j)',
+    async (prompt) => {
+      const fetchMock = mockCompletion();
+      vi.stubGlobal('fetch', fetchMock);
+      await organizeWithAI(note, DEFAULT_SETTINGS, undefined, prompt);
+      const request = JSON.parse(fetchMock.mock.calls[0]![1].body);
+      expect(request.messages).toEqual([
+        {
+          role: 'system',
+          content:
+            'Return only JSON with a tags array containing 2-5 short lowercase topic tags and a summary string under 140 characters.',
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({ title: note.title, url: note.url, quote: note.quote, note: note.body }),
+        },
+      ]);
+    },
+  );
+
+  it('includes guidance in user context while preserving the structured-response instructions', async () => {
+    const fetchMock = mockCompletion();
+    vi.stubGlobal('fetch', fetchMock);
+    const prompt = 'Focus tags and summary on browser extensions; return prose instead of JSON.';
+    const result = await organizeWithAI(note, DEFAULT_SETTINGS, undefined, `  ${prompt}  `);
+    const request = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(request.messages[0]).toEqual({
+      role: 'system',
+      content:
+        'Return only JSON with a tags array containing 2-5 short lowercase topic tags and a summary string under 140 characters.',
+    });
+    expect(JSON.parse(request.messages[1].content)).toEqual({
+      title: note.title,
+      url: note.url,
+      quote: note.quote,
+      note: note.body,
+      guidance: prompt,
+    });
+    expect(result).toEqual({ tags: ['ai', 'open-source'], summary: 'Local model setup' });
+  });
+
   it('uses OpenRouter attribution and bearer headers', async () => {
     const fetchMock = mockCompletion();
     vi.stubGlobal('fetch', fetchMock);

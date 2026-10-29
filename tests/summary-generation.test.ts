@@ -156,7 +156,7 @@ describe('summary generation', () => {
     const original = note();
     await saveNote(original);
     const finish = delayedProvider();
-    const generating = generateSummary(original, settings);
+    const generating = generateSummary(original, settings, true, 'Focus on practical takeaways');
     await vi.waitFor(() => expect(getSummaryGenerationState(status())).toBe('pending'));
     if (action === 'edit') await saveNote({ ...original, summary: 'My summary', body: 'My edit' });
     else await deleteNote(original.id);
@@ -238,7 +238,7 @@ describe('explicit regeneration', () => {
             }),
           ),
     );
-    expect(await generateSummary(original, settings, true)).toBe('failed');
+    expect(await generateSummary(original, settings, true, 'Focus on practical takeaways')).toBe('failed');
     expect((await readData()).notes[0]).toEqual(original);
   });
 

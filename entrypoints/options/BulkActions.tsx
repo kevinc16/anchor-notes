@@ -24,6 +24,7 @@ export function BulkActions({
 }) {
   const [operation, setOperation] = useState<TagOperation>('add');
   const [tags, setTags] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState('');
@@ -58,6 +59,7 @@ export function BulkActions({
       const response = (await browser.runtime.sendMessage({
         type: 'START_BULK_GENERATION',
         ids: noteIds,
+        ...(prompt.trim() ? { prompt: prompt.trim() } : {}),
       } satisfies ExtensionMessage)) as MessageResponse;
       if (!response?.ok) throw new Error(response?.error || 'Could not start regeneration.');
     } catch (error) {
@@ -137,11 +139,30 @@ export function BulkActions({
               This replaces all existing tags on the selected notes. Leaving the field empty clears their tags.
             </p>
           )}
-          <div className="grid gap-2 border-t border-line pt-4">
-            <p className="text-xs leading-relaxed text-muted">
-              Regeneration sends each selected note’s title, URL, quote, and body to your configured LLM provider and
-              replaces its tags and summary. Failed requests keep existing values.
-            </p>
+        </>
+      )}
+      {(selecting || failedIds.length > 0) && (
+        <div className="grid gap-2 border-t border-line pt-4">
+          <p className="text-xs leading-relaxed text-muted">
+            Regeneration sends each selected note’s title, URL, quote, body, and optional prompt to your configured LLM
+            provider and replaces its tags and summary. Failed requests keep existing values.
+          </p>
+          <label className="grid gap-1 text-xs font-bold">
+            AI prompt (optional)
+            <textarea
+              className={`${fieldClass} min-h-20 w-full resize-y font-normal`}
+              placeholder="Focus on implementation tradeoffs and browser extension tags…"
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              disabled={busy || running}
+              aria-describedby="ai-prompt-help"
+            />
+          </label>
+          <p id="ai-prompt-help" className="text-xs text-muted">
+            Guides tags and summaries for every selected note. Leave blank for defaults. Not saved; retries use the
+            current prompt.
+          </p>
+          {selecting && (
             <div className="flex flex-wrap gap-2">
               <button
                 className={buttonClass}
@@ -152,8 +173,8 @@ export function BulkActions({
                 Regenerate tags and summaries
               </button>
             </div>
-          </div>
-        </>
+          )}
+        </div>
       )}
       {failedIds.length > 0 && (
         <button
