@@ -43,7 +43,8 @@ export type GenerationOutcome = 'completed' | 'failed' | 'skipped';
 export interface BulkGeneration {
   id: string;
   expiresAt: number;
-  items: Array<{ id: string; state: 'queued' | 'pending' | GenerationOutcome }>;
+  // Error details are attached to runtime responses only, never persisted.
+  items: Array<{ id: string; state: 'queued' | 'pending' | GenerationOutcome; error?: string }>;
 }
 
 export interface EncryptedSecret {

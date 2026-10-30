@@ -150,6 +150,30 @@ describe('bulk generation', () => {
     );
   });
 
+  it('includes provider error details in runtime snapshots without persisting them', async () => {
+    await enableAI();
+    await saveNote(note('one'));
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(JSON.stringify({ error: { message: 'Insufficient credits.' } }), { status: 402 }),
+    );
+    await startBulkGeneration(['one']);
+    await vi.waitFor(async () =>
+      expect((await getBulkGeneration())?.items[0]).toEqual({
+        id: 'one',
+        state: 'failed',
+        error: 'AI request failed (402): Insufficient credits.',
+      }),
+    );
+    expect(JSON.stringify([...memory])).not.toContain('Insufficient credits.');
+    expect((await readData()).notes[0]).toEqual(note('one'));
+    vi.stubGlobal('fetch', async () => completion());
+    await startBulkGeneration(['one']);
+    await vi.waitFor(async () =>
+      expect((await getBulkGeneration())?.items[0]).toEqual({ id: 'one', state: 'completed' }),
+    );
+  });
+
   it('requires enabled AI and unlocked credentials before sending any notes', async () => {
     await saveNote(note('one'));
     let requests = 0;

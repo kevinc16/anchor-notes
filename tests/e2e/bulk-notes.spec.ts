@@ -149,6 +149,10 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   await expect(library.getByLabel('AI prompt (optional)', { exact: true })).toHaveCount(0);
   await expect(library.getByText('Generating summary…')).toHaveCount(2);
   await release(articleUrl, true);
+  const failureAlert = library.getByRole('alert');
+  await expect(failureAlert).toContainText('Could not regenerate 1 note.');
+  await expect(failureAlert).toContainText('AI request failed (503): The provider is temporarily unavailable.');
+  await expect(failureAlert).toContainText('Existing tags and summaries were kept for failed notes.');
   await expect(library.getByText('Regeneration failed. Existing tags and summary kept.', { exact: true })).toHaveCount(
     1,
   );
@@ -159,6 +163,12 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   );
   const failed = (await readExtensionData(serviceWorker)).notes.filter((n) => n.summary?.startsWith('Summary'));
   expect(failed).toHaveLength(1);
+  // The batch alert stays visible even when the failed note is hidden by search.
+  await library.getByPlaceholder('Search notes, tags, or sources…').fill('no matching notes');
+  await expect(failureAlert).toBeVisible();
+  await library.reload();
+  await expect(library.getByRole('alert')).toContainText('Could not regenerate 1 note.');
+  await expect(library.getByRole('alert')).toContainText('The provider is temporarily unavailable.');
   await library.getByLabel('AI prompt (optional)', { exact: true }).fill('Focus on practical takeaways');
   const retryRequest = context.waitForEvent('request', {
     predicate: (request) => request.method() === 'POST' && request.url().includes('/v1/chat/completions'),
@@ -172,6 +182,7 @@ test('regenerates with partial failure, survives reopening, and retries only fai
   await expect(library.getByRole('status', { name: 'Bulk regeneration progress' })).toContainText(
     '1 completed · 0 failed · 0 skipped',
   );
+  await expect(library.getByRole('alert')).toHaveCount(0);
   expect(
     (await readExtensionData(serviceWorker)).notes.every((n) => n.summary === 'Organized by the local E2E provider.'),
   ).toBe(true);

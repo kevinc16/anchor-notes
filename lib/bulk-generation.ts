@@ -4,7 +4,12 @@ import { readSessionApiKey } from './credentials';
 import { FIREFOX_REMOTE_DATA_COLLECTION } from './firefox-permissions';
 import { shouldUseAiOrganizer } from './settings';
 import { readData } from './storage';
-import { generateSummary, SUMMARY_GENERATION_PREFIX } from './summary-generation';
+import {
+  clearSummaryGenerationError,
+  generateSummary,
+  getSummaryGenerationError,
+  SUMMARY_GENERATION_PREFIX,
+} from './summary-generation';
 import type { AnchorNote, AnchorSettings, BulkGeneration } from './types';
 
 export const BULK_GENERATION_KEY = 'anchorNotesBulkGeneration';
@@ -14,8 +19,17 @@ export const isBulkGenerationActive = (batch: BulkGeneration | undefined) =>
 let running: BulkGeneration | undefined;
 let starting = false;
 
+function withGenerationErrors(batch: BulkGeneration): BulkGeneration {
+  const snapshot = structuredClone(batch);
+  for (const item of snapshot.items) {
+    const error = item.state === 'failed' ? getSummaryGenerationError(item.id) : undefined;
+    if (error) item.error = error;
+  }
+  return snapshot;
+}
+
 export async function getBulkGeneration(): Promise<BulkGeneration | undefined> {
-  if (running) return structuredClone(running);
+  if (running) return withGenerationErrors(running);
   const stored = await browser.storage.session.get(BULK_GENERATION_KEY);
   const batch = stored[BULK_GENERATION_KEY] as BulkGeneration | undefined;
   if (isBulkGenerationActive(batch) && batch) {
@@ -29,7 +43,7 @@ export async function getBulkGeneration(): Promise<BulkGeneration | undefined> {
       interrupted.map((item) => browser.storage.session.remove(`${SUMMARY_GENERATION_PREFIX}${item.id}`)),
     );
   }
-  return batch;
+  return batch && withGenerationErrors(batch);
 }
 
 async function resolveGenerationSettings(settings: AnchorSettings): Promise<AnchorSettings> {
@@ -63,6 +77,7 @@ export async function startBulkGeneration(ids: string[], prompt?: string): Promi
     const data = await readData();
     await resolveGenerationSettings(data.settings);
     await getBulkGeneration();
+    uniqueIds.forEach(clearSummaryGenerationError);
     const batch: BulkGeneration = {
       id: crypto.randomUUID(),
       expiresAt: Date.now() + Math.ceil(uniqueIds.length / 2) * 65_000 + 10_000,

@@ -1,5 +1,8 @@
 import type { AnchorNote, AnchorSettings } from './types';
 
+// Only these deliberately constructed messages may be displayed by the library.
+export class AIOrganizationError extends Error {}
+
 const TOPICS: Record<string, string[]> = {
   design: ['design', 'interface', 'typography', 'color', 'layout', 'brand', 'ux', 'ui'],
   engineering: ['code', 'software', 'api', 'database', 'javascript', 'python', 'architecture'],
@@ -83,17 +86,39 @@ export async function organizeWithAI(
       ],
     }),
   });
-  if (!response.ok) throw new Error(`AI request failed (${response.status}).`);
-  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = payload.choices?.[0]?.message?.content ?? '';
+  const payload = (await response.json().catch(() => {
+    if (response.ok) throw new AIOrganizationError('The AI provider returned an invalid JSON response.');
+    return null;
+  })) as {
+    error?: string | { message?: unknown };
+    message?: unknown;
+    choices?: Array<{ message?: { content?: unknown } }>;
+  } | null;
+  if (!response.ok || payload?.error) {
+    const error = payload?.error;
+    const detail = [typeof error === 'string' ? error : error?.message, payload?.message].find(
+      (value): value is string => typeof value === 'string' && Boolean(value.trim()),
+    );
+    let message = detail ?? '';
+    if (settings.aiApiKey) message = message.split(settings.aiApiKey).join('[redacted]');
+    message = message.replace(/\s+/g, ' ').trim().slice(0, 300);
+    const prefix = response.ok ? 'AI provider error' : `AI request failed (${response.status})`;
+    throw new AIOrganizationError(message ? `${prefix}: ${message}` : `${prefix}.`);
+  }
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string') throw new AIOrganizationError('The AI provider returned no tags and summary.');
   const withoutFence = content.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
   const firstBrace = withoutFence.indexOf('{');
   const lastBrace = withoutFence.lastIndexOf('}');
   const json = firstBrace >= 0 && lastBrace > firstBrace ? withoutFence.slice(firstBrace, lastBrace + 1) : withoutFence;
-  const parsed = JSON.parse(json) as {
-    tags?: unknown;
-    summary?: unknown;
-  };
+  let parsed: { tags?: unknown; summary?: unknown };
+  try {
+    const value: unknown = JSON.parse(json);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid result.');
+    parsed = value;
+  } catch {
+    throw new AIOrganizationError('The AI provider returned invalid tags and summary JSON.');
+  }
   return {
     tags: Array.isArray(parsed.tags)
       ? parsed.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 5)
