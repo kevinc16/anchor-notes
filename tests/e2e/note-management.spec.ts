@@ -229,14 +229,20 @@ test('removes a saved highlight from the page editor', async ({
   const confirmation = page.getByRole('dialog', { name: 'Delete note?' });
   await removeButton.click();
   await expect(confirmation).toBeVisible();
-  await expect(confirmation).toHaveCSS('background-color', 'rgb(251, 248, 241)');
-  await expect(confirmation).toHaveCSS('color', 'rgb(36, 33, 29)');
-  await expect(confirmation).toHaveCSS('border-top-color', 'rgb(230, 223, 212)');
+  const palette = await popover.evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    color: getComputedStyle(element).color,
+    border: getComputedStyle(element).borderTopColor,
+    field: getComputedStyle(element.querySelector('textarea')!).backgroundColor,
+  }));
+  await expect(confirmation).toHaveCSS('background-color', palette.background);
+  await expect(confirmation).toHaveCSS('color', palette.color);
+  await expect(confirmation).toHaveCSS('border-top-color', palette.border);
   await expect(confirmation.locator('#anchor-delete-description')).toHaveText(
     'This will delete the saved note and remove its highlight. This cannot be undone.',
   );
   await expect(confirmation.locator('#anchor-delete-description')).toBeVisible();
-  await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', 'rgb(255, 254, 250)');
+  await expect(confirmation.locator('button[value="cancel"]')).toHaveCSS('background-color', palette.field);
   await expect(confirmation.getByRole('heading')).toHaveCSS('text-transform', 'none');
   const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancel).toHaveCSS('text-transform', 'none');

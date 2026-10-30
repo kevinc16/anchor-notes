@@ -48,7 +48,7 @@ export function TopicFilter({
       }}
     >
       <summary
-        className="min-h-9 cursor-pointer rounded-full border border-line bg-card px-3 py-2 text-xs font-bold text-ink marker:text-muted hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="min-h-9 cursor-pointer rounded-full border border-line bg-card px-3 py-2 text-xs font-bold text-ink marker:text-muted hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         title={`Topic: ${value ?? 'All notes'}`}
       >
         <span className="inline-block max-w-[calc(100%-1rem)] truncate align-middle">
@@ -60,7 +60,7 @@ export function TopicFilter({
           Find a tag
           <input
             ref={searchRef}
-            className="min-w-0 rounded-lg border border-line bg-white px-3 py-2 text-body outline-none focus:ring-2 focus:ring-ink/20"
+            className="min-w-0 rounded-lg border border-line bg-field px-3 py-2 text-body outline-none focus:ring-2 focus:ring-ink/20"
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -68,7 +68,7 @@ export function TopicFilter({
         </label>
         <div className="mt-2 max-h-64 overflow-y-auto" role="group" aria-label="Available tags">
           <button
-            className="w-full rounded-lg px-2 py-2 text-left text-xs font-bold hover:bg-stone-100"
+            className="w-full rounded-lg px-2 py-2 text-left text-xs font-bold hover:bg-hover"
             type="button"
             aria-pressed={value === null}
             onClick={() => select(null)}
@@ -78,7 +78,7 @@ export function TopicFilter({
           {matches.map((tag) => (
             <button
               key={tag}
-              className={`w-full rounded-lg px-2 py-2 text-left text-xs break-words [overflow-wrap:anywhere] hover:bg-stone-100 ${value === tag ? 'bg-tag-background font-bold' : ''}`}
+              className={`w-full rounded-lg px-2 py-2 text-left text-xs break-words [overflow-wrap:anywhere] hover:bg-hover ${value === tag ? 'bg-tag-background font-bold' : ''}`}
               type="button"
               aria-label={`Filter by tag: ${tag}`}
               aria-pressed={value === tag}

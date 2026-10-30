@@ -5,6 +5,16 @@
 @source '../lib';
 
 @theme {
+  --color-logo-surface: #24211d;
+  --color-field: #fff;
+  --color-inverse: #fff;
+  --color-hover: #f5f1e8;
+  --color-hover-strong: #e6dfd4;
+  --color-control-border: #a8a29e;
+  --color-focus-ring: rgb(168 162 158 / 35%);
+  --color-primary-hover: #44403c;
+  --color-danger-hover: #fef2f2;
+  --color-overlay: rgb(36 33 29 / 35%);
   --color-paper: #fbf8f1;
   --color-card: #fffefa;
   --color-ink: #24211d;
@@ -74,7 +84,46 @@
   --shadow-note: 0 12px 30px rgba(51, 43, 31, 0.07);
 }
 
+/* The attribute is applied only on extension pages, never on host documents. */
+:root[data-anchor-theme='dark'] {
+  color-scheme: dark;
+  --color-paper: #1d1c19;
+  --color-card: #272520;
+  --color-field: #211f1b;
+  --color-ink: #f3eee4;
+  --color-inverse: #24211d;
+  --color-muted: #b9b1a5;
+  --color-line: #514b42;
+  --color-callout-background: #37301d;
+  --color-callout-border: #736031;
+  --color-callout-text: #f0d991;
+  --color-callout-key-background: #27251e;
+  --color-callout-key-border: #847249;
+  --color-quote: #ece5d9;
+  --color-quote-accent: #e6b94f;
+  --color-library-quote: #ece5d9;
+  --color-library-quote-accent: #e6b94f;
+  --color-tag-background: #3b372f;
+  --color-tag-text: #d9d0c2;
+  --color-summary-background: #302d27;
+  --color-subtle-border: #49433a;
+  --color-danger: #ffa99d;
+  --color-label: #ded6c9;
+  --color-sidebar: #24221e;
+  --color-active: #363126;
+  --color-divider: #514b42;
+  --color-provider-danger: #ffa99d;
+  --color-input-accent: #f3eee4;
+  --color-hover: #39352e;
+  --color-hover-strong: #4b443a;
+  --color-control-border: #aaa092;
+  --color-focus-ring: rgb(243 238 228 / 30%);
+  --color-primary-hover: #d9cebc;
+  --color-danger-hover: #4a2d28;
+}
+
 :root {
+  color-scheme: light;
   --layout-sidebar-width: 220px;
   --layout-content-gutter: clamp(32px, 6vw, 88px);
   --layout-content-bottom: 70px;

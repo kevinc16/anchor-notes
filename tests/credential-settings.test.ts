@@ -9,6 +9,7 @@ import {
 import type { AnchorSettings, EncryptedSecret } from '../lib/types';
 
 const settings: AnchorSettings = {
+  theme: 'system',
   highlightColor: 'yellow',
   highlightCoverage: 'medium',
   aiEnabled: true,

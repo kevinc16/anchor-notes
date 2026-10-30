@@ -16,10 +16,13 @@
 }
 
 .anchor-note-highlight {
-  --anchor-highlight-yellow: rgba(255, 215, 74, 0.72);
-  --anchor-highlight-mint: rgba(114, 225, 190, 0.62);
-  --anchor-highlight-lilac: rgba(187, 151, 255, 0.55);
-  --anchor-highlight-coral: rgba(255, 139, 119, 0.58);
+  /* Opacity is capped against the host text/background contrast, independently of UI theme. */
+  --anchor-highlight-opacity: 0.24;
+  --anchor-highlight-accent: #ffd74a;
+  --anchor-highlight-yellow: rgba(255, 215, 74, var(--anchor-highlight-opacity));
+  --anchor-highlight-mint: rgba(114, 225, 190, var(--anchor-highlight-opacity));
+  --anchor-highlight-lilac: rgba(187, 151, 255, var(--anchor-highlight-opacity));
+  --anchor-highlight-coral: rgba(255, 139, 119, var(--anchor-highlight-opacity));
   --anchor-highlight-color: var(--anchor-highlight-yellow);
   --anchor-highlight-start: 45%;
   background: linear-gradient(
@@ -34,13 +37,22 @@
 }
 
 .anchor-note-highlight[data-anchor-color='mint'] {
+  --anchor-highlight-accent: #72e1be;
   --anchor-highlight-color: var(--anchor-highlight-mint);
 }
 .anchor-note-highlight[data-anchor-color='lilac'] {
+  --anchor-highlight-accent: #bb97ff;
   --anchor-highlight-color: var(--anchor-highlight-lilac);
 }
 .anchor-note-highlight[data-anchor-color='coral'] {
+  --anchor-highlight-accent: #ff8b77;
   --anchor-highlight-color: var(--anchor-highlight-coral);
+}
+.anchor-note-highlight[data-anchor-subtle-highlight] {
+  text-decoration: underline;
+  text-decoration-color: var(--anchor-highlight-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 .anchor-note-highlight[data-anchor-coverage='small'] {
   --anchor-highlight-start: 72%;
@@ -56,6 +68,7 @@
 #anchor-notes-popover,
 #anchor-notes-toast {
   all: initial;
+  color-scheme: light;
   --anchor-font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --anchor-font-serif: Georgia, Cambria, 'Times New Roman', serif;
   --anchor-font-size-label: 12px;
@@ -89,6 +102,11 @@
   --anchor-color-swatch-border: #fff;
   --anchor-color-swatch-shadow: #d8d1c6;
   --anchor-color-dark: #24211d;
+  --anchor-color-button-surface: #24211d;
+  --anchor-color-button-text: #fff;
+  --anchor-color-hover: #f5f1e8;
+  --anchor-color-button-hover: #3b3731;
+  --anchor-color-remove-hover: rgba(156, 56, 47, 0.08);
   --anchor-color-white: #fff;
   --anchor-color-cancel: #6c665d;
   --anchor-color-remove: #9c382f;
@@ -284,14 +302,14 @@
 }
 .anchor-cancel:hover {
   color: var(--anchor-color-dark);
-  background: #f5f1e8;
+  background: var(--anchor-color-hover);
 }
 .anchor-save {
-  color: var(--anchor-color-white);
-  background: var(--anchor-color-dark);
+  color: var(--anchor-color-button-text);
+  background: var(--anchor-color-button-surface);
 }
 .anchor-save:hover {
-  background: #3b3731;
+  background: var(--anchor-color-button-hover);
   transform: translateY(-1px);
 }
 .anchor-remove {
@@ -299,7 +317,7 @@
   background: transparent;
 }
 .anchor-remove:hover {
-  background: rgba(156, 56, 47, 0.08);
+  background: var(--anchor-color-remove-hover);
 }
 #anchor-notes-popover .anchor-remove {
   justify-self: start;
@@ -362,11 +380,38 @@
   transform: translateX(-50%);
   padding: var(--anchor-spacing-xl) var(--anchor-spacing-3xl);
   border-radius: var(--anchor-radius-full);
-  background: var(--anchor-color-dark);
-  color: var(--anchor-color-white);
+  background: var(--anchor-color-button-surface);
+  color: var(--anchor-color-button-text);
   box-shadow: var(--anchor-toast-shadow);
   font-family: var(--anchor-font-family);
   font-size: var(--anchor-font-size-body);
   font-weight: var(--anchor-font-weight-semibold);
   line-height: 1;
+}
+
+/* Only extension-owned roots receive this attribute; host styles stay untouched. */
+:is(#anchor-notes-composer, #anchor-notes-popover, #anchor-notes-toast)[data-anchor-theme='dark'] {
+  color-scheme: dark;
+  --anchor-color-panel-border: #514b42;
+  --anchor-color-surface: #272520;
+  --anchor-color-ink: #f3eee4;
+  --anchor-color-muted: #b9b1a5;
+  --anchor-color-kicker: #c4bbad;
+  --anchor-color-quote: #ece5d9;
+  --anchor-color-field-border: #655d51;
+  --anchor-color-input-surface: #211f1b;
+  --anchor-color-focus: #e6b94f;
+  --anchor-focus-shadow: 0 0 0 3px rgb(230 185 79 / 25%);
+  --anchor-color-swatch-border: #272520;
+  --anchor-color-swatch-shadow: #aaa092;
+  --anchor-color-dark: #f3eee4;
+  --anchor-color-button-surface: #f3eee4;
+  --anchor-color-button-text: #24211d;
+  --anchor-color-hover: #39352e;
+  --anchor-color-button-hover: #d9cebc;
+  --anchor-color-cancel: #c4bbad;
+  --anchor-color-remove: #ffa99d;
+  --anchor-color-remove-hover: #4a2d28;
+  --anchor-color-open-library: #d9d0c2;
+  --anchor-color-open-library-surface: #39352e;
 }
