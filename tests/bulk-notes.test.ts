@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS } from '../lib/settings';
+import { encryptSecret } from '../lib/secrets';
 import type { AnchorNote } from '../lib/types';
 
 const memory = vi.hoisted(() => new Map<string, unknown>());
@@ -183,7 +184,7 @@ describe('bulk generation', () => {
     });
     await expect(startBulkGeneration(['one'])).rejects.toThrow(/Settings/);
     await enableAI();
-    await updateSettings({ aiApiKeyEncrypted: { version: 1 } as never });
+    await updateSettings({ aiApiKeyEncrypted: await encryptSecret('synthetic-key', 'synthetic passphrase') });
     await expect(startBulkGeneration(['one'])).rejects.toThrow(/Unlock/);
     expect(requests).toBe(0);
     expect((await readData()).notes[0]).toEqual(note('one'));
@@ -288,7 +289,8 @@ it.each(['disabled', 'locked', 'consent', 'missing-key'])(
     await startBulkGeneration(['one', 'two', 'three']);
     await vi.waitFor(() => expect(finishes).toHaveLength(2));
     if (gate === 'disabled') await updateSettings({ aiEnabled: false });
-    if (gate === 'locked') await updateSettings({ aiApiKeyEncrypted: { version: 1 } as never });
+    if (gate === 'locked')
+      await updateSettings({ aiApiKeyEncrypted: await encryptSecret('synthetic-key', 'synthetic passphrase') });
     if (gate === 'consent') memory.set('consent', false);
     if (gate === 'missing-key') await updateSettings({ aiApiKey: '' });
     finishes[0]!(completion());

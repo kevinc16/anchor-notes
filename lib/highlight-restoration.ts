@@ -157,6 +157,7 @@ export function observeHighlightRestoration(document: Document, readData: () => 
               (mark) => mark.dataset.anchorId === note.id,
             );
           }
+          for (const mark of marks) mark.dataset.anchorCoverage = data.settings.highlightCoverage;
           rendered.set(note.id, {
             fragments: marks.map((mark) => ({ mark, text: mark.textContent })),
             text: textBetweenMarks(marks),

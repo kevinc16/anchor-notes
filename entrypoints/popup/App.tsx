@@ -1,6 +1,6 @@
 import { browser } from '#imports';
 import { useEffect, useMemo, useState } from 'react';
-import { EMPTY_DATA, hostFromUrl, normalizeUrl, readData } from '@/lib/storage';
+import { EMPTY_DATA, hostFromUrl, normalizeUrl, normalizeData, readData } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage } from '@/lib/types';
 import { useDataStore } from '@/lib/ui-stores';
 import { Icon } from '@/components/Icon';
@@ -35,6 +35,16 @@ export default function App() {
       })
       .catch(() => setPage({ title: 'Current page', url: '' }));
   }, [loadData]);
+
+  useEffect(() => {
+    function onChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
+      if (area === 'local' && changes.anchorNotesData) {
+        useDataStore.setState({ data: normalizeData(changes.anchorNotesData.newValue) });
+      }
+    }
+    browser.storage.onChanged.addListener(onChanged);
+    return () => browser.storage.onChanged.removeListener(onChanged);
+  }, []);
 
   const notes = useMemo(() => {
     const pageUrl = normalizeUrl(page.url);

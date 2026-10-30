@@ -53,3 +53,27 @@ describe('normalizeSettings', () => {
     expect(shouldUseAiOrganizer(local)).toBe(false);
   });
 });
+
+it('normalizes invalid imported preferences and discards unknown secret fields', () => {
+  expect(
+    normalizeSettings({
+      highlightColor: 'invalid',
+      highlightCoverage: false,
+      aiProvider: 'invalid',
+      aiEnabled: 'true',
+      aiEndpoint: 123,
+      aiModel: [],
+      aiApiKey: {},
+      passphrase: 'synthetic-passphrase',
+      sessionApiKey: 'synthetic-session',
+    }),
+  ).toEqual({
+    highlightColor: 'yellow',
+    highlightCoverage: 'medium',
+    aiProvider: 'local',
+    aiEnabled: false,
+    aiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    aiModel: 'gpt-4o-mini',
+    aiApiKey: '',
+  });
+});
