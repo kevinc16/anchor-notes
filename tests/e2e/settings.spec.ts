@@ -6,6 +6,7 @@ import type { AnchorData, AnchorSettings } from '../../lib/types';
 import {
   expect,
   openExtensionPage,
+  openPopupInInactiveTab,
   readExtensionData,
   readSessionApiKey,
   resetExtensionStorage,
@@ -214,4 +215,114 @@ test('warns when a new highlight cannot use a locked encrypted API key', async (
   await expect(library.locator('article')).toHaveCount(1);
   await expect(library.getByText('Generating summary…')).toHaveCount(0);
   await expect(library.getByText('Summary unavailable. Your note is saved.')).toHaveCount(0);
+});
+
+test('restores backup settings into open forms and webpages without organizing imported notes', async ({
+  page,
+  context,
+  serviceWorker,
+  extensionId,
+  articleUrl,
+}) => {
+  await seedExtensionData(
+    serviceWorker,
+    { schemaVersion: 1, notes: [], settings: DEFAULT_SETTINGS },
+    'synthetic-stale-session',
+  );
+  await saveFixtureHighlight(page, serviceWorker, articleUrl, 'Synthetic backup note');
+  const original = await readExtensionData(serviceWorker);
+  const popup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
+  await expect(popup.getByText('Synthetic backup note', { exact: true })).toBeVisible();
+  const settingsPage = await openExtensionPage(context, extensionId, 'options.html');
+  const otherSettings = await openExtensionPage(context, extensionId, 'options.html');
+  for (const surface of [settingsPage, otherSettings]) {
+    await surface.getByRole('button', { name: /Settings/ }).click();
+    await expect(
+      surface.getByRole('group', { name: 'Highlight color', exact: true }).getByRole('button').first(),
+    ).toHaveAttribute('aria-pressed', 'true');
+  }
+  let providerRequests = 0;
+  context.on('request', (request) => {
+    if (request.url().includes('/v1/chat/completions')) providerRequests++;
+  });
+  const encrypted = await encryptSecret(API_KEY, PASSPHRASE);
+  const backup = {
+    ...original,
+    notes: original.notes.map((note) => ({ ...note, body: 'Restored synthetic note' })),
+    settings: {
+      ...DEFAULT_SETTINGS,
+      theme: 'dark',
+      highlightColor: 'coral',
+      highlightCoverage: 'full',
+      aiEnabled: true,
+      aiProvider: 'custom',
+      aiEndpoint: customEndpoint(articleUrl),
+      aiModel: 'restored-model',
+      aiApiKeyEncrypted: encrypted,
+    },
+  };
+  await settingsPage
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+  await expect(settingsPage.getByText('Backup imported', { exact: true })).toBeVisible();
+  for (const surface of [settingsPage, otherSettings]) {
+    await expect(surface.getByRole('button', { name: 'Coral', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(surface.getByRole('button', { name: /Entire 100% element/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(surface.getByRole('textbox', { name: 'Model', exact: true })).toHaveValue('restored-model');
+    await expect(surface.getByRole('button', { name: 'Unlock key', exact: true })).toBeVisible();
+  }
+  for (const surface of [settingsPage, otherSettings, popup]) {
+    await expect(surface.locator('html')).toHaveAttribute('data-anchor-theme', 'dark');
+  }
+  await expect(otherSettings.getByLabel('Theme', { exact: true })).toHaveValue('dark');
+  expect(await readSessionApiKey(serviceWorker)).toBe('');
+  expect((await readExtensionData(serviceWorker)).notes).toEqual(backup.notes);
+  await expect(popup.getByText('Restored synthetic note', { exact: true })).toBeVisible();
+  await expect(page.locator('mark.anchor-note-highlight').first()).toHaveAttribute('data-anchor-coverage', 'full');
+  expect(providerRequests).toBe(0);
+  // Even an identical backup must replace unsaved drafts in another open Settings form.
+  await otherSettings.getByRole('button', { name: 'Mint', exact: true }).click();
+  await otherSettings.getByRole('textbox', { name: 'Model', exact: true }).fill('unsaved-model');
+  await otherSettings.getByLabel('Encryption passphrase').fill('synthetic unsaved passphrase');
+  await settingsPage.locator('input[type=file]').setInputFiles({
+    name: 'same-backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
+  await expect(otherSettings.getByRole('button', { name: 'Coral', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(otherSettings.getByRole('textbox', { name: 'Model', exact: true })).toHaveValue('restored-model');
+  await expect(otherSettings.getByLabel('Encryption passphrase')).toHaveValue('');
+  const downloadEvent = settingsPage.waitForEvent('download');
+  await settingsPage.getByRole('button', { name: 'Export JSON', exact: true }).click();
+  const download = await downloadEvent;
+  const { readFile } = await import('node:fs/promises');
+  const exported = JSON.parse(await readFile((await download.path())!, 'utf8'));
+  expect(exported.settings).toEqual(backup.settings);
+  expect(JSON.stringify(exported)).not.toContain('synthetic-stale-session');
+  expect(JSON.stringify(exported)).not.toContain(PASSPHRASE);
+  await settingsPage.locator('input[type=file]').setInputFiles({
+    name: 'legacy.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ notes: [] })),
+  });
+  await expect.poll(async () => (await readExtensionData(serviceWorker)).settings).toEqual(backup.settings);
+  expect(providerRequests).toBe(0);
+  // The actual downloaded backup remains importable after preferences change.
+  await settingsPage.locator('input[type=file]').setInputFiles({
+    name: 'partial.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ notes: [], settings: {} })),
+  });
+  await expect(settingsPage.getByRole('button', { name: 'Enable LLM', exact: true })).toBeVisible();
+  await settingsPage.locator('input[type=file]').setInputFiles({
+    name: 'roundtrip.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(exported)),
+  });
+  await expect(settingsPage.getByRole('button', { name: 'Unlock key', exact: true })).toBeVisible();
+  expect((await readExtensionData(serviceWorker)).settings).toEqual(backup.settings);
+  expect(providerRequests).toBe(0);
 });

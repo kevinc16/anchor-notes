@@ -1,4 +1,5 @@
 import { browser } from '#imports';
+import { importBackup } from '@/lib/backup';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { clearSessionApiKey, readSessionApiKey, writeSessionApiKey } from '@/lib/credentials';
 import { confirmNoteDeletion } from '@/lib/delete-confirmation';
@@ -11,10 +12,9 @@ import { requestFirefoxDataCollectionPermission, type FirefoxDataCollectionApi }
 import { applyLibraryNoteEdits } from '@/lib/note-edits';
 import { getLibraryCardPreview, isLibraryCardPreviewTruncated } from '@/lib/note-preview';
 import { decryptSecret, encryptSecret, MIN_PASSPHRASE_LENGTH } from '@/lib/secrets';
-import { EMPTY_DATA, normalizeData, noteMatches, readData, updateSettings, writeData } from '@/lib/storage';
+import { EMPTY_DATA, normalizeData, noteMatches, readData, updateSettings } from '@/lib/storage';
 import type {
   AiProvider,
-  AnchorData,
   AnchorNote,
   AnchorSettings,
   HighlightColor,
@@ -402,6 +402,13 @@ export default function App() {
     };
   }, [setLayout]);
 
+  function applySavedSettings(next: AnchorSettings) {
+    setSettings(next);
+    setApiKeyDraft(next.aiApiKey);
+    setVaultPassphrase('');
+    setEncryptCredential(Boolean(next.aiApiKeyEncrypted));
+  }
+
   async function changeLayout(next: LibraryLayout) {
     setLayout(next);
     try {
@@ -412,16 +419,38 @@ export default function App() {
   }
 
   useEffect(() => {
-    function onChanged(changes: Record<string, { newValue?: unknown }>, area: string) {
+    function onChanged(changes: Record<string, { newValue?: unknown; oldValue?: unknown }>, area: string) {
       if (area === 'local' && changes.anchorNotesData) {
         themeChanged.current = true;
         const next = normalizeData(changes.anchorNotesData.newValue);
         useDataStore.setState({ data: next });
-        setSettings((current) => ({ ...current, theme: next.settings.theme }));
+        const { theme, ...preferences } = next.settings;
+        const { theme: _oldTheme, ...oldPreferences } = normalizeData(changes.anchorNotesData.oldValue).settings;
+        if (JSON.stringify(preferences) !== JSON.stringify(oldPreferences)) {
+          applySavedSettings(next.settings);
+        } else {
+          setSettings((current) => ({ ...current, theme }));
+        }
+      }
+      if (area === 'session' && changes.anchorNotesAiApiKey) {
+        setCredentialUnlocked(Boolean(changes.anchorNotesAiApiKey.newValue));
       }
     }
+    function onSettingsRestored(message: ExtensionMessage) {
+      if (message.type !== 'SETTINGS_RESTORED') return;
+      void readData()
+        .then((next) => {
+          applySavedSettings(next.settings);
+          setCredentialUnlocked(false);
+        })
+        .catch(() => setToast('Could not load restored settings.'));
+    }
     browser.storage.onChanged.addListener(onChanged);
-    return () => browser.storage.onChanged.removeListener(onChanged);
+    browser.runtime.onMessage.addListener(onSettingsRestored);
+    return () => {
+      browser.storage.onChanged.removeListener(onChanged);
+      browser.runtime.onMessage.removeListener(onSettingsRestored);
+    };
   }, []);
 
   useEffect(() => {
@@ -432,8 +461,8 @@ export default function App() {
           theme: themeChanged.current ? current.theme : next.settings.theme,
         }));
         setApiKeyDraft(next.settings.aiApiKey);
-        setCredentialUnlocked(Boolean(sessionApiKey));
         setEncryptCredential(Boolean(next.settings.aiApiKeyEncrypted));
+        setCredentialUnlocked(Boolean(sessionApiKey));
       })
       .catch(() => setToast('Could not load settings.'));
   }, [loadData]);
@@ -658,11 +687,17 @@ export default function App() {
   async function importData(file?: File) {
     if (!file) return;
     try {
-      const incoming = JSON.parse(await file.text()) as Partial<AnchorData>;
-      if (!Array.isArray(incoming.notes)) throw new Error('This backup does not contain a notes array.');
-      const byId = new Map([...data.notes, ...incoming.notes].map((note) => [note.id, note]));
-      await writeData({ ...data, notes: [...byId.values()] });
+      const incoming: unknown = JSON.parse(await file.text());
+      const next = await importBackup(incoming);
+      if (Object.hasOwn(incoming as object, 'settings')) {
+        // Storage may not emit a change for an identical backup. Reset other open forms too.
+        await browser.runtime
+          .sendMessage({ type: 'SETTINGS_RESTORED' } satisfies ExtensionMessage)
+          .catch(() => undefined);
+      }
       await loadData(readData);
+      applySavedSettings(next.settings);
+      setCredentialUnlocked(Boolean(await readSessionApiKey()));
       setToast('Backup imported');
     } catch (error) {
       window.alert(`Could not import backup: ${error instanceof Error ? error.message : 'Invalid file.'}`);
@@ -1080,7 +1115,9 @@ export default function App() {
             <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <h2 className="mb-3 font-serif text-xl font-semibold">Data</h2>
               <p className="mb-5 text-body leading-relaxed text-muted">
-                Use JSON backups to move your library or keep an independent copy.
+                Use JSON backups to move your library or keep an independent copy. Importing merges notes and replaces
+                saved preferences when the backup includes settings. Backups without settings keep your current
+                preferences.
               </p>
               <div className="flex gap-2">
                 <button className={buttonClass} type="button" onClick={exportData}>

@@ -56,6 +56,17 @@ describe('dynamic highlight restoration', () => {
     vi.useRealTimers();
   });
 
+  it('refreshes coverage on existing marks when preferences change', async () => {
+    document.body.innerHTML = '<p>Alpha beta gamma.</p>';
+    coordinator = observeHighlightRestoration(document, readData);
+    await settle();
+    expect(marks()[0]?.dataset.anchorCoverage).toBe('medium');
+    data = { ...data, settings: { ...DEFAULT_SETTINGS, highlightCoverage: 'full' } };
+    coordinator.refresh();
+    await settle();
+    expect(marks()[0]?.dataset.anchorCoverage).toBe('full');
+  });
+
   it('restores late text and retries after virtualization removes and reinserts it', async () => {
     coordinator = observeHighlightRestoration(document, readData);
     await settle();

@@ -83,6 +83,7 @@ export interface NoteReturnIntent {
 }
 
 export type ExtensionMessage =
+  | { type: 'SETTINGS_RESTORED' }
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
   | { type: 'BULK_EDIT_TAGS'; ids: string[]; operation: TagOperation; tags: string }
