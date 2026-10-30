@@ -1,10 +1,6 @@
 #anchor-notes-delete-confirmation {
   all: initial;
-  --anchor-color-panel-border: #e6dfd4;
-  --anchor-color-surface: #fbf8f1;
-  --anchor-color-ink: #24211d;
-  --anchor-color-field-border: #e6dfd4;
-  --anchor-color-input-surface: #fffefa;
+  color-scheme: inherit;
   box-sizing: border-box;
   display: none;
   position: fixed;
@@ -72,7 +68,7 @@
 #anchor-notes-delete-confirmation button[value='delete'] {
   border-color: transparent;
   background: var(--anchor-color-remove, var(--color-danger, #9c382f));
-  color: #fff;
+  color: var(--anchor-color-button-text, var(--color-inverse, #fff));
 }
 
 #anchor-notes-delete-confirmation button:hover {

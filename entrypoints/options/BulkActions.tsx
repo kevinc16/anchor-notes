@@ -5,9 +5,9 @@ import { parseTags } from '@/lib/tags';
 import type { BulkGeneration, ExtensionMessage, MessageResponse, TagOperation } from '@/lib/types';
 
 const buttonClass =
-  'inline-flex min-h-9 items-center justify-center rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex min-h-9 items-center justify-center rounded-full border border-line bg-card px-4 text-xs font-bold text-ink transition hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-50';
 const fieldClass =
-  'rounded-lg border border-line bg-white px-3 py-2 text-xs text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
+  'rounded-lg border border-line bg-field px-3 py-2 text-xs text-ink outline-none focus:border-control-border focus:ring-3 focus:ring-focus-ring';
 
 export function BulkActions({
   selecting,

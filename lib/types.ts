@@ -1,3 +1,4 @@
+export type ThemePreference = 'system' | 'light' | 'dark';
 export type HighlightColor = 'yellow' | 'mint' | 'lilac' | 'coral';
 export type HighlightCoverage = 'small' | 'medium' | 'full';
 export type AiProvider = 'local' | 'openrouter' | 'ollama' | 'custom';
@@ -59,6 +60,7 @@ export interface EncryptedSecret {
 }
 
 export interface AnchorSettings {
+  theme: ThemePreference;
   highlightColor: HighlightColor;
   highlightCoverage: HighlightCoverage;
   aiEnabled: boolean;

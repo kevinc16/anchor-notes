@@ -131,6 +131,7 @@ describe('organizeWithAI', () => {
     const fetchMock = mockCompletion();
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
+      theme: 'system',
       highlightColor: 'yellow',
       highlightCoverage: 'medium',
       aiEnabled: true,
@@ -155,6 +156,7 @@ describe('organizeWithAI', () => {
     const fetchMock = mockCompletion();
     vi.stubGlobal('fetch', fetchMock);
     const settings: AnchorSettings = {
+      theme: 'system',
       highlightColor: 'mint',
       highlightCoverage: 'medium',
       aiEnabled: true,

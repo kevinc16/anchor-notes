@@ -1,6 +1,7 @@
 import type { AiProvider, AnchorSettings, HighlightCoverage } from './types';
 
 export const DEFAULT_SETTINGS: AnchorSettings = {
+  theme: 'system',
   highlightColor: 'yellow',
   highlightCoverage: 'medium',
   aiEnabled: false,
@@ -26,6 +27,7 @@ export function normalizeSettings(value: unknown): AnchorSettings {
   return {
     ...DEFAULT_SETTINGS,
     ...currentSettings,
+    theme: currentSettings.theme === 'light' || currentSettings.theme === 'dark' ? currentSettings.theme : 'system',
     highlightCoverage,
     aiProvider,
     aiEnabled,

@@ -1,6 +1,13 @@
 import { browser, defineContentScript } from '#imports';
+import { watchTheme } from '@/lib/browser-theme';
+import type { ResolvedTheme } from '@/lib/theme';
 import { confirmNoteDeletion } from '@/lib/delete-confirmation';
-import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from '@/lib/highlight-dom';
+import {
+  HIGHLIGHT_CLASS,
+  removeEmptyHighlightMarks,
+  wrapHighlightRange,
+  refreshHighlightAppearance,
+} from '@/lib/highlight-dom';
 import { observeHighlightRestoration } from '@/lib/highlight-restoration';
 import { populateCurrentNote } from '@/lib/note-editor';
 import { readData } from '@/lib/storage';
@@ -18,6 +25,16 @@ export default defineContentScript({
   cssInjectionMode: 'manifest',
   main(ctx) {
     let pendingRange: Range | null = null;
+    let currentTheme: ResolvedTheme = 'light';
+    const stopTheme = watchTheme((theme) => {
+      currentTheme = theme;
+      document.querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}`).forEach(refreshHighlightAppearance);
+      document
+        .querySelectorAll<HTMLElement>('#anchor-notes-composer, #anchor-notes-popover, #anchor-notes-toast')
+        .forEach((element) => {
+          element.dataset.anchorTheme = theme;
+        });
+    });
 
     function textContext(range: Range) {
       const rootText = document.body.innerText || '';
@@ -104,6 +121,7 @@ export default defineContentScript({
       const rect = pendingRange.getBoundingClientRect();
       const composer = document.createElement('div');
       composer.id = 'anchor-notes-composer';
+      composer.dataset.anchorTheme = currentTheme;
       composer.dataset.color = settings.highlightColor;
       composer.innerHTML = `
         <div class="anchor-composer-kicker">New highlight</div>
@@ -221,6 +239,7 @@ export default defineContentScript({
         .querySelectorAll<HTMLElement>(`.${HIGHLIGHT_CLASS}[data-anchor-id="${CSS.escape(id)}"]`)
         .forEach((mark) => {
           mark.dataset.anchorColor = color;
+          refreshHighlightAppearance(mark);
         });
     }
 
@@ -271,6 +290,7 @@ export default defineContentScript({
       if (!note) return;
       const popover = document.createElement('div');
       popover.id = 'anchor-notes-popover';
+      popover.dataset.anchorTheme = currentTheme;
       popover.innerHTML = `
         <div class="anchor-popover-header">
           <span class="anchor-composer-kicker">Saved note</span>
@@ -358,6 +378,7 @@ export default defineContentScript({
       document.getElementById('anchor-notes-toast')?.remove();
       const toast = document.createElement('div');
       toast.id = 'anchor-notes-toast';
+      toast.dataset.anchorTheme = currentTheme;
       toast.textContent = message;
       document.body.appendChild(toast);
       window.setTimeout(() => toast.remove(), duration);
@@ -406,6 +427,7 @@ export default defineContentScript({
     browser.storage.onChanged.addListener(onStorageChanged);
     ctx.onInvalidated(() => {
       restoration.stop();
+      stopTheme();
       browser.storage.onChanged.removeListener(onStorageChanged);
     });
   },

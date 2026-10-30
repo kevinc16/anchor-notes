@@ -53,3 +53,14 @@ describe('normalizeSettings', () => {
     expect(shouldUseAiOrganizer(local)).toBe(false);
   });
 });
+
+describe('theme preference normalization', () => {
+  it.each([undefined, null, {}, { theme: undefined }, { theme: null }, { theme: 'invalid' }, { theme: 1 }])(
+    'defaults missing or invalid preferences to System: %j',
+    (value) => expect(normalizeSettings(value).theme).toBe('system'),
+  );
+
+  it.each(['system', 'light', 'dark'] as const)('preserves the %s preference in normalized data', (theme) => {
+    expect(normalizeSettings({ theme }).theme).toBe(theme);
+  });
+});
