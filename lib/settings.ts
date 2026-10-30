@@ -1,6 +1,7 @@
 import type { AiProvider, AnchorSettings, EncryptedSecret, HighlightColor, HighlightCoverage } from './types';
 
 export const DEFAULT_SETTINGS: AnchorSettings = {
+  theme: 'system',
   highlightColor: 'yellow',
   highlightCoverage: 'medium',
   aiEnabled: false,
@@ -20,6 +21,7 @@ export function normalizeSettings(value: unknown): AnchorSettings {
       : DEFAULT_SETTINGS.aiProvider;
   const aiApiKeyEncrypted = normalizeEncryptedSecret(candidate.aiApiKeyEncrypted);
   return {
+    theme: candidate.theme === 'light' || candidate.theme === 'dark' ? candidate.theme : 'system',
     highlightColor: ['yellow', 'mint', 'lilac', 'coral'].includes(candidate.highlightColor as string)
       ? (candidate.highlightColor as HighlightColor)
       : DEFAULT_SETTINGS.highlightColor,

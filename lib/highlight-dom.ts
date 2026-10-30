@@ -1,6 +1,41 @@
-import type { AnchorNote, HighlightCoverage } from './types';
+import type { AnchorNote, HighlightCoverage, HighlightColor } from './types';
+import { highlightOpacity } from './highlight-appearance';
 
 export const HIGHLIGHT_CLASS = 'anchor-note-highlight';
+
+export function refreshHighlightAppearance(mark: HTMLElement): void {
+  const window = mark.ownerDocument.defaultView;
+  if (!window) return;
+  const parse = (value: string) =>
+    value
+      .match(/^rgba?\(([\d.,\s]+)\)$/)?.[1]
+      ?.split(',')
+      .map(Number);
+  const foreground = parse(window.getComputedStyle(mark).color);
+  // ponytail: estimate background colors; image backgrounds would require pixel sampling.
+  const layers: number[][] = [];
+  let parent = mark.parentElement;
+  while (parent) {
+    const style = window.getComputedStyle(parent);
+    const background = parse(style.backgroundColor);
+    if (background) {
+      layers.push(background);
+      if (background[3] === undefined || background[3] === 1) break;
+    }
+    parent = parent.parentElement;
+  }
+  const scheme = window.getComputedStyle(mark).colorScheme;
+  let background = scheme === 'dark' ? [18, 18, 18] : [255, 255, 255];
+  for (const layer of layers.reverse()) {
+    const alpha = layer[3] ?? 1;
+    background = background.map((value, index) => layer[index]! * alpha + value * (1 - alpha));
+  }
+  const opacity = foreground
+    ? highlightOpacity(foreground, background, (mark.dataset.anchorColor as HighlightColor) || 'yellow')
+    : 0.24;
+  mark.style.setProperty('--anchor-highlight-opacity', String(opacity));
+  mark.toggleAttribute('data-anchor-subtle-highlight', opacity < 0.1);
+}
 
 function unwrapMark(mark: HTMLElement): void {
   const parent = mark.parentNode;
@@ -62,6 +97,7 @@ export function wrapHighlightRange(
       mark.dataset.anchorCoverage = highlightCoverage;
       mark.title = note.body || 'Saved in Anchor Notes';
       fragmentRange.surroundContents(mark);
+      refreshHighlightAppearance(mark);
       if (!mark.textContent?.trim()) {
         unwrapMark(mark);
         continue;

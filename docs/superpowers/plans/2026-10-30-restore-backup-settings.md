@@ -15,8 +15,10 @@ Review focus: malformed encrypted credentials, unknown/session-only fields, stal
 
 ## Verification
 
-Validated with Node 24.22.1: formatting, lint, strict TypeScript, 180 unit tests with coverage, 54 Chromium E2E tests, Chrome and Firefox production builds, and Firefox manifest validation.
+Validated with Node 24.22.1: formatting, lint, strict TypeScript, 206 unit tests with coverage, 61 Chromium E2E tests, Chrome and Firefox production builds, and Firefox manifest validation.
 
 A Firefox WebDriver smoke check temporarily installed the built extension, imported synthetic preferences and a synthetic note, checked the live Settings form, and verified restored highlight coverage on a normal local webpage without a consent prompt. Browser checks were headless; interactive manual checks were not run.
 
 Review found stale unsaved drafts in another open Settings tab when imported settings were identical to saved settings. An explicit message now resets those forms, covered by the Chromium regression test. The full E2E suite also caught session-storage access in content scripts; keeping credential-dependent backup orchestration in `lib/backup.ts` avoids importing it into shared content-script storage code.
+
+Integrated the dark-mode feature merged in #133 before opening this PR for review. Settings normalization preserves the theme preference, and import coverage checks that restored dark mode reaches already-open Settings and popup surfaces. Theme-only changes continue preserving unsaved settings drafts. The Firefox smoke also checked the restored dark theme.

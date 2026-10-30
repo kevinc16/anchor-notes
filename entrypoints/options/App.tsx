@@ -19,6 +19,7 @@ import type {
   AnchorSettings,
   HighlightColor,
   HighlightCoverage,
+  ThemePreference,
   ExtensionMessage,
   MessageResponse,
   SummaryGenerationStatus,
@@ -41,11 +42,11 @@ import { Icon } from '@/components/Icon';
 
 const buttonBaseClass =
   'transition hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
-const buttonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink hover:border-stone-400 hover:bg-stone-50`;
-const primaryButtonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-ink bg-ink px-4 text-xs font-bold text-white hover:border-stone-700 hover:bg-stone-700`;
+const buttonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-line bg-card px-4 text-xs font-bold text-ink hover:border-control-border hover:bg-hover`;
+const primaryButtonClass = `${buttonBaseClass} inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-ink bg-ink px-4 text-xs font-bold text-inverse hover:border-primary-hover hover:bg-primary-hover`;
 const fieldClass =
-  'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-body text-ink outline-none focus:border-stone-400 focus:ring-3 focus:ring-stone-200/60';
-const quoteToggleClass = `${buttonBaseClass} -ml-2 rounded-full px-2 py-1 font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 hover:bg-stone-50 hover:text-ink`;
+  'w-full rounded-lg border border-line bg-field px-3 py-2.5 text-body text-ink outline-none focus:border-control-border focus:ring-3 focus:ring-focus-ring';
+const quoteToggleClass = `${buttonBaseClass} -ml-2 rounded-full px-2 py-1 font-sans text-meta font-bold text-muted underline decoration-dotted underline-offset-2 hover:bg-hover hover:text-ink`;
 const highlightColors: Array<{ id: HighlightColor; label: string; className: string }> = [
   { id: 'yellow', label: 'Yellow', className: 'bg-highlight-yellow' },
   { id: 'mint', label: 'Mint', className: 'bg-highlight-mint' },
@@ -76,7 +77,7 @@ const providerDefaults: Record<Exclude<AiProvider, 'local'>, Pick<AnchorSettings
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2 text-brand font-extrabold tracking-[-0.03em]">
-      <span className="grid size-8 -rotate-2 place-items-center rounded-lg bg-ink font-serif text-lg text-anchor">
+      <span className="grid size-8 -rotate-2 place-items-center rounded-lg bg-logo-surface font-serif text-lg text-anchor">
         A
       </span>
       <span>Anchor</span>
@@ -90,7 +91,7 @@ function ColorPicker({ value, onChange }: { value: HighlightColor; onChange: (co
       {highlightColors.map((color) => (
         <button
           key={color.id}
-          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-meta font-bold transition hover:border-stone-400 hover:bg-stone-50 hover:text-ink active:scale-[0.98] ${value === color.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-meta font-bold transition hover:border-control-border hover:bg-hover hover:text-ink active:scale-[0.98] ${value === color.id ? 'border-ink bg-hover text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === color.id}
           onClick={() => onChange(color.id)}
@@ -115,7 +116,7 @@ function CoveragePicker({
       {highlightCoverages.map((coverage) => (
         <button
           key={coverage.id}
-          className={`rounded-lg border px-3 py-2 text-left transition hover:border-stone-400 hover:bg-stone-50 hover:text-ink active:scale-[0.98] ${value === coverage.id ? 'border-ink bg-stone-50 text-ink' : 'border-line text-muted'}`}
+          className={`rounded-lg border px-3 py-2 text-left transition hover:border-control-border hover:bg-hover hover:text-ink active:scale-[0.98] ${value === coverage.id ? 'border-ink bg-hover text-ink' : 'border-line text-muted'}`}
           type="button"
           aria-pressed={value === coverage.id}
           onClick={() => onChange(coverage.id)}
@@ -280,7 +281,7 @@ function NoteCard({
             type="button"
             aria-label={`Filter by tag: ${tag}`}
             aria-pressed={activeTag === tag}
-            className={`max-w-full rounded-full px-2 py-1 text-meta font-medium break-words [overflow-wrap:anywhere] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${activeTag === tag ? 'bg-ink text-white hover:bg-stone-700' : 'bg-tag-background text-tag-text hover:bg-stone-200'}`}
+            className={`max-w-full rounded-full px-2 py-1 text-meta font-medium break-words [overflow-wrap:anywhere] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${activeTag === tag ? 'bg-ink text-inverse hover:bg-primary-hover' : 'bg-tag-background text-tag-text hover:bg-hover-strong'}`}
             onClick={() => onFilterTag(activeTag === tag ? null : tag)}
           >
             {tag}
@@ -302,14 +303,14 @@ function NoteCard({
         </a>
         <div className="flex gap-2">
           <button
-            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-muted transition hover:bg-stone-50 hover:text-ink"
+            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-muted transition hover:bg-hover hover:text-ink"
             type="button"
             onClick={onEdit}
           >
             Edit
           </button>
           <button
-            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-danger transition hover:bg-red-50 hover:text-danger"
+            className="min-h-8 rounded-full px-2 py-1 text-meta font-bold text-danger transition hover:bg-danger-hover hover:text-danger"
             type="button"
             onClick={onDelete}
           >
@@ -365,6 +366,7 @@ export default function App() {
   const [editTags, setEditTags] = useState('');
   const [editColor, setEditColor] = useState<HighlightColor>('yellow');
   const [settings, setSettings] = useState<AnchorSettings>(EMPTY_DATA.settings);
+  const themeChanged = useRef(false);
   const [apiKeyDraft, setApiKeyDraft] = useState('');
   const [vaultPassphrase, setVaultPassphrase] = useState('');
   const [credentialUnlocked, setCredentialUnlocked] = useState(false);
@@ -419,12 +421,15 @@ export default function App() {
   useEffect(() => {
     function onChanged(changes: Record<string, { newValue?: unknown; oldValue?: unknown }>, area: string) {
       if (area === 'local' && changes.anchorNotesData) {
+        themeChanged.current = true;
         const next = normalizeData(changes.anchorNotesData.newValue);
         useDataStore.setState({ data: next });
-        if (
-          JSON.stringify(next.settings) !== JSON.stringify(normalizeData(changes.anchorNotesData.oldValue).settings)
-        ) {
+        const { theme, ...preferences } = next.settings;
+        const { theme: _oldTheme, ...oldPreferences } = normalizeData(changes.anchorNotesData.oldValue).settings;
+        if (JSON.stringify(preferences) !== JSON.stringify(oldPreferences)) {
           applySavedSettings(next.settings);
+        } else {
+          setSettings((current) => ({ ...current, theme }));
         }
       }
       if (area === 'session' && changes.anchorNotesAiApiKey) {
@@ -451,7 +456,12 @@ export default function App() {
   useEffect(() => {
     void Promise.all([loadData(readData), readSessionApiKey()])
       .then(([next, sessionApiKey]) => {
-        applySavedSettings(next.settings);
+        setSettings((current) => ({
+          ...next.settings,
+          theme: themeChanged.current ? current.theme : next.settings.theme,
+        }));
+        setApiKeyDraft(next.settings.aiApiKey);
+        setEncryptCredential(Boolean(next.settings.aiApiKeyEncrypted));
         setCredentialUnlocked(Boolean(sessionApiKey));
       })
       .catch(() => setToast('Could not load settings.'));
@@ -536,6 +546,15 @@ export default function App() {
       setToast('Note deleted');
     } catch {
       setToast('Could not delete note.');
+    }
+  }
+
+  async function changeTheme(theme: ThemePreference) {
+    try {
+      await updateSettings({ theme });
+      setSettings((current) => ({ ...current, theme }));
+    } catch {
+      setToast('Could not save theme.');
     }
   }
 
@@ -779,7 +798,7 @@ export default function App() {
                   {selecting ? 'Done selecting' : 'Select notes'}
                 </button>
                 <button
-                  className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink hover:bg-stone-200' : 'text-muted hover:bg-stone-100 hover:text-ink'}`}
+                  className={`rounded-full px-3 py-2 text-meta font-bold transition ${groupMode === 'website' ? 'bg-tag-background text-ink hover:bg-hover-strong' : 'text-muted hover:bg-hover hover:text-ink'}`}
                   type="button"
                   aria-pressed={groupMode === 'website'}
                   onClick={() => setGroupMode(groupMode === 'website' ? 'none' : 'website')}
@@ -787,7 +806,7 @@ export default function App() {
                   Group by website
                 </button>
                 <select
-                  className="cursor-pointer rounded-full border border-transparent bg-transparent px-3 py-2 text-meta font-bold text-muted outline-none transition hover:border-line hover:bg-stone-50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  className="cursor-pointer rounded-full border border-transparent bg-transparent px-3 py-2 text-meta font-bold text-muted outline-none transition hover:border-line hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                   aria-label="Sort notes"
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
@@ -837,7 +856,7 @@ export default function App() {
                         <header className="mb-4 border-b border-line pb-2.5">
                           <h2>
                             <button
-                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-stone-50 hover:text-ink"
+                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-hover hover:text-ink"
                               type="button"
                               aria-expanded={isExpanded}
                               aria-controls={panelId}
@@ -910,6 +929,20 @@ export default function App() {
               </p>
             </header>
             <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
+              <Field label="Theme" help="System follows your operating system appearance. Changes save automatically.">
+                <select
+                  className={fieldClass}
+                  aria-label="Theme"
+                  value={settings.theme}
+                  onChange={(event) => void changeTheme(event.target.value as ThemePreference)}
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </Field>
+            </div>
+            <div className="mt-7 max-w-[680px] rounded-2xl border border-line bg-card p-6">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-xl font-semibold">Organization</h2>
@@ -921,7 +954,7 @@ export default function App() {
                 <button
                   className={
                     settings.aiEnabled
-                      ? `${buttonClass} border-provider-danger text-provider-danger hover:bg-red-50`
+                      ? `${buttonClass} border-provider-danger text-provider-danger hover:bg-danger-hover`
                       : primaryButtonClass
                   }
                   type="button"
@@ -1013,7 +1046,7 @@ export default function App() {
                           onChange={(event) => setApiKeyDraft(event.target.value)}
                         />
                       </Field>
-                      <label className="mb-4 flex items-start gap-3 rounded-lg border border-line bg-stone-50 p-3">
+                      <label className="mb-4 flex items-start gap-3 rounded-lg border border-line bg-hover p-3">
                         <input
                           className="mt-0.5 size-4 accent-input-accent"
                           type="checkbox"
@@ -1063,7 +1096,7 @@ export default function App() {
                             </button>
                           )}
                           <button
-                            className={`${buttonClass} text-danger hover:border-danger hover:bg-red-50`}
+                            className={`${buttonClass} text-danger hover:border-danger hover:bg-danger-hover`}
                             type="button"
                             onClick={() => void forgetApiKey()}
                           >
@@ -1108,7 +1141,7 @@ export default function App() {
 
       {editing && (
         <div
-          className="fixed inset-0 z-20 grid place-items-center bg-ink/35 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-20 grid place-items-center bg-overlay p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setEditing(null);
@@ -1168,7 +1201,7 @@ export default function App() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-white shadow-xl">
+        <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-inverse shadow-xl">
           {toast}
         </div>
       )}

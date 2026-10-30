@@ -43,7 +43,7 @@ beforeEach(async () => {
 
 it('round trips settings and preserves note merge identities and timestamps', async () => {
   const exported = JSON.parse(
-    JSON.stringify({ ...current, settings: { ...DEFAULT_SETTINGS, highlightColor: 'coral' } }),
+    JSON.stringify({ ...current, settings: { ...DEFAULT_SETTINGS, highlightColor: 'coral', theme: 'dark' } }),
   );
   exported.notes.push({ ...note, id: 'second-note' });
   exported.notes[0].body = 'Imported replacement';

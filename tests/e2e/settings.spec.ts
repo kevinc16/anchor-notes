@@ -251,6 +251,7 @@ test('restores backup settings into open forms and webpages without organizing i
     notes: original.notes.map((note) => ({ ...note, body: 'Restored synthetic note' })),
     settings: {
       ...DEFAULT_SETTINGS,
+      theme: 'dark',
       highlightColor: 'coral',
       highlightCoverage: 'full',
       aiEnabled: true,
@@ -270,6 +271,10 @@ test('restores backup settings into open forms and webpages without organizing i
     await expect(surface.getByRole('textbox', { name: 'Model', exact: true })).toHaveValue('restored-model');
     await expect(surface.getByRole('button', { name: 'Unlock key', exact: true })).toBeVisible();
   }
+  for (const surface of [settingsPage, otherSettings, popup]) {
+    await expect(surface.locator('html')).toHaveAttribute('data-anchor-theme', 'dark');
+  }
+  await expect(otherSettings.getByLabel('Theme', { exact: true })).toHaveValue('dark');
   expect(await readSessionApiKey(serviceWorker)).toBe('');
   expect((await readExtensionData(serviceWorker)).notes).toEqual(backup.notes);
   await expect(popup.getByText('Restored synthetic note', { exact: true })).toBeVisible();

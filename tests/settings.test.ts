@@ -68,6 +68,7 @@ it('normalizes invalid imported preferences and discards unknown secret fields',
       sessionApiKey: 'synthetic-session',
     }),
   ).toEqual({
+    theme: 'system',
     highlightColor: 'yellow',
     highlightCoverage: 'medium',
     aiProvider: 'local',
@@ -75,5 +76,16 @@ it('normalizes invalid imported preferences and discards unknown secret fields',
     aiEndpoint: 'https://api.openai.com/v1/chat/completions',
     aiModel: 'gpt-4o-mini',
     aiApiKey: '',
+  });
+});
+
+describe('theme preference normalization', () => {
+  it.each([undefined, null, {}, { theme: undefined }, { theme: null }, { theme: 'invalid' }, { theme: 1 }])(
+    'defaults missing or invalid preferences to System: %j',
+    (value) => expect(normalizeSettings(value).theme).toBe('system'),
+  );
+
+  it.each(['system', 'light', 'dark'] as const)('preserves the %s preference in normalized data', (theme) => {
+    expect(normalizeSettings({ theme }).theme).toBe(theme);
   });
 });
