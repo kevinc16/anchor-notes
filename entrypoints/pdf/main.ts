@@ -177,7 +177,7 @@ document.querySelector<HTMLInputElement>('#open-file')!.addEventListener('change
 });
 const keepButton = document.querySelector<HTMLButtonElement>('#keep-pdf')!;
 const removeButton = document.querySelector<HTMLButtonElement>('#remove-pdf')!;
-async function refreshKeptState() {
+async function refreshKeptState(associateSource = false) {
   const document = current;
   keepButton.disabled = !document;
   removeButton.hidden = true;
@@ -186,7 +186,7 @@ async function refreshKeptState() {
   try {
     const kept = await readPdfDocument(document.documentHash);
     if (document !== current) return;
-    if (kept) await associatePdfSource(document.url, document.documentHash);
+    if (kept && associateSource) await associatePdfSource(document.url, document.documentHash);
     if (document !== current) return;
     keepButton.textContent = kept ? 'PDF kept on this device' : 'Keep PDF on this device';
     keepButton.disabled = Boolean(kept);
@@ -196,7 +196,7 @@ async function refreshKeptState() {
   }
 }
 window.addEventListener('anchor:pdf-loaded', () => {
-  void refreshKeptState();
+  void refreshKeptState(true);
 });
 window.addEventListener('anchor:pdf-storage', () => {
   void refreshKeptState();
