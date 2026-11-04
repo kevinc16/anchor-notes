@@ -6,6 +6,9 @@
     <form id="open-url"><label>PDF URL <input id="source-url" type="url" placeholder="https://…" /></label><button type="submit">Open PDF</button></form>
     <label class="file-button">Choose PDF file<input id="open-file" type="file" accept="application/pdf,.pdf" /></label>
     <a id="open-original" target="_blank" rel="noreferrer" hidden>Open original</a>
+    <button id="keep-pdf" type="button" disabled>Keep PDF on this device</button>
+    <button id="remove-pdf" type="button" hidden>Remove saved PDF</button>
+    <button id="reload-source" type="button" hidden>Reload from source</button>
     <button id="open-library" type="button">Library</button>
   </header>
   <p id="pdf-status" role="status">Open a PDF URL or choose a file. PDFs stay on this device.</p>

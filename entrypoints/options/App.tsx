@@ -1,3 +1,4 @@
+import { SavedPdfs } from './SavedPdfs';
 import { browser } from '#imports';
 import { importBackup } from '@/lib/backup';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
@@ -747,6 +748,7 @@ export default function App() {
             {error}
           </p>
         )}
+        {view === 'library' && <SavedPdfs />}
         {view === 'library' ? (
           <section>
             <header className="flex items-end justify-between gap-8 max-[760px]:flex-col max-[760px]:items-stretch">

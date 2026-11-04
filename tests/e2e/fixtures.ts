@@ -121,7 +121,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
           }
         }
 
-        if (pathname === '/pdf-document') {
+        if (pathname === '/pdf-document' || pathname === '/pdf-document-2') {
           response.writeHead(200, { 'content-type': 'application/pdf' });
           response.end(readFileSync(path.resolve(process.cwd(), 'tests/e2e/fixtures/research.pdf')));
           return;
