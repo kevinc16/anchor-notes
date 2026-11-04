@@ -91,3 +91,5 @@ Use **Open PDF in Anchor Notes** in the popup, then enter a PDF URL or choose a 
 This first PDF stage provides viewing. PDF note capture and optional on-device document retention follow in separate PRs.
 
 Choose **Keep PDF on this device** after opening a PDF to retain a local copy in IndexedDB. Saved copies reopen offline; the library's **Saved PDFs** area shows retained byte usage and removes copies without deleting notes. Copies are deduplicated by content. Browser storage quotas apply; clearing extension data or uninstalling removes local copies. JSON backups do not contain PDF files. Without a saved copy, local PDFs must be selected again and remote PDFs may need downloading again.
+
+In the Anchor Notes PDF viewer, select text and click **Save highlight** to use the same note composer, colors and editor as webpages. Highlights restore by document hash and page-specific text selectors after reload, zoom and rotation. Click a highlight (or focus it and press Enter) to edit it. Multi-span selection within a page works; cross-page selection is rejected with feedback. Different PDF bytes at the same source URL do not receive old highlights.

@@ -9,7 +9,16 @@ export interface TextQuoteSelector {
   suffix: string;
 }
 
+export interface PdfSelector {
+  version: 1;
+  pageNumber: number;
+  documentHash: string;
+  start: number;
+  end: number;
+}
+
 export interface HighlightAnchor {
+  pdf?: PdfSelector;
   quote: TextQuoteSelector;
   startPath: string;
   startOffset: number;

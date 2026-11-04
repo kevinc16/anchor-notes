@@ -1,6 +1,7 @@
 import '@/styles/delete-confirmation.css';
 
 export async function confirmNoteDeletion(parent: HTMLElement = document.body): Promise<boolean> {
+  const document = parent.ownerDocument;
   const dialog = document.createElement('dialog');
   dialog.id = 'anchor-notes-delete-confirmation';
   dialog.setAttribute('aria-labelledby', 'anchor-delete-title');
