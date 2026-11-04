@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { test, expect } from './fixtures';
+import { test, expect, readExtensionData, seedExtensionData } from './fixtures';
 
 test('explicit URL opening uses bundled viewer navigation and selectable text', async ({ context, extensionId }) => {
   const page = await context.newPage();
@@ -127,4 +127,103 @@ test('identical bytes from another URL share storage and reopen without network'
   await expect(
     library.getByRole('region', { name: 'Saved PDFs' }).getByRole('button', { name: 'Remove saved PDF' }),
   ).toHaveCount(1);
+});
+
+test('saves PDF highlights against the source and restores after retained reload and zoom', async ({
+  context,
+  extensionId,
+  serviceWorker,
+}) => {
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/pdf.html?source=${encodeURIComponent('http://127.0.0.1:4173/pdf-document')}`,
+  );
+  await expect(page.getByRole('status')).toContainText('PDF opened');
+  const viewer = page.frameLocator('#pdf-viewer');
+  const text = viewer
+    .locator('.page[data-page-number="1"] .textLayer span')
+    .filter({ hasText: 'Anchor PDF research' })
+    .first();
+  await text.evaluate((node) => {
+    const range = node.ownerDocument.createRange();
+    range.selectNodeContents(node);
+    const selection = node.ownerDocument.defaultView!.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Save highlight', exact: true }).click();
+  await viewer.locator('#anchor-notes-composer textarea').fill('PDF research note');
+  await viewer.getByRole('button', { name: 'Save note', exact: true }).click();
+  await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
+  const saved = await readExtensionData(serviceWorker);
+  await seedExtensionData(serviceWorker, { ...saved, settings: { ...saved.settings, highlightCoverage: 'full' } });
+  await expect(viewer.locator('.anchor-pdf-highlight').first()).toHaveAttribute('data-anchor-coverage', 'full');
+  const data = await serviceWorker.evaluate(async () => {
+    const chromeApi = (
+      globalThis as unknown as {
+        chrome: { storage: { local: { get(key: string): Promise<Record<string, unknown>> } } };
+      }
+    ).chrome;
+    return (await chromeApi.storage.local.get('anchorNotesData')).anchorNotesData;
+  });
+  expect(data).toMatchObject({
+    notes: [
+      {
+        url: 'http://127.0.0.1:4173/pdf-document',
+        body: 'PDF research note',
+        anchor: { pdf: { pageNumber: 1, version: 1 } },
+      },
+    ],
+  });
+  await page.getByRole('button', { name: 'Keep PDF on this device', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'PDF kept on this device' })).toBeVisible();
+  await page.reload();
+  await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
+  await viewer.locator('#scaleSelect').selectOption('1.5');
+  await expect(viewer.locator('.anchor-pdf-highlight')).toHaveCount(1);
+  await viewer.locator('.anchor-pdf-highlight').first().press('Enter');
+  await expect(viewer.locator('#anchor-notes-popover textarea')).toHaveValue('PDF research note');
+  await viewer.locator('#anchor-notes-popover textarea').fill('Edited PDF note');
+  await viewer.getByRole('button', { name: 'Save changes', exact: true }).click();
+});
+
+test('captures multiple spans within one page and clearly rejects cross-page selections', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/pdf.html?source=${encodeURIComponent('http://127.0.0.1:4173/pdf-document')}`,
+  );
+  const viewer = page.frameLocator('#pdf-viewer');
+  await expect(viewer.locator('.page[data-page-number="1"] .textLayer')).toContainText('A second span');
+  await viewer.locator('.page[data-page-number="1"] .textLayer').evaluate((root) => {
+    const spans = root.querySelectorAll('span');
+    const range = root.ownerDocument.createRange();
+    range.setStartBefore(spans[0]!);
+    range.setEndAfter(spans[spans.length - 1]!);
+    const selection = root.ownerDocument.defaultView!.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Save highlight', exact: true }).click();
+  await expect(viewer.locator('#anchor-notes-composer')).toContainText('A second span');
+  await viewer.getByRole('button', { name: 'Save note', exact: true }).click();
+  await expect(viewer.locator('.anchor-pdf-highlight')).toHaveCount(2);
+  await viewer.locator('#pageNumber').fill('2');
+  await viewer.locator('#pageNumber').press('Enter');
+  await expect(viewer.locator('.page[data-page-number="2"] .textLayer')).toContainText('page two');
+  await viewer.locator('#viewer').evaluate((root) => {
+    const first = root.querySelector('.page[data-page-number="1"] .textLayer span')!,
+      last = root.querySelector('.page[data-page-number="2"] .textLayer span')!;
+    const range = root.ownerDocument.createRange();
+    range.setStartBefore(first);
+    range.setEndAfter(last);
+    const selection = root.ownerDocument.defaultView!.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Save highlight', exact: true }).click();
+  await expect(viewer.locator('#anchor-notes-toast')).toContainText('Select text within one PDF page');
+  await expect(viewer.locator('#anchor-notes-composer')).toHaveCount(0);
 });

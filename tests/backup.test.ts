@@ -100,3 +100,29 @@ it('does not replace persistent data when session clearing fails', async () => {
   await expect(importBackup({ notes: [], settings: {} })).rejects.toThrow('Storage unavailable');
   expect(await readData()).toEqual(current);
 });
+
+it('round trips PDF selectors without storing document bytes in note backups', async () => {
+  const { saveNote } = await import('../lib/storage');
+  const pdf = {
+    ...note,
+    id: 'synthetic-pdf',
+    url: 'https://example.test/document',
+    quote: 'quote',
+    anchor: {
+      quote: { exact: 'quote', prefix: '', suffix: '' },
+      startPath: '',
+      startOffset: 0,
+      endPath: '',
+      endOffset: 0,
+      pdf: { version: 1, pageNumber: 2, documentHash: 'a'.repeat(64), start: 0, end: 5 },
+    },
+  } as AnchorNote;
+  await saveNote(pdf);
+  const backup = JSON.parse(JSON.stringify(await readData()));
+  expect(backup.notes.find((item: AnchorNote) => item.id === pdf.id)).toEqual(pdf);
+  expect((await importBackup(backup)).notes.find((item) => item.id === pdf.id)).toEqual(pdf);
+  const before = await readData();
+  backup.notes.find((item: AnchorNote) => item.id === pdf.id).anchor.pdf.pageNumber = 0;
+  await expect(importBackup(backup)).rejects.toThrow('invalid PDF selector');
+  expect(await readData()).toEqual(before);
+});

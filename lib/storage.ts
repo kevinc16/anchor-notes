@@ -1,3 +1,4 @@
+import { hasPdfSelector, normalizePdfSelector } from './pdf-anchor';
 import { storage } from '#imports';
 import { DEFAULT_SETTINGS, normalizeSettings } from './settings';
 import type { AnchorData, AnchorNote, AnchorSettings, TagOperation } from './types';
@@ -42,6 +43,12 @@ function mutateNotes(change: (notes: AnchorNote[]) => AnchorNote[] | undefined):
 export async function saveNote(note: AnchorNote): Promise<AnchorNote> {
   await mutateNotes((notes) => {
     const index = notes.findIndex((item) => item.id === note.id);
+    if (
+      hasPdfSelector(note.anchor) &&
+      !normalizePdfSelector(note.anchor.pdf) &&
+      (index < 0 || JSON.stringify(notes[index]?.anchor) !== JSON.stringify(note.anchor))
+    )
+      throw new Error('This PDF note has an invalid selector.');
     if (index >= 0) {
       const existing = notes[index];
       if (existing) {

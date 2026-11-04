@@ -1,3 +1,4 @@
+import { hasPdfSelector } from './pdf-anchor';
 import { HIGHLIGHT_CLASS, removeEmptyHighlightMarks, wrapHighlightRange } from './highlight-dom';
 import { findTextRange } from './text-range';
 import type { AnchorData, NoteReturnIntent } from './types';
@@ -113,8 +114,9 @@ export function observeHighlightRestoration(document: Document, readData: () => 
       if (canonical && canonical !== staleCanonical) pageUrls.add(canonical);
       const notes = data.notes.filter(
         (note) =>
-          pageUrls.has(normalizeUrl(note.url)) ||
-          Boolean(note.canonicalUrl && pageUrls.has(normalizeUrl(note.canonicalUrl))),
+          !hasPdfSelector(note.anchor) &&
+          (pageUrls.has(normalizeUrl(note.url)) ||
+            Boolean(note.canonicalUrl && pageUrls.has(normalizeUrl(note.canonicalUrl)))),
       );
 
       // Only synchronous writes happen while disconnected; page changes during storage reads remain observed.

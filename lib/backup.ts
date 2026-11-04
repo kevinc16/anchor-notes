@@ -1,3 +1,4 @@
+import { hasPdfSelector, normalizePdfSelector } from './pdf-anchor';
 import { clearSessionApiKey } from './credentials';
 import { normalizeSettings } from './settings';
 import { readData, writeData } from './storage';
@@ -9,6 +10,8 @@ export async function importBackup(value: unknown): Promise<AnchorData> {
     throw new Error('This backup does not contain a notes array.');
   }
   const incoming = value as Partial<AnchorData>;
+  if (incoming.notes!.some((note) => hasPdfSelector(note?.anchor) && !normalizePdfSelector(note.anchor.pdf)))
+    throw new Error('This backup contains an invalid PDF selector.');
   const hasSettings = Object.hasOwn(incoming, 'settings');
   if (
     hasSettings &&

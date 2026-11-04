@@ -1,3 +1,4 @@
+import { mountPdfHighlights } from './highlights';
 import {
   associatePdfSource,
   keepPdfDocument,
@@ -269,3 +270,17 @@ async function openInitial() {
   } else input.value = new URL(location.href).searchParams.get('prefill') || '';
 }
 void openInitial();
+
+export const pdfUiReady = viewerReady.then((app) => {
+  const ui = mountPdfHighlights(app, frame.contentDocument!, currentPdf, showPdfStatus);
+  const save = document.querySelector<HTMLButtonElement>('#save-highlight')!;
+  save.addEventListener('mousedown', (event) => event.preventDefault());
+  save.addEventListener('click', () => {
+    void ui.showComposer();
+  });
+  window.addEventListener('anchor:pdf-loaded', () => {
+    save.disabled = false;
+    ui.refresh();
+  });
+  return ui;
+});
