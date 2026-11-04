@@ -92,6 +92,9 @@ export interface NoteReturnIntent {
 }
 
 export type ExtensionMessage =
+  | { type: 'OPEN_PDF_VIEWER'; source?: string; id?: string; active?: boolean }
+  | { type: 'GET_PDF_CONTEXT'; tabId: number }
+  | { type: 'PDF_VIEWER_COMMAND'; tabId: number; action: 'capture' | 'scroll'; id?: string }
   | { type: 'SETTINGS_RESTORED' }
   | { type: 'SAVE_NOTE'; note: Omit<AnchorNote, 'tags'> & { tags?: string[] } }
   | { type: 'UPDATE_NOTE'; note: AnchorNote }
@@ -107,6 +110,7 @@ export type ExtensionMessage =
   | { type: 'SCROLL_TO_NOTE'; id: string };
 
 export interface MessageResponse {
+  pdfContext?: { url: string; title: string; documentHash: string };
   ok: boolean;
   returnIntent?: NoteReturnIntent;
   note?: AnchorNote;

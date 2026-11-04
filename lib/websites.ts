@@ -16,6 +16,7 @@ export interface WebsiteNoteGroup {
 }
 
 export function hostFromUrl(url: string): string {
+  if (/^anchor-notes:pdf:sha256:[a-f0-9]{64}$/.test(url)) return 'Local PDFs';
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {

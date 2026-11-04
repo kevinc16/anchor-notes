@@ -8,7 +8,7 @@
 
 **Tech stack:** Existing WXT, TypeScript, React popup/library, browser-local storage, native IndexedDB, Vitest, Playwright; a pinned official PDF.js distribution with its worker and required assets.
 
-**Spec:** [Issue #67](https://github.com/kevinc16/anchor-notes/issues/67), amended by the [opt-in viewer decision](https://github.com/kevinc16/anchor-notes/issues/67#issuecomment-6630463278). This plan is a proposal for review, not authorization to implement it.
+**Spec:** [Issue #67](https://github.com/kevinc16/anchor-notes/issues/67), amended by the [opt-in viewer decision](https://github.com/kevinc16/anchor-notes/issues/67#issuecomment-6630463278). The user authorized implementation as separate PRs, each delivering working functionality. The execution staging below supersedes the original task order.
 
 ## Global constraints
 
@@ -161,7 +161,7 @@ The user explicitly opens a text PDF in either supported browser, saves a note a
 
 - [PDF.js getting started](https://mozilla.github.io/pdf.js/getting_started/) distinguishes the display library from the full generic viewer distribution. Check the selected release's actual APIs/assets rather than coding against `master` examples.
 - [Mozilla content-script limitations](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#limitations): built-in PDF viewers remain privileged; the extension page owns this integration.
-- Current repository baseline inspected: `0b8215c`. Planning changed no runtime code. Baseline investigation passed 30 existing DOM/restoration/return tests; that does not verify the proposed PDF feature. The current environment has Node `24.19.0` and no installed Playwright Chromium, so implementation must prepare the required runtime/browser before validation.
+- Current repository baseline inspected: `0b8215c`. Planning changed no runtime code. Baseline investigation passed 30 existing DOM/restoration/return tests; that does not verify the proposed PDF feature. The investigation environment initially had Node `24.19.0` and no installed Playwright Chromium. Execution prepared Node `24.22.1`, Chromium, current Firefox and official Firefox 140 for validation.
 
 ## Execution staging
 
@@ -173,3 +173,16 @@ User requested separate PRs with a working result at each stage. The data-only f
 4. Complete popup/command/library navigation, restoration hardening and cross-browser verification.
 
 PRs are stacked in this order; no automatic merges. Execution evidence is recorded in each PR and in the final progress update.
+
+## Implementation record
+
+The original checkboxes above describe the design-time task breakdown. Delivery follows the functional PR stages below rather than shipping an inert data-contract PR first:
+
+- [x] [#135](https://github.com/kevinc16/anchor-notes/pull/135): explicit-open reader, bundled upstream viewer, URL/file input and fallback. Uses the official compatibility distribution for Firefox ESR 140.
+- [x] [#136](https://github.com/kevinc16/anchor-notes/pull/136): optional IndexedDB retention, offline reopening, deduplication and saved-copy removal that preserves notes.
+- [x] [#137](https://github.com/kevinc16/anchor-notes/pull/137): page selectors, shared editor, multi-span capture and persistent PDF overlays.
+- [x] [#138](https://github.com/kevinc16/anchor-notes/pull/138): popup/command/library navigation, exact-version fallback, stable geometry and whole-feature verification.
+
+Implementation choices: the upstream viewer runs in a same-origin iframe; native IndexedDB uses a separate metadata store for efficient usage listings; storage integration is tested with real browser IndexedDB (including injected quota failures) rather than adding a mock dependency. Runtime code and document bytes stay local. JSON backups include notes/selectors and exclude retained documents. A fresh whole-feature code review identified three return-navigation issues; regression tests and fixes cover remote-file source preservation, clearing stale note-return parameters, and popup navigation across document versions. No minor findings were deferred.
+
+Final verification: 218 unit tests with coverage, type checking, formatting/lint, Chrome/Firefox builds, Firefox manifest validation, source-archive rebuild and all 74 Chromium E2E tests passed. An additional focused popup assertion verifies a live viewer-port response and page-three scrolling in the existing viewer. Firefox 140 and 157 native WebDriver smoke checks verify text rendering, note capture/save, IndexedDB retention, restored highlights after reopening, live viewer-port messaging and ordinary webpage restoration. Results are also recorded in the final PR. Interactive manual browser testing is not claimed.

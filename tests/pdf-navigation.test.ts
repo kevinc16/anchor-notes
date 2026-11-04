@@ -30,3 +30,29 @@ it('display titles tolerate malformed percent encodings in valid URLs', async ()
   expect(pdfTitleFromUrl('https://example.test/report%FF.pdf')).toBe('report%FF.pdf');
   expect(pdfTitleFromUrl('https://example.test/report%20one.pdf')).toBe('report one.pdf');
 });
+
+it('library PDF links keep source and exact document hash while ordinary links stay unchanged', async () => {
+  const { noteSourceUrl } = await import('../lib/pdf-navigation');
+  const plain = { id: 'note', url: 'https://example.test/document' };
+  expect(noteSourceUrl(plain, base)).toBe('https://example.test/document');
+  const url = new URL(
+    noteSourceUrl(
+      {
+        ...plain,
+        anchor: {
+          quote: { exact: 'hello', prefix: '', suffix: '' },
+          startPath: '',
+          endPath: '',
+          startOffset: 0,
+          endOffset: 0,
+          pdf: { version: 1, pageNumber: 3, documentHash: 'b'.repeat(64), start: 0, end: 5 },
+        },
+      },
+      base,
+    ),
+  );
+  expect(url.pathname).toBe('/pdf.html');
+  expect(url.searchParams.get('source')).toBe(plain.url);
+  expect(url.searchParams.get('note')).toBe('note');
+  expect(url.searchParams.get('document')).toBe('b'.repeat(64));
+});

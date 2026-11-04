@@ -1,3 +1,5 @@
+import type { AnchorNote } from './types';
+import { hasPdfSelector, normalizePdfSelector } from './pdf-anchor';
 export function validatePdfSource(value: string): string {
   const url = new URL(value);
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
@@ -37,4 +39,15 @@ export function pdfTitleFromUrl(value: string): string {
   } catch {
     return name;
   }
+}
+
+export function noteSourceUrl(
+  note: Pick<AnchorNote, 'id' | 'url'> & Partial<Pick<AnchorNote, 'anchor'>>,
+  base: string,
+): string {
+  if (!hasPdfSelector(note.anchor)) return note.url;
+  const url = new URL(pdfViewerUrl(base, note.url, note.id));
+  const pdf = normalizePdfSelector(note.anchor?.pdf);
+  if (pdf) url.searchParams.set('document', pdf.documentHash);
+  return url.href;
 }

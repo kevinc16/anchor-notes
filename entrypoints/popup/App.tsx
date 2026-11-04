@@ -1,12 +1,14 @@
 import { browser } from '#imports';
 import { useEffect, useMemo, useState } from 'react';
 import { EMPTY_DATA, hostFromUrl, normalizeUrl, normalizeData, readData } from '@/lib/storage';
-import type { AnchorNote, ExtensionMessage } from '@/lib/types';
+import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
 import { useDataStore } from '@/lib/ui-stores';
-import { pdfViewerUrl } from '@/lib/pdf-navigation';
+import { pdfViewerUrl, parsePdfViewerUrl } from '@/lib/pdf-navigation';
 import { Icon } from '@/components/Icon';
 
 interface PageState {
+  isPdfViewer?: boolean;
+  documentHash?: string;
   tabId?: number;
   title: string;
   url: string;
@@ -30,9 +32,27 @@ export default function App() {
 
   useEffect(() => {
     void Promise.all([browser.tabs.query({ active: true, currentWindow: true }), loadData(readData)])
-      .then(([tabs]) => {
+      .then(async ([tabs]) => {
         const tab = tabs[0];
-        setPage({ tabId: tab?.id, title: tab?.title || 'Current page', url: tab?.url || '' });
+        let documentHash: string | undefined;
+        const isPdfViewer = Boolean(parsePdfViewerUrl(tab?.url || '', browser.runtime.getURL('/')));
+        let url = tab?.url || '',
+          title = tab?.title || 'Current page';
+        if (parsePdfViewerUrl(url, browser.runtime.getURL('/'))) {
+          const fallback = parsePdfViewerUrl(url, browser.runtime.getURL('/'))?.source || '';
+          try {
+            const result = (await browser.runtime.sendMessage({
+              type: 'GET_PDF_CONTEXT',
+              tabId: tab!.id!,
+            } satisfies ExtensionMessage)) as MessageResponse;
+            documentHash = result.pdfContext?.documentHash;
+            url = result.pdfContext?.url || fallback;
+            title = result.pdfContext?.title || title;
+          } catch {
+            url = fallback;
+          }
+        }
+        setPage({ tabId: tab?.id, title, url, isPdfViewer, documentHash });
       })
       .catch(() => setPage({ title: 'Current page', url: '' }));
   }, [loadData]);
@@ -56,7 +76,24 @@ export default function App() {
 
   async function showOnPage(note: AnchorNote) {
     if (!page.tabId) return;
-    await browser.tabs.sendMessage(page.tabId, { type: 'SCROLL_TO_NOTE', id: note.id } satisfies ExtensionMessage);
+    if (note.anchor?.pdf) {
+      const inViewer = page.isPdfViewer && page.documentHash === note.anchor.pdf.documentHash;
+      const response = (await browser.runtime.sendMessage(
+        inViewer
+          ? ({
+              type: 'PDF_VIEWER_COMMAND',
+              tabId: page.tabId,
+              action: 'scroll',
+              id: note.id,
+            } satisfies ExtensionMessage)
+          : ({ type: 'OPEN_PDF_VIEWER', id: note.id } satisfies ExtensionMessage),
+      )) as MessageResponse;
+      if (!response?.ok) {
+        window.alert(response?.error || 'Could not show PDF highlight.');
+        return;
+      }
+    } else
+      await browser.tabs.sendMessage(page.tabId, { type: 'SCROLL_TO_NOTE', id: note.id } satisfies ExtensionMessage);
     window.close();
   }
 
