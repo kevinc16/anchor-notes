@@ -1,0 +1,64 @@
+:root {
+  font:
+    14px system-ui,
+    sans-serif;
+  color-scheme: light dark;
+}
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: light-dark(#faf9f6, #181818);
+  color: light-dark(#242424, #eee);
+}
+#pdf-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+}
+#open-url {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+#open-url label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+input,
+button,
+.file-button {
+  font: inherit;
+  padding: 8px;
+  border: 1px solid #888;
+  border-radius: 6px;
+}
+input[type='url'] {
+  min-width: 120px;
+  flex: 1;
+}
+button,
+.file-button {
+  cursor: pointer;
+}
+input[type='file'] {
+  max-width: 200px;
+}
+#pdf-status {
+  margin: 0;
+  padding: 0 12px 10px;
+}
+#pdf-viewer {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border: 0;
+}
+[hidden] {
+  display: none !important;
+}

@@ -121,6 +121,12 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
           }
         }
 
+        if (pathname === '/pdf-document') {
+          response.writeHead(200, { 'content-type': 'application/pdf' });
+          response.end(readFileSync(path.resolve(process.cwd(), 'tests/e2e/fixtures/research.pdf')));
+          return;
+        }
+
         if (pathname === '/' || pathname === '/article') {
           response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
           response.end(articleHtml);

@@ -6,6 +6,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/node_modules/**',
+      'public/pdfjs/**',
       '.output/**',
       '.wxt/**',
       'coverage/**',

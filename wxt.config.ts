@@ -22,6 +22,7 @@ export default defineConfig({
       'docs/development.md',
       'docs/dependency-maintenance.md',
       'scripts/validate-firefox-build.mjs',
+      'scripts/vendor-pdfjs.mjs',
     ],
   },
   hooks: {
@@ -44,6 +45,10 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: (env) => ({
+    content_security_policy:
+      env.browser === 'firefox'
+        ? "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+        : { extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'" },
     name: 'Anchor Notes',
     version: '0.5.0',
     description: 'Highlight the web, keep durable notes, and remember the important things.',

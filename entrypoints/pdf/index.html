@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Anchor Notes — PDF</title></head>
+<body>
+  <header id="pdf-controls">
+    <strong>Anchor Notes · PDF</strong>
+    <form id="open-url"><label>PDF URL <input id="source-url" type="url" placeholder="https://…" /></label><button type="submit">Open PDF</button></form>
+    <label class="file-button">Choose PDF file<input id="open-file" type="file" accept="application/pdf,.pdf" /></label>
+    <a id="open-original" target="_blank" rel="noreferrer" hidden>Open original</a>
+    <button id="open-library" type="button">Library</button>
+  </header>
+  <p id="pdf-status" role="status">Open a PDF URL or choose a file. PDFs stay on this device.</p>
+  <iframe id="pdf-viewer" title="PDF document"></iframe>
+  <script type="module" src="./main.ts"></script>
+</body></html>
