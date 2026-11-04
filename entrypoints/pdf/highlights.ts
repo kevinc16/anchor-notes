@@ -30,17 +30,32 @@ export function mountPdfHighlights(
       .forEach((item) => item.remove());
   }
   async function render(note: AnchorNote): Promise<boolean> {
-    remove(note.id);
+    const existing = [
+      ...document.querySelectorAll<HTMLButtonElement>(`.anchor-pdf-highlight[data-anchor-id="${CSS.escape(note.id)}"]`),
+    ];
     const source = current();
     const p = normalizePdfSelector(note.anchor?.pdf);
-    if (!source || !p || p.documentHash !== source.documentHash || normalizeUrl(note.url) !== normalizeUrl(source.url))
+    if (
+      !source ||
+      !p ||
+      p.documentHash !== source.documentHash ||
+      normalizeUrl(note.url) !== normalizeUrl(source.url)
+    ) {
+      remove(note.id);
       return false;
+    }
     const page = document.querySelector<HTMLElement>(`.page[data-page-number="${p.pageNumber}"]`);
     const text = page?.querySelector<HTMLElement>('.textLayer');
-    if (!page || !text) return false;
+    if (!page || !text) {
+      remove(note.id);
+      return false;
+    }
     const match = findPdfQuote(indexPdfText(text).text, note.anchor);
     const range = match && pdfRange(text, match.start, match.end);
-    if (!range) return false;
+    if (!range) {
+      remove(note.id);
+      return false;
+    }
     const bounds = page.getBoundingClientRect();
     const seen = new Set<string>();
     for (const rect of range.getClientRects()) {
@@ -48,7 +63,7 @@ export function mountPdfHighlights(
       const key = [rect.x, rect.y, rect.width, rect.height].map((v) => Math.round(v * 2)).join(':');
       if (seen.has(key)) continue;
       seen.add(key);
-      const mark = document.createElement('button');
+      const mark = existing[seen.size - 1] || document.createElement('button');
       mark.type = 'button';
       mark.className = 'anchor-note-highlight anchor-pdf-highlight';
       mark.dataset.anchorId = note.id;
@@ -58,8 +73,8 @@ export function mountPdfHighlights(
       mark.setAttribute('aria-label', `Edit highlight: ${note.quote}`);
       Object.assign(mark.style, {
         position: 'absolute',
-        left: `${rect.left - bounds.left}px`,
-        top: `${rect.top - bounds.top}px`,
+        left: `${rect.left - bounds.left - page.clientLeft}px`,
+        top: `${rect.top - bounds.top - page.clientTop}px`,
         width: `${rect.width}px`,
         height: `${rect.height}px`,
         border: '0',
@@ -67,8 +82,9 @@ export function mountPdfHighlights(
         zIndex: '5',
         pointerEvents: 'none',
       });
-      page.append(mark);
+      if (mark.parentElement !== page) page.append(mark);
     }
+    existing.slice(seen.size).forEach((mark) => mark.remove());
     return seen.size > 0;
   }
   function captureSelection(): CaptureResult {
@@ -153,7 +169,6 @@ export function mountPdfHighlights(
     const source = current();
     const data = await readData();
     if (started !== revision || !source || source !== current()) return;
-    document.querySelectorAll('.anchor-pdf-highlight').forEach((item) => item.remove());
     coverage = data.settings.highlightCoverage;
     const matching = data.notes.filter(
       (note) => normalizeUrl(note.url) === normalizeUrl(source.url) && note.anchor?.pdf,
@@ -162,6 +177,10 @@ export function mountPdfHighlights(
       status(
         'Some saved highlights belong to a different version of this PDF. Open their saved copy from the library or select the original file.',
       );
+    const ids = new Set(matching.map((note) => note.id));
+    document.querySelectorAll<HTMLElement>('.anchor-pdf-highlight').forEach((mark) => {
+      if (!ids.has(mark.dataset.anchorId || '')) mark.remove();
+    });
     for (const note of matching) await render(note);
   }
   function schedule() {
@@ -178,7 +197,9 @@ export function mountPdfHighlights(
   });
   window.addEventListener('resize', schedule);
   async function showNote(id: string) {
+    const source = current();
     const data = await readData();
+    if (source !== current()) return false;
     const note = data.notes.find((note) => note.id === id);
     const p = normalizePdfSelector(note?.anchor?.pdf);
     if (!note || !p || p.documentHash !== current()?.documentHash) {
@@ -193,6 +214,7 @@ export function mountPdfHighlights(
     schedule();
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline) {
+      if (source !== current()) return false;
       if (await render(note)) {
         document
           .querySelector<HTMLElement>(`.anchor-pdf-highlight[data-anchor-id="${CSS.escape(id)}"]`)

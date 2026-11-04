@@ -1,3 +1,5 @@
+import { noteSourceUrl } from './pdf-navigation';
+import { hasPdfSelector } from './pdf-anchor';
 import type { AnchorNote, NoteReturnIntent } from './types';
 
 export interface NoteReturnApi {
@@ -16,9 +18,14 @@ export const noteReturnKey = (tabId: number) => `anchorNotesReturn:${tabId}`;
 
 export async function openNoteSource(
   api: NoteReturnApi,
-  note: Pick<AnchorNote, 'id' | 'url'>,
+  note: Pick<AnchorNote, 'id' | 'url'> & Partial<Pick<AnchorNote, 'anchor'>>,
   active = true,
+  extensionBaseUrl?: string,
 ): Promise<void> {
+  if (hasPdfSelector(note.anchor) && extensionBaseUrl) {
+    await api.tabs.create({ url: noteSourceUrl(note, extensionBaseUrl), active });
+    return;
+  }
   // Store the intent before loading the source, even if its content script starts immediately.
   const tab = await api.tabs.create({ url: 'about:blank', active });
   if (tab.id === undefined) throw new Error('Could not open the source tab.');

@@ -1,3 +1,5 @@
+import { createPdfRouter } from '@/lib/pdf-routing';
+import { pdfViewerUrl, noteSourceUrl, validatePdfSource } from '@/lib/pdf-navigation';
 import { browser, defineBackground } from '#imports';
 import { getBulkGeneration, startBulkGeneration } from '@/lib/bulk-generation';
 import { isEncryptedCredentialLocked, LOCKED_API_KEY_WARNING } from '@/lib/credential-settings';
@@ -10,6 +12,15 @@ import { bulkEditTags, deleteNote, readData, saveNote } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage, MessageResponse } from '@/lib/types';
 
 export default defineBackground(() => {
+  const pdfRouter = createPdfRouter(browser.runtime.getURL('/'));
+  browser.runtime.onConnect.addListener((port) => {
+    pdfRouter.connect(port);
+  });
+  async function capture(tabId: number) {
+    if (pdfRouter.has(tabId)) return pdfRouter.send(tabId, { type: 'CAPTURE_SELECTION' });
+    return browser.tabs.sendMessage(tabId, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage);
+  }
+
   browser.tabs.onRemoved.addListener((tabId) => {
     void browser.storage.session.remove(noteReturnKey(tabId)).catch(() => undefined);
   });
@@ -25,9 +36,7 @@ export default defineBackground(() => {
 
   browser.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === 'anchor-save-selection' && tab?.id) {
-      void browser.tabs
-        .sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage)
-        .catch(() => undefined);
+      void capture(tab.id).catch(() => undefined);
     }
   });
 
@@ -40,15 +49,46 @@ export default defineBackground(() => {
     if (command === 'save-highlight') {
       void browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
         if (tab?.id) {
-          void browser.tabs
-            .sendMessage(tab.id, { type: 'CAPTURE_SELECTION' } satisfies ExtensionMessage)
-            .catch(() => undefined);
+          void capture(tab.id).catch(() => undefined);
         }
       });
     }
   });
 
   browser.runtime.onMessage.addListener((message: ExtensionMessage, sender): Promise<MessageResponse> | undefined => {
+    if (
+      message.type === 'OPEN_PDF_VIEWER' ||
+      message.type === 'GET_PDF_CONTEXT' ||
+      message.type === 'PDF_VIEWER_COMMAND'
+    ) {
+      const senderPage = sender.url?.split(/[?#]/)[0];
+      if (![browser.runtime.getURL('/popup.html'), browser.runtime.getURL('/options.html')].includes(senderPage || ''))
+        return Promise.resolve({ ok: false, error: 'Open the popup or library to use PDF navigation.' });
+      if (message.type === 'GET_PDF_CONTEXT') return pdfRouter.send(message.tabId, { type: 'GET_PDF_CONTEXT' });
+      if (message.type === 'PDF_VIEWER_COMMAND') {
+        if (message.action === 'scroll' && message.id)
+          return pdfRouter.send(message.tabId, { type: 'SCROLL_TO_NOTE', id: message.id });
+        if (message.action === 'capture') return pdfRouter.send(message.tabId, { type: 'CAPTURE_SELECTION' });
+        return Promise.resolve({ ok: false, error: 'Choose a saved PDF note.' });
+      }
+      return (async (): Promise<MessageResponse> => {
+        try {
+          let url: string;
+          if (message.id) {
+            const note = (await readData()).notes.find((note) => note.id === message.id);
+            if (!note) return { ok: false, error: 'This saved note could not be found.' };
+            url = noteSourceUrl(note, browser.runtime.getURL('/'));
+          } else {
+            const source = message.source ? validatePdfSource(message.source) : undefined;
+            url = pdfViewerUrl(browser.runtime.getURL('/'), source);
+          }
+          await browser.tabs.create({ url, active: message.active ?? true });
+          return { ok: true };
+        } catch {
+          return { ok: false, error: 'Could not open the PDF viewer.' };
+        }
+      })();
+    }
     if (
       message.type === 'BULK_EDIT_TAGS' ||
       message.type === 'START_BULK_GENERATION' ||
@@ -91,7 +131,12 @@ export default defineBackground(() => {
           const data = await readData();
           const note = data.notes.find((item) => item.id === message.id);
           if (!note) return { ok: false, error: 'This saved note could not be found.' };
-          await openNoteSource({ tabs: browser.tabs, session: browser.storage.session }, note, message.active);
+          await openNoteSource(
+            { tabs: browser.tabs, session: browser.storage.session },
+            note,
+            message.active,
+            browser.runtime.getURL('/'),
+          );
           return { ok: true };
         } catch {
           return { ok: false, error: 'Could not open the source page.' };

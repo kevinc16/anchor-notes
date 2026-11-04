@@ -1,3 +1,6 @@
+import { connectPdfViewer } from './messaging';
+import { normalizePdfSelector } from '@/lib/pdf-anchor';
+import type { MessageResponse } from '@/lib/types';
 import { mountPdfHighlights } from './highlights';
 import {
   associatePdfSource,
@@ -26,6 +29,9 @@ const frame = document.querySelector<HTMLIFrameElement>('#pdf-viewer')!;
 const status = document.querySelector<HTMLElement>('#pdf-status')!;
 const input = document.querySelector<HTMLInputElement>('#source-url')!;
 let revision = 0;
+let requiredHash: string | undefined;
+let pendingNoteId: string | undefined;
+let pendingNoteSource: string | undefined;
 let controller: AbortController | undefined;
 let viewerWork: Promise<unknown> = Promise.resolve();
 export function showPdfStatus(message: string) {
@@ -91,6 +97,9 @@ async function renderPdf(bytes: ArrayBuffer, source: string | undefined, filenam
   const app = await viewerReady;
   const hash = await pdfHash(bytes);
   if (expectedRevision !== revision) return;
+  if (requiredHash && hash !== requiredHash)
+    throw new Error('This is a different PDF. Choose the original file to restore this saved note.');
+  if (expectedRevision !== revision) return;
   const snapshot = new Blob([bytes], { type: 'application/pdf' });
   await app.close();
   if (expectedRevision !== revision) return;
@@ -122,6 +131,13 @@ async function renderPdf(bytes: ArrayBuffer, source: string | undefined, filenam
     history.replaceState(null, '', url);
     showPdfStatus('PDF opened. Selectable text is available on text-based pages; OCR is not supported.');
     window.dispatchEvent(new CustomEvent('anchor:pdf-loaded', { detail: current }));
+    requiredHash = undefined;
+    if (pendingNoteId) {
+      const id = pendingNoteId;
+      pendingNoteId = undefined;
+      pendingNoteSource = undefined;
+      void pdfUiReady.then((ui) => ui.showNote(id));
+    }
   } catch {
     await app.close();
     throw new Error(
@@ -161,20 +177,37 @@ async function openRemote(source: string) {
 }
 document.querySelector('#open-url')!.addEventListener('submit', (event) => {
   event.preventDefault();
+  requiredHash = undefined;
+  pendingNoteId = undefined;
+  pendingNoteSource = undefined;
+  const url = new URL(location.href);
+  url.searchParams.delete('note');
+  url.searchParams.delete('document');
+  history.replaceState(null, '', url);
   void openRemote(input.value);
 });
 document.querySelector<HTMLInputElement>('#open-file')!.addEventListener('change', (event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  if (!pendingNoteId) {
+    requiredHash = undefined;
+    const url = new URL(location.href);
+    url.searchParams.delete('note');
+    history.replaceState(null, '', url);
+  }
+  const source = pendingNoteSource?.startsWith('http') ? pendingNoteSource : undefined;
   const request = ++revision;
   controller?.abort();
   current = undefined;
   window.dispatchEvent(new Event('anchor:pdf-storage'));
   showPdfStatus('Opening PDF…');
-  void file
-    .arrayBuffer()
-    .then((bytes) => loadPdf(bytes, undefined, file.name, request))
-    .catch((error: unknown) => showPdfStatus(error instanceof Error ? error.message : 'Could not read PDF file.'));
+  void viewerReady
+    .then((app) => app.close())
+    .then(() => file.arrayBuffer())
+    .then((bytes) => loadPdf(bytes, source, file.name, request))
+    .catch((error: unknown) => {
+      if (request === revision) showPdfStatus(error instanceof Error ? error.message : 'Could not read PDF file.');
+    });
 });
 const keepButton = document.querySelector<HTMLButtonElement>('#keep-pdf')!;
 const removeButton = document.querySelector<HTMLButtonElement>('#remove-pdf')!;
@@ -242,10 +275,25 @@ document.querySelector('#reload-source')!.addEventListener('click', () => {
 const initial = parsePdfViewerUrl(location.href, browser.runtime.getURL('/'));
 async function openInitial() {
   const request = revision;
-  const source = initial?.source;
+  let source = initial?.source;
+  if (initial?.noteId) {
+    const result = (await browser.runtime.sendMessage({ type: 'GET_NOTE', id: initial.noteId })) as MessageResponse;
+    if (request !== revision) return;
+    const selector = normalizePdfSelector(result.note?.anchor?.pdf);
+    if (!result.ok || !result.note || !selector) {
+      showPdfStatus('This saved PDF note is unavailable or has an unsupported selector.');
+      return;
+    }
+    source = result.note.url;
+    pendingNoteSource = source;
+    requiredHash = selector.documentHash;
+    pendingNoteId = result.note.id;
+  }
   const hash =
+    requiredHash ||
     new URL(location.href).searchParams.get('document') ||
     (source?.startsWith('anchor-notes:pdf:sha256:') ? source.slice(-64) : undefined);
+  requiredHash ||= hash;
   if (source) {
     try {
       const saved = hash ? await readPdfDocument(hash) : await findPdfDocument(source);
@@ -269,11 +317,16 @@ async function openInitial() {
     } else showPdfStatus('No saved copy is available. Choose the same PDF file to restore its notes.');
   } else input.value = new URL(location.href).searchParams.get('prefill') || '';
 }
-void openInitial();
+void openInitial().catch(() =>
+  showPdfStatus('Could not open this saved PDF note. Try again or choose its original PDF file.'),
+);
 
 export const pdfUiReady = viewerReady.then((app) => {
   const ui = mountPdfHighlights(app, frame.contentDocument!, currentPdf, showPdfStatus);
   const save = document.querySelector<HTMLButtonElement>('#save-highlight')!;
+  window.addEventListener('anchor:pdf-storage', () => {
+    save.disabled = !currentPdf();
+  });
   save.addEventListener('mousedown', (event) => event.preventDefault());
   save.addEventListener('click', () => {
     void ui.showComposer();
@@ -284,3 +337,5 @@ export const pdfUiReady = viewerReady.then((app) => {
   });
   return ui;
 });
+
+connectPdfViewer(pdfUiReady, currentPdf);

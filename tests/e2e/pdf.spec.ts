@@ -181,10 +181,40 @@ test('saves PDF highlights against the source and restores after retained reload
   await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
   await viewer.locator('#scaleSelect').selectOption('1.5');
   await expect(viewer.locator('.anchor-pdf-highlight')).toHaveCount(1);
+  const aligned = () =>
+    viewer
+      .locator('.anchor-pdf-highlight')
+      .first()
+      .evaluate((mark) => {
+        const text = mark.closest('.page')!.querySelector('.textLayer span')!;
+        const range = mark.ownerDocument.createRange();
+        range.selectNodeContents(text);
+        const expected = range.getBoundingClientRect(),
+          actual = mark.getBoundingClientRect();
+        return (
+          Math.abs(actual.left - expected.left) < 1 &&
+          Math.abs(actual.top - expected.top) < 1 &&
+          Math.abs(actual.width - expected.width) < 1 &&
+          Math.abs(actual.height - expected.height) < 1
+        );
+      });
+  await expect.poll(aligned).toBe(true);
+  await viewer.locator('#secondaryToolbarToggleButton').click();
+  await viewer.locator('#pageRotateCw').click();
+  await viewer.locator('#secondaryToolbarToggleButton').click();
+  await expect.poll(aligned).toBe(true);
   await viewer.locator('.anchor-pdf-highlight').first().press('Enter');
   await expect(viewer.locator('#anchor-notes-popover textarea')).toHaveValue('PDF research note');
   await viewer.locator('#anchor-notes-popover textarea').fill('Edited PDF note');
   await viewer.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect.poll(async () => (await readExtensionData(serviceWorker)).notes[0]?.body).toBe('Edited PDF note');
+  await expect(viewer.locator('#anchor-notes-popover')).toHaveCount(0);
+  await viewer.locator('.anchor-pdf-highlight').first().press('Enter');
+  await viewer.getByRole('button', { name: 'Use mint highlight' }).click();
+  await expect.poll(async () => (await readExtensionData(serviceWorker)).notes[0]?.color).toBe('mint');
+  await viewer.getByRole('button', { name: 'Delete', exact: true }).click();
+  await viewer.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(viewer.locator('.anchor-pdf-highlight')).toHaveCount(0);
 });
 
 test('captures multiple spans within one page and clearly rejects cross-page selections', async ({
@@ -226,4 +256,149 @@ test('captures multiple spans within one page and clearly rejects cross-page sel
   await page.getByRole('button', { name: 'Save highlight', exact: true }).click();
   await expect(viewer.locator('#anchor-notes-toast')).toContainText('Select text within one PDF page');
   await expect(viewer.locator('#anchor-notes-composer')).toHaveCount(0);
+});
+
+test('popup matches the original PDF and library links reopen the exact saved highlight', async ({
+  context,
+  extensionId,
+  serviceWorker,
+}) => {
+  const { openPopupInInactiveTab } = await import('./fixtures');
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/pdf.html?source=${encodeURIComponent('http://127.0.0.1:4173/pdf-document')}`,
+  );
+  const viewer = page.frameLocator('#pdf-viewer');
+  await expect(page.getByRole('status')).toContainText('PDF opened');
+  await viewer.locator('#pageNumber').fill('3');
+  await viewer.locator('#pageNumber').press('Enter');
+  const text = viewer.locator('.page[data-page-number="3"] .textLayer span').filter({ hasText: 'Final page' }).first();
+  await text.evaluate((node) => {
+    const range = node.ownerDocument.createRange();
+    range.selectNodeContents(node);
+    const selection = node.ownerDocument.defaultView!.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Save highlight', exact: true }).click();
+  await viewer.locator('#anchor-notes-composer textarea').fill('Source-linked PDF note');
+  await viewer.getByRole('button', { name: 'Save note', exact: true }).click();
+  await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Keep PDF on this device', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'PDF kept on this device' })).toBeVisible();
+  await page.bringToFront();
+  const popup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
+  await expect(popup.getByText('Source-linked PDF note', { exact: true })).toBeVisible();
+  await popup.getByRole('button', { name: 'Show on page', exact: true }).click();
+  await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
+  const library = await context.newPage();
+  await library.goto(`chrome-extension://${extensionId}/options.html`);
+  const link = library.getByRole('link', { name: 'Return to source' }).first();
+  await expect(link).toHaveAttribute('href', /pdf\.html\?.*note=/);
+  await context.setOffline(true);
+  const [reopened] = await Promise.all([context.waitForEvent('page'), link.click()]);
+  await expect(reopened.frameLocator('#pdf-viewer').locator('.anchor-pdf-highlight').first()).toBeVisible();
+  await context.setOffline(false);
+  await page.route('**/pdf-document', (route) =>
+    route.fulfill({ path: path.resolve('tests/e2e/fixtures/second.pdf'), contentType: 'application/pdf' }),
+  );
+  await page.getByLabel('PDF URL').fill('http://127.0.0.1:4173/pdf-document');
+  await page.getByRole('button', { name: 'Open PDF', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('different version');
+  await page.bringToFront();
+  const olderPopup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
+  await expect(olderPopup.getByText('Source-linked PDF note', { exact: true })).toBeVisible();
+  const [older] = await Promise.all([
+    context.waitForEvent('page'),
+    olderPopup.getByRole('button', { name: 'Show on page', exact: true }).click(),
+  ]);
+  await expect(older.frameLocator('#pdf-viewer').locator('.anchor-pdf-highlight').first()).toBeVisible();
+});
+
+test('a saved remote note reconnects to matching local bytes after URL failure', async ({
+  context,
+  extensionId,
+  serviceWorker,
+}) => {
+  const { createHash } = await import('node:crypto');
+  const { readFileSync } = await import('node:fs');
+  const { DEFAULT_SETTINGS } = await import('../../lib/settings');
+  const hash = createHash('sha256')
+    .update(readFileSync(path.resolve('tests/e2e/fixtures/research.pdf')))
+    .digest('hex');
+  const quote = 'Anchor PDF research on page one.';
+  const source = 'http://127.0.0.1:4173/unavailable-pdf';
+  const note = {
+    id: 'fallback-pdf-note',
+    url: source,
+    title: 'Remote research',
+    quote,
+    body: 'Retained remote identity',
+    anchor: {
+      quote: { exact: quote, prefix: '', suffix: '' },
+      startPath: '',
+      startOffset: 0,
+      endPath: '',
+      endOffset: 0,
+      pdf: { version: 1 as const, pageNumber: 1, documentHash: hash, start: 0, end: quote.length },
+    },
+    pageSnapshot: { description: '', capturedAt: '2026-01-01' },
+    color: 'yellow' as const,
+    tags: [],
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  };
+  await seedExtensionData(serviceWorker, { schemaVersion: 1, notes: [note], settings: DEFAULT_SETTINGS });
+  const page = await context.newPage();
+  await page.goto(
+    `chrome-extension://${extensionId}/pdf.html?source=${encodeURIComponent(source)}&note=${note.id}&document=${hash}`,
+  );
+  await expect(page.getByRole('status')).toContainText('could not be downloaded');
+  await page.getByLabel('Choose PDF file').setInputFiles(path.resolve('tests/e2e/fixtures/second.pdf'));
+  await expect(page.getByRole('status')).toContainText('different PDF');
+  await page.getByLabel('Choose PDF file').setInputFiles(path.resolve('tests/e2e/fixtures/research.pdf'));
+  await expect(page.frameLocator('#pdf-viewer').locator('.anchor-pdf-highlight').first()).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('source')).toBe(source);
+  await page.getByLabel('Choose PDF file').setInputFiles(path.resolve('tests/e2e/fixtures/second.pdf'));
+  await expect(page).toHaveTitle('second.pdf — Anchor Notes');
+  expect(new URL(page.url()).searchParams.has('note')).toBe(false);
+  await page.reload();
+  await expect(page.getByRole('status')).toContainText('Choose the same PDF');
+});
+
+test('kept PDFs survive a persistent browser-context restart without a source request', async () => {
+  test.setTimeout(60_000);
+  const { chromium } = await import('@playwright/test');
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const profile = await mkdtemp(path.join(tmpdir(), 'anchor-pdf-retained-'));
+  const extension = path.resolve('.output/chrome-mv3');
+  const launch = () =>
+    chromium.launchPersistentContext(profile, {
+      channel: 'chromium',
+      headless: true,
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+    });
+  let context = await launch();
+  try {
+    const worker = context.serviceWorkers()[0] || (await context.waitForEvent('serviceworker'));
+    const id = new URL(worker.url()).hostname;
+    let page = await context.newPage();
+    await page.goto(`chrome-extension://${id}/pdf.html`);
+    await page.getByLabel('Choose PDF file').setInputFiles(path.resolve('tests/e2e/fixtures/research.pdf'));
+    await expect(page.getByRole('status')).toContainText('PDF opened');
+    await page.getByRole('button', { name: 'Keep PDF on this device', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'PDF kept on this device' })).toBeVisible();
+    const url = page.url();
+    await context.close();
+    context = await launch();
+    await context.setOffline(true);
+    page = await context.newPage();
+    await page.goto(url);
+    await expect(page.getByRole('status')).toContainText('Saved PDF opened');
+    await expect(page.frameLocator('#pdf-viewer').locator('.textLayer').first()).toContainText('Anchor PDF research');
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
 });
