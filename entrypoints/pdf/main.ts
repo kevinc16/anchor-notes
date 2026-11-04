@@ -48,9 +48,9 @@ export const viewerReady = new Promise<PdfApplication>((resolve) => {
       externalLinkRel: 'noopener noreferrer',
     });
     void source.PDFViewerApplication.initializedPromise.then(() => {
-      const style = source.document.createElement('style');
-      style.textContent = '#openFile, #secondaryOpenFile { display: none !important; }';
-      source.document.head.append(style);
+      source.document.querySelectorAll<HTMLElement>('#openFile, #secondaryOpenFile').forEach((button) => {
+        button.style.display = 'none';
+      });
       source.document.addEventListener(
         'keydown',
         (event) => {
