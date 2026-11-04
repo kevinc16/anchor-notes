@@ -289,7 +289,23 @@ test('popup matches the original PDF and library links reopen the exact saved hi
   await page.bringToFront();
   const popup = await openPopupInInactiveTab(context, extensionId, serviceWorker);
   await expect(popup.getByText('Source-linked PDF note', { exact: true })).toBeVisible();
+  const liveContext = await popup.evaluate(async () => {
+    const api = (
+      globalThis as unknown as {
+        chrome: {
+          tabs: { query(query: unknown): Promise<Array<{ id?: number }>> };
+          runtime: { sendMessage(message: unknown): Promise<unknown> };
+        };
+      }
+    ).chrome;
+    const [tab] = await api.tabs.query({ active: true, currentWindow: true });
+    return api.runtime.sendMessage({ type: 'GET_PDF_CONTEXT', tabId: tab!.id });
+  });
+  expect(liveContext).toMatchObject({ ok: true, pdfContext: { url: 'http://127.0.0.1:4173/pdf-document' } });
+  await viewer.locator('#pageNumber').fill('1');
+  await viewer.locator('#pageNumber').press('Enter');
   await popup.getByRole('button', { name: 'Show on page', exact: true }).click();
+  await expect(viewer.locator('#pageNumber')).toHaveValue('3');
   await expect(viewer.locator('.anchor-pdf-highlight').first()).toBeVisible();
   const library = await context.newPage();
   await library.goto(`chrome-extension://${extensionId}/options.html`);
