@@ -6,3 +6,5 @@ dist/
 playwright-report/
 test-results/
 *.zip
+
+public/pdfjs/

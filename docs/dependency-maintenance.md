@@ -50,3 +50,7 @@ Before updating, `npm audit --json` reported **9 affected package entries** (5 h
 After updating direct and compatible transitive dependencies, `npm audit --json` reports **0 known advisories** for this lockfile on the review date. No advisory is currently deferred. This is a point-in-time npm database result, not a claim that the dependency tree is vulnerability-free. Re-run `npm audit` during future upgrades and review new findings in context; never use `npm audit fix --force` without reviewing compatibility.
 
 To reproduce the inventory, run `npm ci`, `npm outdated --include=dev`, `npm outdated --include=dev --all`, and `npm audit` under the pinned runtime. `npm outdated` exits nonzero when newer packages exist, including the intentional TypeScript and Node-type deferrals.
+
+## Bundled PDF.js viewer
+
+The opt-in PDF page bundles the official PDF.js 6.5.438 generic release in `public/pdfjs/`. See `PROVENANCE.md` and resource licenses for the archive URL, SHA-256 and small bootstrap patches. To update, review upstream security/compatibility notes, update the pinned version/digest in `scripts/vendor-pdfjs.mjs`, download the official distribution, and run the script with its local ZIP path. Commit runtime assets and provenance; ordinary builds never download viewer code. Source archives include the tracked viewer and vendor script. Verify Chrome MV3 and Firefox 140+ CSP/worker/WASM behavior and PDF browser tests after each update. PDF scripting, XFA and native annotation editing are disabled in the Anchor Notes viewer integration.

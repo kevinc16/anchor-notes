@@ -1,0 +1,54 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 109 >>
+stream
+BT /F1 16 Tf 60 700 Td (Anchor PDF research on page one.) Tj 0 -30 Td (A second span for highlighting.) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 109 >>
+stream
+BT /F1 16 Tf 60 700 Td (Anchor PDF research on page two.) Tj 0 -30 Td (A second span for highlighting.) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 111 >>
+stream
+BT /F1 16 Tf 60 700 Td (Final page with delayed rendering.) Tj 0 -30 Td (A second span for highlighting.) Tj ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000323 00000 n 
+0000000483 00000 n 
+0000000609 00000 n 
+0000000769 00000 n 
+0000000895 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1057
+%%EOF

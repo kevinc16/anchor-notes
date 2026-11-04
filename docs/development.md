@@ -102,3 +102,7 @@ The popup and library use the typed Zustand stores in [`lib/ui-stores.ts`](../li
 Stores are in-memory and scoped to each extension page. Popup and options pages have separate JavaScript contexts; they share the store definition, not a live instance. There is no Zustand persistence middleware, browser localStorage mirror, or automatic cross-page synchronization. Browser extension local storage remains the source of truth through [`lib/storage.ts`](../lib/storage.ts), which still normalizes reads and writes. Existing runtime messages continue to handle content-script/background operations; stores do not call browser APIs or send messages.
 
 Settings and note edit drafts remain component-local. API key drafts, passphrases, and decrypted credentials never enter Zustand. The snapshot contains only the already-persisted settings; encrypted keys remain ciphertext, and unlocked keys stay in extension session storage through the existing credential helpers. Changing a UI control does not write data; save, delete, and import handlers persist through the existing helpers and then refresh the snapshot.
+
+## PDF fixtures
+
+`tests/e2e/fixtures/research.pdf` contains three synthetic text pages, generated with standard PDF objects/xref and Helvetica. `protected.pdf` is a password-protected derivative using synthetic credentials, used only to check rejection/fallback. The fixture server serves the public document at `/pdf-document` with `application/pdf` and no filename suffix. Browser tests exercise the bundled viewer in the extension context.

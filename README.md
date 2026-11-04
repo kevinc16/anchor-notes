@@ -83,3 +83,9 @@ Read the [privacy policy](PRIVACY.md) for details.
 ## License
 
 MIT
+
+### Open a PDF
+
+Use **Open PDF in Anchor Notes** in the popup, then enter a PDF URL or choose a local PDF file. The extension bundles PDF.js's viewer, including its search, page navigation, zoom and rotation controls; your browser's default PDF handler is unchanged. Files are processed locally. Opening a URL makes a new GET request: login-only, POST and expired links may require downloading the PDF and selecting the file instead. Password-protected/malformed PDFs are unsupported; image-only pages have no selectable text and OCR is not included.
+
+This first PDF stage provides viewing. PDF note capture and optional on-device document retention follow in separate PRs.

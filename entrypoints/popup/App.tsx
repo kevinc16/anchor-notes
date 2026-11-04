@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { EMPTY_DATA, hostFromUrl, normalizeUrl, normalizeData, readData } from '@/lib/storage';
 import type { AnchorNote, ExtensionMessage } from '@/lib/types';
 import { useDataStore } from '@/lib/ui-stores';
+import { pdfViewerUrl } from '@/lib/pdf-navigation';
 import { Icon } from '@/components/Icon';
 
 interface PageState {
@@ -75,6 +76,17 @@ export default function App() {
       </header>
 
       <main className="px-4xl py-5" aria-busy={loading}>
+        <button
+          className="mb-4 rounded-xl border border-line px-3 py-2 text-sm"
+          type="button"
+          onClick={() => {
+            const url = new URL(pdfViewerUrl(browser.runtime.getURL('/')));
+            if (/^https?:/.test(page.url)) url.searchParams.set('prefill', page.url);
+            void browser.tabs.create({ url: url.href });
+          }}
+        >
+          Open PDF in Anchor Notes
+        </button>
         {error && (
           <p role="alert" className="mb-4 text-xs text-danger">
             {error}
