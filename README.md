@@ -89,3 +89,5 @@ MIT
 Use **Open PDF in Anchor Notes** in the popup, then enter a PDF URL or choose a local PDF file. The extension bundles PDF.js's viewer, including its search, page navigation, zoom and rotation controls; your browser's default PDF handler is unchanged. Files are processed locally. Opening a URL makes a new GET request: login-only, POST and expired links may require downloading the PDF and selecting the file instead. Password-protected/malformed PDFs are unsupported; image-only pages have no selectable text and OCR is not included.
 
 This first PDF stage provides viewing. PDF note capture and optional on-device document retention follow in separate PRs.
+
+Choose **Keep PDF on this device** after opening a PDF to retain a local copy in IndexedDB. Saved copies reopen offline; the library's **Saved PDFs** area shows retained byte usage and removes copies without deleting notes. Copies are deduplicated by content. Browser storage quotas apply; clearing extension data or uninstalling removes local copies. JSON backups do not contain PDF files. Without a saved copy, local PDFs must be selected again and remote PDFs may need downloading again.

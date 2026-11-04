@@ -1,3 +1,10 @@
+import {
+  associatePdfSource,
+  keepPdfDocument,
+  readPdfDocument,
+  findPdfDocument,
+  removePdfDocument,
+} from '@/lib/pdf-documents';
 import { browser } from '#imports';
 import { watchTheme } from '@/lib/browser-theme';
 import { parsePdfViewerUrl, pdfHash, pdfTitleFromUrl, validatePdfSource } from '@/lib/pdf-navigation';
@@ -110,6 +117,7 @@ async function renderPdf(bytes: ArrayBuffer, source: string | undefined, filenam
     if (source) original.href = source;
     const url = new URL(location.href);
     url.searchParams.set('source', current.url);
+    url.searchParams.set('document', hash);
     history.replaceState(null, '', url);
     showPdfStatus('PDF opened. Selectable text is available on text-based pages; OCR is not supported.');
     window.dispatchEvent(new CustomEvent('anchor:pdf-loaded', { detail: current }));
@@ -126,6 +134,7 @@ async function openRemote(source: string) {
   controller?.abort();
   controller = new AbortController();
   current = undefined;
+  window.dispatchEvent(new Event('anchor:pdf-storage'));
   showPdfStatus('Loading PDF…');
   try {
     const app = await viewerReady;
@@ -159,17 +168,104 @@ document.querySelector<HTMLInputElement>('#open-file')!.addEventListener('change
   const request = ++revision;
   controller?.abort();
   current = undefined;
+  window.dispatchEvent(new Event('anchor:pdf-storage'));
   showPdfStatus('Opening PDF…');
   void file
     .arrayBuffer()
     .then((bytes) => loadPdf(bytes, undefined, file.name, request))
     .catch((error: unknown) => showPdfStatus(error instanceof Error ? error.message : 'Could not read PDF file.'));
 });
-const initial = parsePdfViewerUrl(location.href, browser.runtime.getURL('/'));
-if (initial?.source?.startsWith('http')) {
-  input.value = initial.source;
-  // Explicit viewer links (library/navigation) open immediately; popup prefill uses a separate parameter.
-  void openRemote(initial.source);
-} else {
-  input.value = new URL(location.href).searchParams.get('prefill') || '';
+const keepButton = document.querySelector<HTMLButtonElement>('#keep-pdf')!;
+const removeButton = document.querySelector<HTMLButtonElement>('#remove-pdf')!;
+async function refreshKeptState(associateSource = false) {
+  const document = current;
+  keepButton.disabled = !document;
+  removeButton.hidden = true;
+  keepButton.textContent = 'Keep PDF on this device';
+  if (!document) return;
+  try {
+    const kept = await readPdfDocument(document.documentHash);
+    if (document !== current) return;
+    if (kept && associateSource) await associatePdfSource(document.url, document.documentHash);
+    if (document !== current) return;
+    keepButton.textContent = kept ? 'PDF kept on this device' : 'Keep PDF on this device';
+    keepButton.disabled = Boolean(kept);
+    removeButton.hidden = !kept;
+  } catch {
+    showPdfStatus('PDF opened. Local document storage is unavailable; viewing and notes still work.');
+  }
 }
+window.addEventListener('anchor:pdf-loaded', () => {
+  void refreshKeptState(true);
+});
+window.addEventListener('anchor:pdf-storage', () => {
+  void refreshKeptState();
+});
+const changes = new BroadcastChannel('anchor-pdf-storage');
+changes.onmessage = () => {
+  void refreshKeptState();
+};
+keepButton.addEventListener('click', () => {
+  const document = current;
+  if (!document) return;
+  keepButton.disabled = true;
+  void keepPdfDocument({
+    hash: document.documentHash,
+    bytes: document.bytes,
+    title: document.title,
+    sourceUrl: document.url,
+  })
+    .then(() => {
+      if (document === current)
+        showPdfStatus('PDF kept on this device. It can reopen offline. JSON backups include notes, not PDF files.');
+    })
+    .catch(() => {
+      if (document === current) {
+        keepButton.disabled = false;
+        showPdfStatus('Could not keep PDF: storage may be full or unavailable. Viewing and note saving still work.');
+      }
+    });
+});
+removeButton.title =
+  'Remove the saved copy; notes remain. Reopening may require downloading or selecting this PDF again.';
+removeButton.addEventListener('click', () => {
+  if (!current) return;
+  void removePdfDocument(current.documentHash)
+    .then(() => showPdfStatus('Saved PDF removed. Notes remain; the open PDF is still usable.'))
+    .catch(() => showPdfStatus('Could not remove the saved PDF. Try again.'));
+});
+document.querySelector('#reload-source')!.addEventListener('click', () => {
+  if (current?.url.startsWith('http')) void openRemote(current.url);
+});
+
+const initial = parsePdfViewerUrl(location.href, browser.runtime.getURL('/'));
+async function openInitial() {
+  const request = revision;
+  const source = initial?.source;
+  const hash =
+    new URL(location.href).searchParams.get('document') ||
+    (source?.startsWith('anchor-notes:pdf:sha256:') ? source.slice(-64) : undefined);
+  if (source) {
+    try {
+      const saved = hash ? await readPdfDocument(hash) : await findPdfDocument(source);
+      if (request !== revision) return;
+      if (saved) {
+        const bytes = await saved.bytes.arrayBuffer();
+        if (request !== revision) return;
+        await loadPdf(bytes, source.startsWith('http') ? source : undefined, saved.title, request);
+        if (request !== revision) return;
+        showPdfStatus('Saved PDF opened from this device. JSON backups do not include PDF files.');
+        document.querySelector<HTMLElement>('#reload-source')!.hidden = !source.startsWith('http');
+        return;
+      }
+    } catch {
+      /* Loading the source/file still works if IndexedDB is unavailable. */
+    }
+    if (request !== revision) return;
+    if (source.startsWith('http')) {
+      input.value = source;
+      await openRemote(source);
+    } else showPdfStatus('No saved copy is available. Choose the same PDF file to restore its notes.');
+  } else input.value = new URL(location.href).searchParams.get('prefill') || '';
+}
+void openInitial();
